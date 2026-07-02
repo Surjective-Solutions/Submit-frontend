@@ -24,12 +24,8 @@ export default function CashiersPage() {
     loadCashiers();
   }, []);
 
-  function handleAddSuccess(data) {
-    const newCashier = {
-      ...data,
-      id: Date.now().toString(),
-    };
-    setCashiers((prev) => [newCashier, ...prev]);
+  function handleAddSuccess() {
+    loadCashiers(); // reload real data from backend
   }
 
   async function handleDelete(id) {
