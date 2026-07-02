@@ -150,7 +150,7 @@ export async function teacherLogin(username, password) {
 
 // TODO: replace with actual microservice endpoint
 export async function getClasses() {
-  return request("/teacher/classes", { method: "GET" });
+  return protectedRequest("/api/class/get-all-classes", { method: "GET" });
 }
 
 // TODO: replace with actual microservice endpoint

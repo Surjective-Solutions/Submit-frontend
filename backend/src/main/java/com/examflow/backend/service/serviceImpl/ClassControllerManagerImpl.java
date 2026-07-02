@@ -1,14 +1,19 @@
 package com.examflow.backend.service.serviceImpl;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.examflow.backend.dto.CashierResponse;
 import com.examflow.backend.dto.ClassRequest;
+import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
+import com.examflow.backend.entity.Cashier;
 import com.examflow.backend.entity.Classes;
 import com.examflow.backend.entity.Tutor;
 import com.examflow.backend.repository.ClassesRepository;
@@ -59,6 +64,30 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         System.out.println("Class created successfully");
 
         return response;
+    }
+
+    @Override
+    public List<ClassResponse> getAllClasses() {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Integer tutorSeq = (Integer) request.getAttribute("userId");
+        Tutor tutor = tutorRepository.findByTutorSeq(tutorSeq);
+        List<Classes> classList = classesRepository.findByStatusAndTutor(2, tutor);
+
+        List<ClassResponse> classResponseList = new ArrayList<>();
+
+        for (Classes classes : classList) {
+            ClassResponse classResponse = new ClassResponse();
+            classResponse.setDisplay_name(classes.getDisplayName());
+            classResponse.setDescription(classes.getDescription());
+            classResponse.setMonthly_fee(classes.getMonthlyFee());
+            classResponse.setSubject_name(classes.getSubjectName());
+            classResponse.setId(classes.getClassSeq());
+            classResponseList.add(classResponse);
+        }
+
+        return classResponseList;
     }
 
 }
