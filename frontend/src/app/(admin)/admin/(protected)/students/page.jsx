@@ -112,7 +112,7 @@ export default function StudentsPage() {
       const data = await getStudents();
       setStudents(data);
     } catch (error) {
-      toast.error("Failed to load cashiers");
+      toast.error("Failed to load students");
     }
   }
 
