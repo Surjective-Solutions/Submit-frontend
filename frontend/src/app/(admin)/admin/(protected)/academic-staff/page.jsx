@@ -42,7 +42,7 @@ export default function AcademicStaffPage() {
       const data = await getTutors();
       setTutors(data);
     } catch (error) {
-      toast.error("Failed to load cashiers");
+      toast.error("Failed to load Tutors");
     }
   }
 

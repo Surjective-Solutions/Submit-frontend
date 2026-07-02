@@ -32,9 +32,14 @@ export default function TeacherLoginForm() {
     setIsLoading(true);
     try {
       const result = await teacherLogin(data.username, data.password);
-      localStorage.setItem("token", result.token);
-      toast.success(result.message ?? 'Logged in successfully');
-      router.push('/teacher/dashboard');
+      if (result.isSuccess) {
+        localStorage.setItem('token', result.token);
+        localStorage.setItem('role', result.role);
+        toast.success(result.message ?? 'Logged in successfully');
+        router.push('/teacher/dashboard');
+      } else {
+        toast.error(result.message ?? 'Invalid credentials');
+      }
     } catch {
       toast.error('Login failed. Please check your credentials.');
     } finally {
