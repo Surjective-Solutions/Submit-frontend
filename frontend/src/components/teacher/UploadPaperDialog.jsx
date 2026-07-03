@@ -44,7 +44,7 @@ function SectionDivider({ label }) {
   );
 }
 
-export default function UploadPaperDialog({ open, onOpenChange, onSuccess }) {
+export default function UploadPaperDialog({ open, onOpenChange, onSuccess, classId }) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState(null);
 
@@ -73,6 +73,8 @@ export default function UploadPaperDialog({ open, onOpenChange, onSuccess }) {
   async function onSubmit(data) {
     setIsLoading(true);
     try {
+      console.log('classId:', classId); // (temporary) remove after backend is ready
+      console.log('paper data:', data);
       onSuccess(data);
       reset();
       setSelectedFileName(null);

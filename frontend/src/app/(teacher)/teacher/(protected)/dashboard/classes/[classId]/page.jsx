@@ -336,6 +336,7 @@ export default function ClassDetailPage() {
       <UploadPaperDialog
         open={uploadOpen}
         onOpenChange={setUploadOpen}
+        classId={classId}
         onSuccess={handleUpload}
       />
       <EditPaperDialog
