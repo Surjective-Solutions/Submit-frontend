@@ -67,8 +67,8 @@ export default function AddCashierDialog({ open, onOpenChange, onSuccess }) {
       await createCashier(data);
       toast.success('Cashier created successfully');
       reset();
+      onSuccess();
       onOpenChange(false);
-      onSuccess(data);
     } catch {
       toast.error('Failed to create cashier. Please try again.');
     } finally {

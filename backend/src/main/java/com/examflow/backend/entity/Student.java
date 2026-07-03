@@ -1,5 +1,10 @@
 package com.examflow.backend.entity;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import org.hibernate.validator.constraints.UniqueElements;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -24,12 +29,15 @@ public class Student {
     private String confirmPassword;
     private String finalPassword;
     private String email;
+    private LocalDate dob;
     private String grade;
     private String schoolName;
     private String whatsappNumber;
     private Boolean marketingConsent;
     private Boolean termsAccepted;
     private Integer status;
+
+    private LocalDateTime registerDateTime;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -211,6 +219,23 @@ public class Student {
 
     public void setStatus(Integer status) {
         this.status = status;
+    }
+
+    public LocalDateTime getRegisterDateTime() {
+        return registerDateTime;
+    }
+
+    public void setRegisterDateTime(LocalDateTime registerDateTime) {
+        this.registerDateTime = registerDateTime;
+    }
+
+    @Column(name = "date_of_birth")
+    public LocalDate getDob() {
+        return dob;
+    }
+
+    public void setDob(LocalDate dob) {
+        this.dob = dob;
     }
 
 }
