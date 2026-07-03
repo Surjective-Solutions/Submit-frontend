@@ -25,6 +25,7 @@ import DeleteConfirmDialog from '@/components/admin/DeleteConfirmDialog';
 import UploadPaperDialog from '@/components/teacher/UploadPaperDialog';
 import EditPaperDialog from '@/components/teacher/EditPaperDialog';
 import { MOCK_TEACHER_CLASSES } from '@/lib/mock-data';
+import { uploadPaper } from '@/lib/api-client';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -79,22 +80,12 @@ export default function ClassDetailPage() {
     );
   }
 
-  function handleUpload(data) {
+  async function handleUpload(data) {
     const file = data.pdf_file?.[0];
-    const month = Number(data.month);
-    const year = Number(data.year);
-    const newPaper = {
-      id: `paper-new-${nextPaperId++}`,
-      paper_name: data.paper_name,
-      month,
-      year,
-      month_label: `${MONTHS[month - 1]} ${year}`,
-      number_of_questions: Number(data.number_of_questions),
-      pdf_url: file ? `mock://${file.name}` : null,
-      uploaded_at: new Date().toISOString(),
-      status: data.status,
-    };
-    setPapers((prev) => [newPaper, ...prev]);
+    console.log('classId:', classId);
+    console.log('pdf file:', file);
+    console.log('paper data:', data);
+    // uploadPaper(classId, { ...data, pdf_file: file }); ← uncomment when backend is ready
     toast.success('Paper uploaded successfully');
     setUploadOpen(false);
   }
