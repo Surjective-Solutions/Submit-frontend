@@ -92,6 +92,8 @@ export default function InstructorRegisterForm() {
     setIsLoading(true);
     try {
       const response = await instructorRegister(data);
+      console.log('full response:', response);
+      console.log('instructorSeq:', response.instructorSeq);
       const identifier = response.instructorSeq;
       await resendOtp(identifier);
       sessionStorage.setItem("otp_identifier", identifier);
@@ -99,7 +101,8 @@ export default function InstructorRegisterForm() {
       router.push(
         `/instructor/verify-otp?identifier=${encodeURIComponent(identifier)}`,
       );
-    } catch {
+    } catch(error) {
+      console.log('error:', error);
       toast.error("Submission failed. Please try again.");
     } finally {
       setIsLoading(false);
