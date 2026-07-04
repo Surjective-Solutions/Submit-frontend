@@ -13,11 +13,15 @@ import com.examflow.backend.dto.CashierResponse;
 import com.examflow.backend.dto.ClassRequest;
 import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
+import com.examflow.backend.dto.PaperUploadRequest;
+import com.examflow.backend.dto.UploadPaperResponse;
 import com.examflow.backend.entity.Cashier;
 import com.examflow.backend.entity.Classes;
 import com.examflow.backend.entity.Tutor;
+import com.examflow.backend.entity.UplaodPaper;
 import com.examflow.backend.repository.ClassesRepository;
 import com.examflow.backend.repository.TutorRepository;
+import com.examflow.backend.repository.UploadPaperRepository;
 import com.examflow.backend.service.ClassControllerManager;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,13 +32,16 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
     private HttpServletRequest request;
     private final TutorRepository tutorRepository;
     private final ClassesRepository classesRepository;
+    private final UploadPaperRepository uploadPaperRepository;
 
     @Autowired
     public ClassControllerManagerImpl(HttpServletRequest request,
-            TutorRepository tutorRepository, ClassesRepository classesRepository) {
+            TutorRepository tutorRepository, ClassesRepository classesRepository,
+            UploadPaperRepository uploadPaperRepository) {
         this.request = request;
         this.tutorRepository = tutorRepository;
         this.classesRepository = classesRepository;
+        this.uploadPaperRepository = uploadPaperRepository;
     }
 
     @Override
@@ -84,10 +91,75 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
             classResponse.setMonthly_fee(classes.getMonthlyFee());
             classResponse.setSubject_name(classes.getSubjectName());
             classResponse.setId(classes.getClassSeq());
+
+            List<UplaodPaper> papers = uploadPaperRepository.findByClassesAndStatus(classes, 2);
+            List<UploadPaperResponse> paperResponses = new ArrayList<>();
+            for (UplaodPaper paper : papers) {
+                UploadPaperResponse paperResponse = new UploadPaperResponse();
+                paperResponse.setPaper_name(paper.getPaperName());
+                paperResponse.setId(paper.getUploadPaperSeq());
+                paperResponse.setMonth(Integer.valueOf(paper.getMonth()));
+                paperResponse.setYear(Integer.valueOf(paper.getYear()));
+                paperResponse.setNumber_of_questions(paper.getNoOfQuestions());
+                paperResponse.setUploaded_at(paper.getCreatedDateTime());
+
+                if (paper.getIsPublished() == true) {
+                    paperResponse.setStatus("PUBLISHED");
+
+                } else {
+                    paperResponse.setStatus("DRAFT");
+                }
+
+                paperResponses.add(paperResponse);
+            }
+            classResponse.setPapers(paperResponses);
+
             classResponseList.add(classResponse);
         }
 
         return classResponseList;
+    }
+
+    @Override
+    public GeneralResponse uploadPapers(PaperUploadRequest paperUploadRequest, Integer classId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        GeneralResponse response = new GeneralResponse();
+        Classes classes = classesRepository.findByClassSeqAndStatus(classId, 2);
+        if (classes == null) {
+            response.setMessage("Class not found");
+            response.setIsSuccess(false);
+            return response;
+        }
+
+        UplaodPaper uploadPaper = new UplaodPaper();
+        uploadPaper.setPaperName(paperUploadRequest.getPaper_name());
+        uploadPaper.setMonth(paperUploadRequest.getMonth().toString());
+        uploadPaper.setYear(paperUploadRequest.getYear().toString());
+        uploadPaper.setNoOfQuestions(paperUploadRequest.getNumber_of_questions());
+        uploadPaper.setCreatedBy(username);
+        uploadPaper.setLastModifiedBy(username);
+        uploadPaper.setCreatedDateTime(LocalDateTime.now());
+        uploadPaper.setLastModifiedDateTime(LocalDateTime.now());
+        uploadPaper.setStatus(2);
+
+        if (paperUploadRequest.getStatus() == "DRAFT") {
+
+            uploadPaper.setIsPublished(false);
+
+        } else {
+
+            uploadPaper.setIsPublished(true);
+        }
+        uploadPaper.setClasses(classes);
+
+        uploadPaperRepository.save(uploadPaper);
+
+        response.setMessage("Paper uploaded successfully");
+        response.setIsSuccess(true);
+        System.out.println("Paper uploaded successfully");
+
+        return response;
     }
 
 }

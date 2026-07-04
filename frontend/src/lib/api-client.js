@@ -178,7 +178,13 @@ export async function getClassPapers(classId) {
 
 // TODO: replace with actual microservice endpoint
 export async function uploadPaper(classId, paperData) {
-  return request(`/teacher/classes/${classId}/papers`, { body: paperData });
+  console.log("Uploading paper for classId:", classId, "with data:", paperData);
+  if (!classId) {
+    classId = 1; // Default classId for testing
+  }
+  return protectedRequest(`/api/class/${classId}/uploadpaper`, {
+    body: paperData,
+  });
 }
 
 // TODO: replace with actual microservice endpoint

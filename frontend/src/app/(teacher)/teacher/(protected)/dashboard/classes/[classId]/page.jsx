@@ -1,12 +1,22 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { ArrowLeft, PlusCircle, Upload, EyeOff, Pencil, Trash2, FileText, Users } from 'lucide-react';
-import { toast } from 'sonner';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import {
+  ArrowLeft,
+  PlusCircle,
+  Upload,
+  EyeOff,
+  Pencil,
+  Trash2,
+  FileText,
+  Users,
+} from "lucide-react";
+import { toast } from "sonner";
+import { getClasses } from "@/lib/api-client";
 
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -14,41 +24,51 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import DeleteConfirmDialog from '@/components/admin/DeleteConfirmDialog';
-import UploadPaperDialog from '@/components/teacher/UploadPaperDialog';
-import EditPaperDialog from '@/components/teacher/EditPaperDialog';
-import { MOCK_TEACHER_CLASSES } from '@/lib/mock-data';
+} from "@/components/ui/tooltip";
+import DeleteConfirmDialog from "@/components/admin/DeleteConfirmDialog";
+import UploadPaperDialog from "@/components/teacher/UploadPaperDialog";
+import EditPaperDialog from "@/components/teacher/EditPaperDialog";
+import { MOCK_TEACHER_CLASSES } from "@/lib/mock-data";
 
 const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 function formatRelativeDate(dateStr) {
-  const now = new Date('2026-06-15T00:00:00.000Z');
+  const now = new Date("2026-06-15T00:00:00.000Z");
   const date = new Date(dateStr);
   const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return '1 day ago';
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "1 day ago";
   if (diffDays < 30) return `${diffDays} days ago`;
   const months = Math.floor(diffDays / 30);
-  if (diffDays < 365) return `${months} month${months > 1 ? 's' : ''} ago`;
+  if (diffDays < 365) return `${months} month${months > 1 ? "s" : ""} ago`;
   const years = Math.floor(diffDays / 365);
-  return `${years} year${years > 1 ? 's' : ''} ago`;
+  return `${years} year${years > 1 ? "s" : ""} ago`;
 }
 
 function formatFullDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
   });
 }
 
@@ -56,23 +76,56 @@ let nextPaperId = 9000;
 
 export default function ClassDetailPage() {
   const { classId } = useParams();
-  const foundClass = MOCK_TEACHER_CLASSES.find((c) => c.id === classId);
+  // const foundClass = MOCK_TEACHER_CLASSES.find((c) => c.id === classId);
 
-  const [papers, setPapers] = useState(
-    foundClass
-      ? [...foundClass.papers].sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at))
-      : []
-  );
+  // const [papers, setPapers] = useState(
+  //   foundClass
+  //     ? [...foundClass.papers].sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at))
+  //     : []
+  // );
+
+  const [papers, setPapers] = useState([]);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [editPaper, setEditPaper] = useState(null);
   const [deletePaper, setDeletePaper] = useState(null);
+  const [classes, setClasses] = useState([]);
+
+  const foundClass = classes.find((c) => String(c.id) === String(classId));
+
+  useEffect(() => {
+    loadClasses();
+  }, []);
+
+  async function loadClasses() {
+    try {
+      const data = await getClasses();
+      setClasses(data);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load classes");
+    }
+  }
+
+  useEffect(() => {
+    if (!foundClass) return;
+
+    const sortedPapers = [...foundClass.papers].sort(
+      (a, b) => new Date(b.uploaded_at || 0) - new Date(a.uploaded_at || 0),
+    );
+
+    setPapers(sortedPapers);
+  }, [foundClass]);
 
   if (!foundClass) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
         <FileText className="h-12 w-12 text-gray-300" />
         <p className="text-base font-medium text-gray-500">Class not found.</p>
-        <Button variant="outline" nativeButton={false} render={<Link href="/teacher/dashboard" />}>
+        <Button
+          variant="outline"
+          nativeButton={false}
+          render={<Link href="/teacher/dashboard" />}
+        >
           ← Back to Classes
         </Button>
       </div>
@@ -95,7 +148,7 @@ export default function ClassDetailPage() {
       status: data.status,
     };
     setPapers((prev) => [newPaper, ...prev]);
-    toast.success('Paper uploaded successfully');
+    toast.success("Paper uploaded successfully");
     setUploadOpen(false);
   }
 
@@ -116,23 +169,27 @@ export default function ClassDetailPage() {
               status: data.status,
               ...(newFile ? { pdf_url: `mock://${newFile.name}` } : {}),
             }
-          : p
-      )
+          : p,
+      ),
     );
-    toast.success('Paper updated');
+    toast.success("Paper updated");
     setEditPaper(null);
   }
 
   function handleDelete() {
     setPapers((prev) => prev.filter((p) => p.id !== deletePaper.id));
-    toast.success('Paper deleted');
+    toast.success("Paper deleted");
     setDeletePaper(null);
   }
 
   function handleTogglePublish(paper) {
-    const next = paper.status === 'DRAFT' ? 'PUBLISHED' : 'DRAFT';
-    setPapers((prev) => prev.map((p) => (p.id === paper.id ? { ...p, status: next } : p)));
-    toast.success(next === 'PUBLISHED' ? 'Paper published' : 'Paper unpublished');
+    const next = paper.status === "DRAFT" ? "PUBLISHED" : "DRAFT";
+    setPapers((prev) =>
+      prev.map((p) => (p.id === paper.id ? { ...p, status: next } : p)),
+    );
+    toast.success(
+      next === "PUBLISHED" ? "Paper published" : "Paper unpublished",
+    );
   }
 
   return (
@@ -151,14 +208,20 @@ export default function ClassDetailPage() {
             Back
           </Button>
           <div>
-            <h1 className="text-xl font-bold text-gray-900 leading-tight">{foundClass.display_name}</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{foundClass.subject_name}</p>
+            <h1 className="text-xl font-bold text-gray-900 leading-tight">
+              {foundClass.display_name}
+            </h1>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {foundClass.subject_name}
+            </p>
           </div>
         </div>
         <Button
           onClick={() => setUploadOpen(true)}
           className="gap-2 text-white shrink-0"
-          style={{ background: 'linear-gradient(135deg, #3940A0 0%, #5a62ff 100%)' }}
+          style={{
+            background: "linear-gradient(135deg, #3940A0 0%, #5a62ff 100%)",
+          }}
         >
           <PlusCircle className="h-4 w-4" />
           Upload Paper
@@ -176,8 +239,12 @@ export default function ClassDetailPage() {
         {papers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
             <FileText className="h-10 w-10 text-gray-300" />
-            <p className="text-sm font-medium text-gray-500">No papers uploaded yet.</p>
-            <p className="text-xs text-gray-400">Click Upload Paper to add the first paper for this class.</p>
+            <p className="text-sm font-medium text-gray-500">
+              No papers uploaded yet.
+            </p>
+            <p className="text-xs text-gray-400">
+              Click Upload Paper to add the first paper for this class.
+            </p>
           </div>
         ) : (
           <Table>
@@ -197,25 +264,35 @@ export default function ClassDetailPage() {
                   <TableCell className="font-semibold text-gray-900 max-w-[200px] truncate">
                     {paper.paper_name}
                   </TableCell>
-                  <TableCell className="text-gray-700">{paper.month_label}</TableCell>
+                  <TableCell className="text-gray-700">
+                    {paper.month_label}
+                  </TableCell>
                   <TableCell>
-                    <span className="text-gray-900">{paper.number_of_questions}</span>
-                    <span className="text-gray-400 text-xs ml-1">questions</span>
+                    <span className="text-gray-900">
+                      {paper.number_of_questions}
+                    </span>
+                    <span className="text-gray-400 text-xs ml-1">
+                      questions
+                    </span>
                   </TableCell>
                   <TableCell>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger
-                          render={<span className="cursor-default text-sm text-gray-700" />}
+                          render={
+                            <span className="cursor-default text-sm text-gray-700" />
+                          }
                         >
                           {formatRelativeDate(paper.uploaded_at)}
                         </TooltipTrigger>
-                        <TooltipContent>{formatFullDate(paper.uploaded_at)}</TooltipContent>
+                        <TooltipContent>
+                          {formatFullDate(paper.uploaded_at)}
+                        </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   </TableCell>
                   <TableCell>
-                    {paper.status === 'PUBLISHED' ? (
+                    {paper.status === "PUBLISHED" ? (
                       <span className="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
                         Published
                       </span>
@@ -254,10 +331,16 @@ export default function ClassDetailPage() {
                                 type="button"
                                 onClick={() => {
                                   const url = paper.pdf_url;
-                                  if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-                                    window.open(url, '_blank');
+                                  if (
+                                    url &&
+                                    (url.startsWith("http://") ||
+                                      url.startsWith("https://"))
+                                  ) {
+                                    window.open(url, "_blank");
                                   } else {
-                                    toast.info('No PDF uploaded for this paper.');
+                                    toast.info(
+                                      "No PDF uploaded for this paper.",
+                                    );
                                   }
                                 }}
                                 className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
@@ -280,14 +363,14 @@ export default function ClassDetailPage() {
                               />
                             }
                           >
-                            {paper.status === 'DRAFT' ? (
+                            {paper.status === "DRAFT" ? (
                               <Upload className="h-3.5 w-3.5 text-green-600" />
                             ) : (
                               <EyeOff className="h-3.5 w-3.5 text-gray-400" />
                             )}
                           </TooltipTrigger>
                           <TooltipContent>
-                            {paper.status === 'DRAFT' ? 'Publish' : 'Unpublish'}
+                            {paper.status === "DRAFT" ? "Publish" : "Unpublish"}
                           </TooltipContent>
                         </Tooltip>
 
@@ -340,13 +423,17 @@ export default function ClassDetailPage() {
       />
       <EditPaperDialog
         open={!!editPaper}
-        onOpenChange={(v) => { if (!v) setEditPaper(null); }}
+        onOpenChange={(v) => {
+          if (!v) setEditPaper(null);
+        }}
         paper={editPaper}
         onSave={handleEditSave}
       />
       <DeleteConfirmDialog
         open={!!deletePaper}
-        onOpenChange={(v) => { if (!v) setDeletePaper(null); }}
+        onOpenChange={(v) => {
+          if (!v) setDeletePaper(null);
+        }}
         name={deletePaper?.paper_name}
         onConfirm={handleDelete}
       />
