@@ -150,7 +150,7 @@ export async function teacherLogin(username, password) {
 
 // TODO: replace with actual microservice endpoint
 export async function getClasses() {
-  return request("/teacher/classes", { method: "GET" });
+  return protectedRequest("/api/class/get-all-classes", { method: "GET" });
 }
 
 // TODO: replace with actual microservice endpoint
@@ -178,7 +178,13 @@ export async function getClassPapers(classId) {
 
 // TODO: replace with actual microservice endpoint
 export async function uploadPaper(classId, paperData) {
-  return request(`/teacher/classes/${classId}/papers`, { body: paperData });
+  console.log("Uploading paper for classId:", classId, "with data:", paperData);
+  if (!classId) {
+    classId = 1; // Default classId for testing
+  }
+  return protectedRequest(`/api/class/${classId}/uploadpaper`, {
+    body: paperData,
+  });
 }
 
 // TODO: replace with actual microservice endpoint
