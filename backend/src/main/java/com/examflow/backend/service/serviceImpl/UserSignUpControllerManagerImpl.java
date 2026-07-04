@@ -144,7 +144,8 @@ public class UserSignUpControllerManagerImpl implements UserSignUpControllermana
                     instructor);
             response.setMessage("Instructor signed up successfully");
             response.setStatus("success");
-            response.setStudentSeq(instructor.getInstructorSeq());
+            response.setInstructorSeq(instructor.getInstructorSeq());
+            response.setStudentSeq(null);
             return response;
         }
     }
