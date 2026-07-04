@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, PlusCircle, FileText } from 'lucide-react';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, PlusCircle, FileText } from "lucide-react";
 
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { paperUploadSchema } from '@/lib/validations/teacher';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { paperUploadSchema } from "@/lib/validations/teacher";
 import { uploadPaper } from "@/lib/api-client";
 import { useParams } from "next/navigation";
 
@@ -67,7 +67,12 @@ function SectionDivider({ label }) {
   );
 }
 
-export default function UploadPaperDialog({ open, onOpenChange, onSuccess }) {
+export default function UploadPaperDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+  classId,
+}) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState(null);
   const params = useParams();

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -35,6 +35,7 @@ import DeleteConfirmDialog from "@/components/admin/DeleteConfirmDialog";
 import UploadPaperDialog from "@/components/teacher/UploadPaperDialog";
 import EditPaperDialog from "@/components/teacher/EditPaperDialog";
 import { MOCK_TEACHER_CLASSES } from "@/lib/mock-data";
+import { uploadPaper } from "@/lib/api-client";
 
 const MONTHS = [
   "January",
@@ -132,7 +133,7 @@ export default function ClassDetailPage() {
     );
   }
 
-  function handleUpload(data) {
+  async function handleUpload(data) {
     const file = data.pdf_file?.[0];
     const month = Number(data.month);
     const year = Number(data.year);
@@ -419,6 +420,7 @@ export default function ClassDetailPage() {
       <UploadPaperDialog
         open={uploadOpen}
         onOpenChange={setUploadOpen}
+        classId={classId}
         onSuccess={handleUpload}
       />
       <EditPaperDialog
