@@ -35,11 +35,9 @@ public class UserSignUpRespond {
     }
 
     public Integer getInstructorSeq() {
-        return instructorSeq;
+            return instructorSeq;
     }
-
-    public void setInstructorSeq(Integer instructorSeq) {
+    public void setInstructorSeq(Integer instructorSeq){
         this.instructorSeq = instructorSeq;
     }
-
 }
