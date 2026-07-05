@@ -75,4 +75,9 @@ public class TutorController {
         return result;
     }
 
+    @GetMapping("/get-all-teachers")
+    public List<TutorResponse> getAllTeachers() {
+        return tutorControllermanager.getAllTutorsForStudent();
+    }
+
 }

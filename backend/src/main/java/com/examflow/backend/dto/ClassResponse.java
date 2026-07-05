@@ -8,6 +8,8 @@ public class ClassResponse {
     private String description;
     private String display_name;
     private String subject_name;
+    private String class_name;
+    private String subject;
     private Integer monthly_fee;
     private String status;
 
@@ -67,6 +69,22 @@ public class ClassResponse {
 
     public void setPapers(List<UploadPaperResponse> papers) {
         this.papers = papers;
+    }
+
+    public String getClass_name() {
+        return class_name;
+    }
+
+    public void setClass_name(String class_name) {
+        this.class_name = class_name;
+    }
+
+    public String getSubject() {
+        return subject;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
     }
 
 }

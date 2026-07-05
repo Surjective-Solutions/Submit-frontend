@@ -11,15 +11,16 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 
-
+import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.InstructorResponse;
 import com.examflow.backend.dto.TutorRequest;
 import com.examflow.backend.dto.TutorResponse;
-import com.examflow.backend.entity.Cashier;
+import com.examflow.backend.entity.Classes;
 import com.examflow.backend.entity.Instructor;
 import com.examflow.backend.entity.Tutor;
 import com.examflow.backend.entity.TutorInstructor;
+import com.examflow.backend.repository.ClassesRepository;
 import com.examflow.backend.repository.InstructorRepository;
 import com.examflow.backend.repository.TutorInstructorRepository;
 import com.examflow.backend.repository.TutorRepository;
@@ -34,17 +35,20 @@ public class TutorControllerManagerImpl implements TutorControllermanager {
     private final PasswordEncoder passwordEncoder;
     private final InstructorRepository instructorRepository;
     private final TutorInstructorRepository tutorInstructorRepository;
+    private final ClassesRepository classesRepository;
     private HttpServletRequest request;
 
     @Autowired
     public TutorControllerManagerImpl(TutorRepository tutorRepository,
             TutorInstructorRepository tutorInstructorRepository,
             HttpServletRequest request,
+            ClassesRepository classesRepository,
             InstructorRepository instructorRepository,
             PasswordEncoder passwordEncoder) {
         this.tutorRepository = tutorRepository;
         this.passwordEncoder = passwordEncoder;
         this.request = request;
+        this.classesRepository = classesRepository;
         this.instructorRepository = instructorRepository;
         this.tutorInstructorRepository = tutorInstructorRepository;
     }
@@ -229,6 +233,47 @@ public class TutorControllerManagerImpl implements TutorControllermanager {
         }
 
         return instructorResponses;
+    }
+
+    @Override
+    public List<TutorResponse> getAllTutorsForStudent() {
+        List<Tutor> tutorList = tutorRepository.findByStatus(2);
+        List<TutorResponse> tutorResponses = new ArrayList<>();
+
+        if (tutorList.size() != 0) {
+            for (Tutor tutor : tutorList) {
+                TutorResponse tutorResponse = new TutorResponse();
+
+                tutorResponse.setId(tutor.getTutorSeq());
+                tutorResponse.setDisplayName(tutor.getName());
+                tutorResponse.setEmail(tutor.getEmail());
+                tutorResponse.setContactNumber(tutor.getContactNumber());
+                tutorResponse.setSubject(tutor.getSubject());
+                tutorResponse.setTeacher_name(tutor.getName());
+                tutorResponse.setSubject_area(tutor.getSubject());
+                tutorResponse.setBio(tutor.getSubject());
+
+                List<Classes> classesList = classesRepository.findByStatusAndTutor(2, tutor);
+                List<ClassResponse> classResponses = new ArrayList<>();
+                for (Classes classes : classesList) {
+                    ClassResponse classResponse = new ClassResponse();
+                    classResponse.setId(classes.getClassSeq());
+                    classResponse.setDisplay_name(classes.getDisplayName());
+                    classResponse.setDescription(classes.getDescription());
+                    classResponse.setClass_name(classes.getDisplayName());
+                    classResponse.setSubject(classes.getSubjectName());
+                    classResponse.setMonthly_fee(classes.getMonthlyFee());
+                    classResponses.add(classResponse);
+                }
+                tutorResponse.setClasses(classResponses);
+
+                tutorResponses.add(tutorResponse);
+            }
+        } else {
+            System.out.println("No tutors found.");
+            return tutorResponses;
+        }
+        return tutorResponses;
     }
 
 }

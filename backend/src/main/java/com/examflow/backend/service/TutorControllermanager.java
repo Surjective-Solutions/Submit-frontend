@@ -25,4 +25,6 @@ public interface TutorControllermanager {
 
     GeneralResponse addInstructor(String employee_id);
 
+    List<TutorResponse> getAllTutorsForStudent();
+
 }
