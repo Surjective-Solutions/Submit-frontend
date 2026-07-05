@@ -26,7 +26,7 @@ public class InstructorController {
     }
 
     @GetMapping("/get-all-instructors")
-    public List<InstructorResponse> getCashiers() {
+    public List<InstructorResponse> getInstructors() {
         return instructorControllerManager.getAllInstructors();
     }
 

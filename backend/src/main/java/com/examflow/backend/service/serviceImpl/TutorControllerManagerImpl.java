@@ -13,24 +13,40 @@ import org.springframework.security.core.Authentication;
 
 
 import com.examflow.backend.dto.GeneralResponse;
+import com.examflow.backend.dto.InstructorResponse;
 import com.examflow.backend.dto.TutorRequest;
 import com.examflow.backend.dto.TutorResponse;
 import com.examflow.backend.entity.Cashier;
+import com.examflow.backend.entity.Instructor;
 import com.examflow.backend.entity.Tutor;
+import com.examflow.backend.entity.TutorInstructor;
+import com.examflow.backend.repository.InstructorRepository;
+import com.examflow.backend.repository.TutorInstructorRepository;
 import com.examflow.backend.repository.TutorRepository;
 import com.examflow.backend.service.TutorControllermanager;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @Service
 public class TutorControllerManagerImpl implements TutorControllermanager {
 
     private final TutorRepository tutorRepository;
     private final PasswordEncoder passwordEncoder;
+    private final InstructorRepository instructorRepository;
+    private final TutorInstructorRepository tutorInstructorRepository;
+    private HttpServletRequest request;
 
     @Autowired
     public TutorControllerManagerImpl(TutorRepository tutorRepository,
+            TutorInstructorRepository tutorInstructorRepository,
+            HttpServletRequest request,
+            InstructorRepository instructorRepository,
             PasswordEncoder passwordEncoder) {
         this.tutorRepository = tutorRepository;
         this.passwordEncoder = passwordEncoder;
+        this.request = request;
+        this.instructorRepository = instructorRepository;
+        this.tutorInstructorRepository = tutorInstructorRepository;
     }
 
     @Override
@@ -144,6 +160,75 @@ public class TutorControllerManagerImpl implements TutorControllermanager {
         tutorRepository.save(tutor);
 
         return response;
+    }
+
+    @Override
+    public GeneralResponse addInstructor(String employee_id) {
+        System.out.println(employee_id);
+        GeneralResponse response = new GeneralResponse();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Integer tutorSeq = (Integer) request.getAttribute("userId");
+        Tutor tutor = tutorRepository.findByTutorSeq(tutorSeq);
+        System.out.println("Adding instructor with employee_id: " + employee_id + " for tutor: " + tutorSeq);
+
+        Instructor instructor = instructorRepository.findByInstrutorNo(employee_id);
+
+        if (instructor == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Instructor with employee_id " + employee_id + " not found.");
+            return response;
+        } else {
+            List<TutorInstructor> existingRelations = tutorInstructorRepository
+                    .findByTutorAndInstructorAndIsEngaged(tutor, instructor, true);
+
+            if (!existingRelations.isEmpty()) {
+                response.setIsSuccess(false);
+                response.setMessage(
+                        "Instructor with employee_id " + employee_id + " is already engaged with this tutor.");
+                return response;
+            } else {
+                TutorInstructor tutorInstructor = new TutorInstructor();
+                tutorInstructor.setTutor(tutor);
+                tutorInstructor.setInstructor(instructor);
+                tutorInstructor.setTutorStatus(2);
+                tutorInstructor.setInstructorStatus(2);
+                tutorInstructor.setIsEngaged(true);
+                tutorInstructor.setCreatedBy(username);
+                tutorInstructor.setCreatedDateTime(LocalDateTime.now());
+                tutorInstructor.setLastModifiedBy(username);
+                tutorInstructor.setLastModifiedDateTime(LocalDateTime.now());
+                tutorInstructorRepository.save(tutorInstructor);
+
+                response.setIsSuccess(true);
+                response.setMessage("Instructor with employee_id " + employee_id + " added successfully.");
+                return response;
+            }
+
+        }
+
+    }
+
+    @Override
+    public List<InstructorResponse> getEngagedInstructors() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Integer tutorSeq = (Integer) request.getAttribute("userId");
+        Tutor tutor = tutorRepository.findByTutorSeq(tutorSeq);
+        List<TutorInstructor> engagedRelations = tutorInstructorRepository.findByTutorAndIsEngaged(tutor, true);
+
+        List<InstructorResponse> instructorResponses = new ArrayList<>();
+        for (TutorInstructor ti : engagedRelations) {
+            InstructorResponse response = new InstructorResponse();
+            response.setId(ti.getInstructor().getInstructorSeq());
+            String fullName = ti.getInstructor().getFullName();
+            response.setName(fullName);
+            response.setStatus("ACTIVE");
+            response.setEmployee_id(ti.getInstructor().getInstrutorNo());
+            instructorResponses.add(response);
+        }
+
+        return instructorResponses;
     }
 
 }

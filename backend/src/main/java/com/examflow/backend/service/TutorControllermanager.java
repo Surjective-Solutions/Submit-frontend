@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 
 import com.examflow.backend.dto.GeneralResponse;
+import com.examflow.backend.dto.InstructorResponse;
 import com.examflow.backend.dto.TutorRequest;
 import com.examflow.backend.dto.TutorResponse;
 
@@ -16,8 +17,12 @@ public interface TutorControllermanager {
 
     List<TutorResponse> getAllTutors();
 
+    List<InstructorResponse> getEngagedInstructors();
+
     String updateTutor(Integer tutorSeq, TutorRequest tutorRequest);
 
     String deleteTutor(Integer tutorSeq);
+
+    GeneralResponse addInstructor(String employee_id);
 
 }
