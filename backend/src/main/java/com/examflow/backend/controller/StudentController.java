@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.examflow.backend.dto.ClassRequest;
+import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.StudentResponse;
 import com.examflow.backend.service.StudentControllerManager;
@@ -37,6 +38,11 @@ public class StudentController {
         System.out.println("reached to controller" + classRequest.getClassSeq());
         GeneralResponse response = studentControllerManager.addClassToStudent(classRequest.getClassSeq());
         return response;
+    }
+
+    @GetMapping("/get-all-enrolled-class")
+    public List<ClassResponse> getAllEnrolledClass() {
+        return studentControllerManager.getAllEnrolledClass();
     }
 
 }

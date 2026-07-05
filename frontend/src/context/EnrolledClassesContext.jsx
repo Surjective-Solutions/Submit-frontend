@@ -1,12 +1,27 @@
 'use client';
 
-import { createContext, useContext, useState } from 'react';
-import { MOCK_STUDENT_ENROLLED_CLASSES } from '@/lib/mock-data';
+import { createContext, useContext, useState, useEffect } from "react";
+import { MOCK_STUDENT_ENROLLED_CLASSES } from "@/lib/mock-data";
+import { getEnrolledClass } from "@/lib/api-client";
 
 const EnrolledClassesContext = createContext(null);
 
 export function EnrolledClassesProvider({ children }) {
-  const [classes, setClasses] = useState(() => [...MOCK_STUDENT_ENROLLED_CLASSES]);
+  // const [classes, setClasses] = useState(() => [...MOCK_STUDENT_ENROLLED_CLASSES]);
+  const [classes, setClasses] = useState([]);
+
+  useEffect(() => {
+    loadEnrolledClasses();
+  }, []);
+
+  async function loadEnrolledClasses() {
+    try {
+      const data = await getEnrolledClass();
+      setClasses(data);
+    } catch (error) {
+      toast.error("Failed to load Classes");
+    }
+  }
 
   function addClass(entry) {
     MOCK_STUDENT_ENROLLED_CLASSES.push(entry);
@@ -14,7 +29,9 @@ export function EnrolledClassesProvider({ children }) {
   }
 
   function removeClass(classId) {
-    const idx = MOCK_STUDENT_ENROLLED_CLASSES.findIndex((c) => c.id === classId);
+    const idx = MOCK_STUDENT_ENROLLED_CLASSES.findIndex(
+      (c) => c.id === classId,
+    );
     if (idx !== -1) MOCK_STUDENT_ENROLLED_CLASSES.splice(idx, 1);
     setClasses((prev) => prev.filter((c) => c.id !== classId));
   }

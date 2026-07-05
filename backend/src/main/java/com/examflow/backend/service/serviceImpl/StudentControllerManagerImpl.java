@@ -11,12 +11,18 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.Authentication;
 
+import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
+import com.examflow.backend.dto.StudentClassPaymentRecordResponse;
 import com.examflow.backend.dto.StudentResponse;
+import com.examflow.backend.entity.ClassPaymentRecord;
 import com.examflow.backend.entity.Classes;
 import com.examflow.backend.entity.Student;
 import com.examflow.backend.entity.StudentClass;
+import com.examflow.backend.entity.StudentClassPaymentRecord;
+import com.examflow.backend.repository.ClassPaymentRecordRepository;
 import com.examflow.backend.repository.ClassesRepository;
+import com.examflow.backend.repository.StudentClassPaymentRecordsRepository;
 import com.examflow.backend.repository.StudentRepository;
 import com.examflow.backend.service.StudentControllerManager;
 
@@ -28,14 +34,21 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
     private final StudentClassesRepository studentClassesRepository;
     private final StudentRepository studentRepository;
     private final ClassesRepository classesRepository;
+    private final ClassPaymentRecordRepository classPaymentRecordRepository;
+    private final StudentClassPaymentRecordsRepository studentClassPaymentRecordsRepository;
     private HttpServletRequest request;
 
     @Autowired
     public StudentControllerManagerImpl(StudentRepository studentRepository,
             ClassesRepository classesRepository,
-            HttpServletRequest request, StudentClassesRepository studentClassesRepository) {
+            StudentClassPaymentRecordsRepository studentClassPaymentRecordsRepository,
+            ClassPaymentRecordRepository classPaymentRecordRepository,
+            HttpServletRequest request,
+            StudentClassesRepository studentClassesRepository) {
         this.studentRepository = studentRepository;
         this.classesRepository = classesRepository;
+        this.classPaymentRecordRepository = classPaymentRecordRepository;
+        this.studentClassPaymentRecordsRepository = studentClassPaymentRecordsRepository;
         this.request = request;
         this.studentClassesRepository = studentClassesRepository;
     }
@@ -113,6 +126,56 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
             return generalResponse;
         }
 
+    }
+
+    @Override
+    public List<ClassResponse> getAllEnrolledClass() {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Integer studentSeq = (Integer) request.getAttribute("userId");
+        Student student = studentRepository.findByStudentSeq(studentSeq);
+        List<ClassResponse> sendClassResponses = new ArrayList<>();
+        List<StudentClass> studentClasses = studentClassesRepository.findByStudentAndStatusSeq(student, 2);
+
+        for (StudentClass studentClass : studentClasses) {
+            ClassResponse classResponse = new ClassResponse();
+            classResponse.setId(studentClass.getClasses().getClassSeq());
+            classResponse.setClass_name(studentClass.getClasses().getDisplayName());
+            classResponse.setTeacher_name(studentClass.getClasses().getTutor().getName());
+            classResponse.setSubject(studentClass.getClasses().getSubjectName());
+            classResponse.setEnrolled_at(studentClass.getCreatedDateTime());
+            classResponse.setMonthly_fee(studentClass.getMonthlyFee());
+            classResponse.setDescription(studentClass.getClasses().getDescription());
+
+            List<ClassPaymentRecord> classPaymentRecords = classPaymentRecordRepository
+                    .findByClassesAndStatus(studentClass.getClasses(), 2);
+            List<StudentClassPaymentRecordResponse> studentClassPaymentRecordResponses = new ArrayList<>();
+            for (ClassPaymentRecord classPaymentRecord : classPaymentRecords) {
+
+                List<StudentClassPaymentRecord> existstudentClassPaymentRecords = studentClassPaymentRecordsRepository
+                        .findByStudentAndClassPaymentRecordAndStatus(student, classPaymentRecord, 2);
+                for (StudentClassPaymentRecord studentClassPaymentRecord : existstudentClassPaymentRecords) {
+                    StudentClassPaymentRecordResponse clasrep = new StudentClassPaymentRecordResponse();
+                    clasrep.setId(studentClassPaymentRecord.getClassPaymentRecord().getClassPaymentRecordSearial());
+                    clasrep.setMonth(studentClassPaymentRecord.getClassPaymentRecord().getMonth());
+                    clasrep.setYear(studentClassPaymentRecord.getClassPaymentRecord().getYear());
+                    if (studentClassPaymentRecord.getIsPayed() == true) {
+                        clasrep.setStatus("PAID");
+                    } else {
+                        clasrep.setStatus("NOT_PAID");
+                    }
+                    clasrep.setReference_number(studentClassPaymentRecord.getReffrenceNo());
+                    clasrep.setPaid_at(studentClassPaymentRecord.getPayedTime());
+                    studentClassPaymentRecordResponses.add(clasrep);
+                }
+
+            }
+
+            classResponse.setMonthly_payments(studentClassPaymentRecordResponses);
+            sendClassResponses.add(classResponse);
+        }
+
+        return sendClassResponses;
     }
 
 }

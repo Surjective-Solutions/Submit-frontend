@@ -1,0 +1,15 @@
+package com.examflow.backend.repository;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.examflow.backend.entity.ClassPaymentRecord;
+import com.examflow.backend.entity.Student;
+import com.examflow.backend.entity.StudentClassPaymentRecord;
+
+public interface StudentClassPaymentRecordsRepository extends JpaRepository<StudentClassPaymentRecord, Integer> {
+
+    List<StudentClassPaymentRecord> findByStudentAndClassPaymentRecordAndStatus(Student student,
+            ClassPaymentRecord classPaymentRecord, Integer status);
+}
