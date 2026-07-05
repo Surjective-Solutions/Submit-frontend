@@ -284,6 +284,10 @@ export async function getStudents() {
   return protectedRequest("/api/student/get-all-students", { method: "GET" });
 }
 
+//api method to handle api request for addClass
+export async function addClasstostudent(data) {
+  return protectedRequest("/api/student/add-class-student", { body: data });
+}
 
 export async function getStudentsTeachers() {
   return protectedRequestPath("/api/tutor/get-all-teachers", { method: "GET" });

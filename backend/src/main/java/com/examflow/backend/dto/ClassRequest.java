@@ -6,6 +6,7 @@ public class ClassRequest {
     private String display_name;
     private String subject_name;
     private Integer monthly_fee;
+    private Integer classSeq;
 
     public String getDescription() {
         return description;
@@ -37,6 +38,14 @@ public class ClassRequest {
 
     public void setMonthly_fee(Integer monthly_fee) {
         this.monthly_fee = monthly_fee;
+    }
+
+    public Integer getClassSeq() {
+        return classSeq;
+    }
+
+    public void setClassSeq(Integer classSeq) {
+        this.classSeq = classSeq;
     }
 
 }

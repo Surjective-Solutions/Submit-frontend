@@ -8,10 +8,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.examflow.backend.dto.CashierResponse;
+import com.examflow.backend.dto.ClassRequest;
+import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.StudentResponse;
-import com.examflow.backend.repository.StudentRepository;
 import com.examflow.backend.service.StudentControllerManager;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/api/student")
@@ -29,4 +31,12 @@ public class StudentController {
     public List<StudentResponse> getStudents() {
         return studentControllerManager.getAllStudents();
     }
+
+    @PostMapping("/add-class-student")
+    public GeneralResponse addClasstoStudent(@RequestBody ClassRequest classRequest) {
+        System.out.println("reached to controller" + classRequest.getClassSeq());
+        GeneralResponse response = studentControllerManager.addClassToStudent(classRequest.getClassSeq());
+        return response;
+    }
+
 }

@@ -10,6 +10,7 @@ import DeleteConfirmDialog from "@/components/admin/DeleteConfirmDialog";
 import { useEnrolledClasses } from "@/context/EnrolledClassesContext";
 import { MOCK_TUTORS } from "@/lib/mock-data";
 import { getStudentsTeachers } from "@/lib/api-client";
+import { addClasstostudent } from "@/lib/api-client";
 import { getLastPaidMonth } from "@/lib/billing-utils";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -178,7 +179,7 @@ export default function TeacherClassesPage() {
     return classes.find((c) => c.id === classId) ?? null;
   }
 
-  function handleAdd(cls) {
+  async function handleAdd(cls) {
     if (getEnrolledEntry(cls.id)) return;
     addClass({
       id: cls.id,
@@ -193,6 +194,11 @@ export default function TeacherClassesPage() {
       monthly_payments: [],
       papers_by_month: [],
     });
+
+    const requestdata = { classSeq: cls.id };
+
+    const response = await addClasstostudent(requestdata);
+
     toast.success("Added to My Classes! Complete your payment to get access.");
   }
 

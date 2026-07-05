@@ -19,4 +19,6 @@ public interface StudentRepository extends JpaRepository<Student, Integer> {
 
     List<Student> findByStatus(Integer status);
 
+    Student findByStudentSeq(Integer studentSeq);
+
 }
