@@ -74,6 +74,39 @@ async function protectedRequest(path, options = {}) {
   return await response.json();
 }
 
+//protected request with file handling for FormData
+async function protectedRequestWithFileHandling(path, options = {}) {
+  const token = localStorage.getItem("token");
+
+  const { method = "POST", body } = options;
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+  };
+
+  // Only add Content-Type for JSON requests
+  if (!(body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const response = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers,
+    body:
+      body instanceof FormData
+        ? body
+        : body
+        ? JSON.stringify(body)
+        : undefined,
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP Error ${response.status}`);
+  }
+
+  return await response.json();
+}
+
 export async function studentLogin(identifier, password) {
   return actualRequest("/api/auth/student-login", {
     body: { identifier, password },
@@ -182,7 +215,7 @@ export async function uploadPaper(classId, paperData) {
   if (!classId) {
     classId = 1; // Default classId for testing
   }
-  return protectedRequest(`/api/class/${classId}/uploadpaper`, {
+  return protectedRequestWithFileHandling(`/api/class/${classId}/uploadpaper`, {
     body: paperData,
   });
 }
@@ -220,9 +253,15 @@ export async function getInstructors() {
   return protectedRequest("/api/instructor/get-all-instructors", { method: "GET" });
 }
 
+//get engaged instructors for a specific tutor
+export async function getEngagedInstructors() {
+  return protectedRequestPath("/api/tutor/get-engaged-instructors", { method: "GET" });
+}
+
 // TODO: replace with actual microservice endpoint
 export async function createInstructor(data) {
-  return request("/teacher/instructors", { body: data });
+  console.log("Creating instructor with data:", data);
+  return protectedRequest("/api/tutor/add/instructor", { body: data });
 }
 
 // TODO: replace with actual microservice endpoint
