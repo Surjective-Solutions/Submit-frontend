@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -12,7 +13,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.examflow.backend.dto.ClassRequest;
 import com.examflow.backend.dto.ClassResponse;
@@ -48,11 +51,14 @@ public class ClassController {
     }
 
     @PostMapping("/{classId}/uploadpaper")
-    public GeneralResponse uploadPapers(@RequestBody PaperUploadRequest paperUploadRequest,
+    public GeneralResponse uploadPapers(@ModelAttribute PaperUploadRequest paperUploadRequest,
+            @RequestParam MultipartFile pdf_file,
             @PathVariable Integer classId) {
         System.out.println("reached to controller");
         GeneralResponse response = new GeneralResponse();
-        response = classControllerManager.uploadPapers(paperUploadRequest, classId);
+
+        System.out.println(pdf_file.getOriginalFilename());
+        response = classControllerManager.uploadPapers(paperUploadRequest, classId, pdf_file);
         return response;
     }
 }

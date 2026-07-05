@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.examflow.backend.dto.CashierResponse;
 import com.examflow.backend.dto.ClassRequest;
@@ -23,6 +24,7 @@ import com.examflow.backend.repository.ClassesRepository;
 import com.examflow.backend.repository.TutorRepository;
 import com.examflow.backend.repository.UploadPaperRepository;
 import com.examflow.backend.service.ClassControllerManager;
+import com.examflow.backend.service.FileStorageService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -31,15 +33,19 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
 
     private HttpServletRequest request;
     private final TutorRepository tutorRepository;
+    private final FileStorageService fileStorageService;
     private final ClassesRepository classesRepository;
     private final UploadPaperRepository uploadPaperRepository;
 
     @Autowired
     public ClassControllerManagerImpl(HttpServletRequest request,
-            TutorRepository tutorRepository, ClassesRepository classesRepository,
+            TutorRepository tutorRepository,
+            FileStorageService fileStorageService,
+            ClassesRepository classesRepository,
             UploadPaperRepository uploadPaperRepository) {
         this.request = request;
         this.tutorRepository = tutorRepository;
+        this.fileStorageService = fileStorageService;
         this.classesRepository = classesRepository;
         this.uploadPaperRepository = uploadPaperRepository;
     }
@@ -102,6 +108,7 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
                 paperResponse.setYear(Integer.valueOf(paper.getYear()));
                 paperResponse.setNumber_of_questions(paper.getNoOfQuestions());
                 paperResponse.setUploaded_at(paper.getCreatedDateTime());
+                paperResponse.setPdf_url(paper.getFilePath());
 
                 if (paper.getIsPublished() == true) {
                     paperResponse.setStatus("PUBLISHED");
@@ -121,7 +128,8 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
     }
 
     @Override
-    public GeneralResponse uploadPapers(PaperUploadRequest paperUploadRequest, Integer classId) {
+    public GeneralResponse uploadPapers(PaperUploadRequest paperUploadRequest, Integer classId,
+            MultipartFile pdf_file) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         GeneralResponse response = new GeneralResponse();
@@ -129,8 +137,12 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         if (classes == null) {
             response.setMessage("Class not found");
             response.setIsSuccess(false);
+
             return response;
         }
+
+        // save to local storage.
+        String fileName = fileStorageService.savePaperFile(pdf_file);
 
         UplaodPaper uploadPaper = new UplaodPaper();
         uploadPaper.setPaperName(paperUploadRequest.getPaper_name());
@@ -139,6 +151,9 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         uploadPaper.setNoOfQuestions(paperUploadRequest.getNumber_of_questions());
         uploadPaper.setCreatedBy(username);
         uploadPaper.setLastModifiedBy(username);
+        uploadPaper.setFileName(fileName);
+        uploadPaper.setFilePath(System.getProperty("user.home")
+                + "/lms/uploads/papers/" + fileName);
         uploadPaper.setCreatedDateTime(LocalDateTime.now());
         uploadPaper.setLastModifiedDateTime(LocalDateTime.now());
         uploadPaper.setStatus(2);
