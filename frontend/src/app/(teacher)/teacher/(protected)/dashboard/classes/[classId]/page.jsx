@@ -331,18 +331,17 @@ export default function ClassDetailPage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const url = paper.pdf_url;
-                                  if (
-                                    url &&
-                                    (url.startsWith("http://") ||
-                                      url.startsWith("https://"))
-                                  ) {
-                                    window.open(url, "_blank");
-                                  } else {
+                                  if (!paper.pdf_url) {
                                     toast.info(
                                       "No PDF uploaded for this paper.",
                                     );
+                                    return;
                                   }
+
+                                  // If pdf_url only contains the filename
+                                  const pdfUrl = `http://localhost:8080/uploads/papers/${encodeURIComponent(paper.pdf_url)}`;
+
+                                  window.open(pdfUrl, "_blank");
                                 }}
                                 className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
                               />
@@ -350,6 +349,7 @@ export default function ClassDetailPage() {
                           >
                             <FileText className="h-3.5 w-3.5 text-indigo-500" />
                           </TooltipTrigger>
+
                           <TooltipContent>View Paper</TooltipContent>
                         </Tooltip>
 

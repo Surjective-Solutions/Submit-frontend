@@ -108,7 +108,7 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
                 paperResponse.setYear(Integer.valueOf(paper.getYear()));
                 paperResponse.setNumber_of_questions(paper.getNoOfQuestions());
                 paperResponse.setUploaded_at(paper.getCreatedDateTime());
-                paperResponse.setPdf_url(paper.getFilePath());
+                paperResponse.setPdf_url(paper.getFileName());
 
                 if (paper.getIsPublished() == true) {
                     paperResponse.setStatus("PUBLISHED");
