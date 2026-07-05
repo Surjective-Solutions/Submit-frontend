@@ -76,7 +76,7 @@ export default function UploadPaperDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState(null);
   const params = useParams();
-  const classId = params.id;
+  // const classId = params.id;
 
   const {
     register,
@@ -100,19 +100,45 @@ export default function UploadPaperDialog({
     setSelectedFileName(null);
   }
 
+  // async function onSubmit(data) {
+  //   setIsLoading(true);
+  //   try {
+  //     const result = await uploadPaper(classId, data);
+  //     console.log("Upload result:", result);
+  //     onSuccess(result);
+  //     handleClose();
+  //   } catch (error) {
+  //     console.error("Upload failed:", error);
+  //     // Optionally, you can show an error message to the user here
+  //     // onSuccess(data);
+  //     // reset();
+  //     // setSelectedFileName(null);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // }
+
   async function onSubmit(data) {
     setIsLoading(true);
+
+    const formData = new FormData();
+
+    formData.append("paper_name", data.paper_name);
+    formData.append("month", data.month);
+    formData.append("year", data.year);
+    formData.append("number_of_questions", data.number_of_questions);
+    formData.append("status", data.status);
+
+    formData.append("pdf_file", data.pdf_file[0]);
+
     try {
-      const result = await uploadPaper(classId, data);
-      console.log("Upload result:", result);
+      const result = await uploadPaper(classId, formData);
+
       onSuccess(result);
+
       handleClose();
     } catch (error) {
-      console.error("Upload failed:", error);
-      // Optionally, you can show an error message to the user here
-      // onSuccess(data);
-      // reset();
-      // setSelectedFileName(null);
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
