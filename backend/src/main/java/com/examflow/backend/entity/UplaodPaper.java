@@ -29,6 +29,10 @@ public class UplaodPaper {
 
     private Boolean isPublished;
 
+    private String fileName;
+
+    private String filePath;
+
     private Classes classes;
 
     private LocalDateTime createdDateTime;
@@ -149,6 +153,24 @@ public class UplaodPaper {
 
     public void setIsPublished(Boolean isPublished) {
         this.isPublished = isPublished;
+    }
+
+    @Column(name = "fileName")
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    @Column(name = "filePath")
+    public String getFilePath() {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
     }
 
 }

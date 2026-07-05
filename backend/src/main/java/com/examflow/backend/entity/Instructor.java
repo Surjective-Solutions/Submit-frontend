@@ -28,6 +28,8 @@ public class Instructor {
 
     private Boolean termsAccepted;
 
+    private String instrutorNo;
+
     private Integer status;
 
     private String email;
@@ -142,6 +144,15 @@ public class Instructor {
 
     public void setIsOtpVerified(Boolean isOtpVerified) {
         this.isOtpVerified = isOtpVerified;
+    }
+
+    @Column(name = "instructorNo")
+    public String getInstrutorNo() {
+        return instrutorNo;
+    }
+
+    public void setInstrutorNo(String instrutorNo) {
+        this.instrutorNo = instrutorNo;
     }
 
 }

@@ -16,6 +16,8 @@ public class UploadPaperResponse {
 
     private LocalDateTime uploaded_at;
 
+    private String pdf_url;
+
     private String status;
 
     public Integer getId() {
@@ -72,6 +74,14 @@ public class UploadPaperResponse {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getPdf_url() {
+        return pdf_url;
+    }
+
+    public void setPdf_url(String pdf_url) {
+        this.pdf_url = pdf_url;
     }
 
 }
