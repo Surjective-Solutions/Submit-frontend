@@ -41,7 +41,7 @@ public class InstructorControllerManagerImpl implements InstructorControllerMana
             instructorResponse.setEmail(instructor.getEmail());
             instructorResponse.setContact_number(instructor.getContactNumber());
             instructorResponse.setSubject_area(null);
-            instructorResponse.setStatus(instructor.getStatus());
+            instructorResponse.setStatusSeq(instructor.getStatus());
             instructorResponse.setProfile_photo_url(null);
 
             instructorResponseList.add(instructorResponse);
