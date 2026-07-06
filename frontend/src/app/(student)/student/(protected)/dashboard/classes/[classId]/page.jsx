@@ -26,13 +26,24 @@ import {
   DialogContent,
   DialogTitle,
 } from '@/components/ui/dialog';
+import PayNowDialog from '@/components/student/PayNowDialog';
+import ViewPaymentSubmissionDialog from '@/components/student/ViewPaymentSubmissionDialog';
 import { useEnrolledClasses } from '@/context/EnrolledClassesContext';
+import { MOCK_PAYMENTS } from '@/lib/mock-data';
 import {
   getCurrentMonthStatus,
   getMonthStatus,
   formatMonthYear,
   toMonthYearSlug,
 } from '@/lib/billing-utils';
+
+function findLatestPaymentSubmission(classId, month, year) {
+  return (
+    MOCK_PAYMENTS
+      .filter((p) => p.class_id === classId && p.month === month && p.year === year)
+      .sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at))[0] ?? null
+  );
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -264,7 +275,10 @@ const BANNER_CONFIG = {
   },
 };
 
-function UnpaidCurrentSection({ status, monthLabel }) {
+function UnpaidCurrentSection({ status, monthLabel, cls, month, year }) {
+  const { setMonthlyPaymentStatus } = useEnrolledClasses();
+  const [payOpen, setPayOpen] = useState(false);
+  const [viewSubmissionOpen, setViewSubmissionOpen] = useState(false);
   const cfg = BANNER_CONFIG[status] ?? BANNER_CONFIG.NOT_PAID;
 
   const bannerBody = {
@@ -272,6 +286,24 @@ function UnpaidCurrentSection({ status, monthLabel }) {
     REJECTED: `Your ${monthLabel} payment was rejected. Please resubmit your payment.`,
     NOT_PAID: `You have not paid for ${monthLabel}. Pay now to access this month's papers.`,
   }[status] ?? `You have not paid for ${monthLabel}.`;
+
+  const latestSubmission = findLatestPaymentSubmission(cls.id, month, year);
+
+  function handlePaidByCard() {
+    setMonthlyPaymentStatus(cls.id, month, year, {
+      status: 'PAID',
+      reference_number: `CARD-${Date.now()}`,
+      paid_at: new Date().toISOString(),
+    });
+  }
+
+  function handleSubmittedForReview() {
+    setMonthlyPaymentStatus(cls.id, month, year, {
+      status: 'PENDING',
+      reference_number: null,
+      paid_at: null,
+    });
+  }
 
   return (
     <div className="space-y-4">
@@ -282,14 +314,44 @@ function UnpaidCurrentSection({ status, monthLabel }) {
 
       <div className={`rounded-xl border px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${cfg.containerClass}`}>
         <p className={`text-sm font-semibold ${cfg.titleClass}`}>{bannerBody}</p>
-        <Button
-          size="sm"
-          className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-8 shrink-0 self-start sm:self-auto"
-          onClick={() => toast.info('Payment flow coming soon')}
-        >
-          Pay Now
-        </Button>
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          {(status === 'PENDING' || status === 'REJECTED') && latestSubmission && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs h-8"
+              onClick={() => setViewSubmissionOpen(true)}
+            >
+              View Submission
+            </Button>
+          )}
+          {status !== 'PENDING' && (
+            <Button
+              size="sm"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-8"
+              onClick={() => setPayOpen(true)}
+            >
+              Pay Now
+            </Button>
+          )}
+        </div>
       </div>
+
+      <PayNowDialog
+        open={payOpen}
+        onOpenChange={setPayOpen}
+        cls={cls}
+        month={month}
+        year={year}
+        monthLabel={monthLabel}
+        onPaidByCard={handlePaidByCard}
+        onSubmittedForReview={handleSubmittedForReview}
+      />
+      <ViewPaymentSubmissionDialog
+        open={viewSubmissionOpen}
+        onOpenChange={setViewSubmissionOpen}
+        payment={latestSubmission}
+      />
     </div>
   );
 }
@@ -418,6 +480,9 @@ export default function ClassDetailPage() {
         <UnpaidCurrentSection
           status={currentStatus}
           monthLabel={currentMonthLabel}
+          cls={cls}
+          month={currentMonth}
+          year={currentYear}
         />
       )}
 
