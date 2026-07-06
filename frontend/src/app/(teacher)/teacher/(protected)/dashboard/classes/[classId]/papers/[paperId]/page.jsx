@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   Activity,
   Award,
@@ -16,7 +16,6 @@ import {
   UserCheck,
   Users,
 } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -117,6 +116,7 @@ function StudentCell({ submission }) {
 
 export default function TeacherPaperSubmissionsPage() {
   const { classId, paperId } = useParams();
+  const router = useRouter();
   const [statsOpen, setStatsOpen] = useState(false);
 
   const foundClass = MOCK_TEACHER_CLASSES.find((c) => c.id === classId);
@@ -296,7 +296,7 @@ export default function TeacherPaperSubmissionsPage() {
                     <Button
                       size="sm"
                       className="bg-indigo-600 text-white hover:bg-indigo-700"
-                      onClick={() => toast.info('Grading flow coming soon')}
+                      onClick={() => router.push(`/teacher/dashboard/classes/${classId}/papers/${paperId}/grade/${submission.id}`)}
                     >
                       Grade
                     </Button>
@@ -361,7 +361,7 @@ export default function TeacherPaperSubmissionsPage() {
                       variant="outline"
                       size="sm"
                       className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800"
-                      onClick={() => toast.info('Submission view coming soon')}
+                      onClick={() => router.push(`/teacher/dashboard/classes/${classId}/papers/${paperId}/grade/${submission.id}`)}
                     >
                       View
                     </Button>

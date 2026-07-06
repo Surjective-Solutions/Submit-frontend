@@ -1,9 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, UserCheck } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -71,6 +70,7 @@ function StudentCell({ submission }) {
 
 export default function InstructorPaperSubmissionsPage() {
   const { teacherId, paperId } = useParams();
+  const router = useRouter();
   const teacher = MOCK_INSTRUCTOR_TEACHERS.find((item) => item.id === teacherId);
   const paper = teacher?.papers?.find((item) => item.id === paperId);
 
@@ -154,7 +154,7 @@ export default function InstructorPaperSubmissionsPage() {
                     <Button
                       size="sm"
                       className="bg-indigo-600 text-white hover:bg-indigo-700"
-                      onClick={() => toast.info('Grading flow coming soon')}
+                      onClick={() => router.push(`/instructor/dashboard/teachers/${teacherId}/papers/${paperId}/grade/${submission.id}`)}
                     >
                       Grade
                     </Button>
@@ -218,7 +218,7 @@ export default function InstructorPaperSubmissionsPage() {
                       variant="outline"
                       size="sm"
                       className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800"
-                      onClick={() => toast.info('Submission view coming soon')}
+                      onClick={() => router.push(`/instructor/dashboard/teachers/${teacherId}/papers/${paperId}/grade/${submission.id}`)}
                     >
                       View
                     </Button>

@@ -14,6 +14,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import QuestionStructureBuilder from '@/components/teacher/QuestionStructureBuilder';
+import { useQuestionBuilder } from '@/hooks/use-question-builder';
 import { paperEditSchema } from '@/lib/validations/teacher';
 
 const MONTHS = [
@@ -48,6 +50,7 @@ export default function EditPaperDialog({ open, onOpenChange, paper, onSave }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showReplacePdf, setShowReplacePdf] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState(null);
+  const qb = useQuestionBuilder(paper?.questions);
 
   const {
     register,
@@ -61,21 +64,29 @@ export default function EditPaperDialog({ open, onOpenChange, paper, onSave }) {
   useEffect(() => {
     if (paper && open) {
       reset({
-        paper_name:          paper.paper_name,
-        month:               String(paper.month),
-        year:                paper.year,
-        number_of_questions: paper.number_of_questions,
-        status:              paper.status,
+        paper_name: paper.paper_name,
+        month:      String(paper.month),
+        year:       paper.year,
+        status:     paper.status,
       });
+      qb.reset(paper.questions);
       setShowReplacePdf(false);
       setSelectedFileName(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paper, open, reset]);
 
   async function onSubmit(data) {
+    const { error, payload, count } = qb.submit();
+    if (error) return;
+
     setIsLoading(true);
     try {
-      onSave(data);
+      onSave({
+        ...data,
+        number_of_questions: count,
+        questions: payload,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -140,17 +151,6 @@ export default function EditPaperDialog({ open, onOpenChange, paper, onSave }) {
                 </Field>
               </div>
 
-              <Field label="Number of Questions" required id="number_of_questions" error={errors.number_of_questions?.message}>
-                <Input
-                  id="number_of_questions"
-                  type="number"
-                  min="1"
-                  max="100"
-                  placeholder="e.g. 10"
-                  {...register('number_of_questions')}
-                />
-              </Field>
-
               {/* PDF section */}
               <div className="space-y-1.5">
                 <Label className="text-gray-700">PDF File</Label>
@@ -204,6 +204,25 @@ export default function EditPaperDialog({ open, onOpenChange, paper, onSave }) {
                   </>
                 )}
               </div>
+
+              <SectionDivider label="Question Structure" />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">Add each question and, if it has parts, split it into (a) / (b).</p>
+                <span className="shrink-0 text-xs font-semibold text-gray-700">Total: {qb.totalMarks} marks</span>
+              </div>
+              {qb.error && (
+                <p className="text-xs text-destructive" role="alert">{qb.error}</p>
+              )}
+              <QuestionStructureBuilder
+                questions={qb.questions}
+                showErrors={qb.showErrors}
+                onAddQuestion={qb.addQuestion}
+                onRemoveQuestion={qb.removeQuestion}
+                onQuestionMarksChange={qb.changeQuestionMarks}
+                onAddSubpart={qb.addSubpart}
+                onRemoveSubpart={qb.removeSubpart}
+                onSubpartMarksChange={qb.changeSubpartMarks}
+              />
 
               <SectionDivider label="Status" />
               <div className="grid grid-cols-2 gap-3">

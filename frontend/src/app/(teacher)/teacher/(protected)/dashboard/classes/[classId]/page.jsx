@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, PlusCircle, Upload, EyeOff, Pencil, Trash2, FileText, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -56,6 +56,7 @@ let nextPaperId = 9000;
 
 export default function ClassDetailPage() {
   const { classId } = useParams();
+  const router = useRouter();
   const foundClass = MOCK_TEACHER_CLASSES.find((c) => c.id === classId);
 
   const [papers, setPapers] = useState(
@@ -83,17 +84,25 @@ export default function ClassDetailPage() {
     const file = data.pdf_file?.[0];
     const month = Number(data.month);
     const year = Number(data.year);
+    const paperId = `paper-new-${nextPaperId++}`;
+    const questions = (data.questions ?? []).map((q) => ({
+      id: `${paperId}-${q.question_label.toLowerCase().replace(/[()]/g, '')}`,
+      ...q,
+    }));
     const newPaper = {
-      id: `paper-new-${nextPaperId++}`,
+      id: paperId,
       paper_name: data.paper_name,
       month,
       year,
       month_label: `${MONTHS[month - 1]} ${year}`,
-      number_of_questions: Number(data.number_of_questions),
+      number_of_questions: data.number_of_questions,
       pdf_url: file ? `mock://${file.name}` : null,
       uploaded_at: new Date().toISOString(),
       status: data.status,
+      questions,
+      submissions: [],
     };
+    foundClass.papers.unshift(newPaper);
     setPapers((prev) => [newPaper, ...prev]);
     toast.success('Paper uploaded successfully');
     setUploadOpen(false);
@@ -103,27 +112,30 @@ export default function ClassDetailPage() {
     const newFile = data.pdf_file?.[0];
     const month = Number(data.month);
     const year = Number(data.year);
-    setPapers((prev) =>
-      prev.map((p) =>
-        p.id === editPaper.id
-          ? {
-              ...p,
-              paper_name: data.paper_name,
-              month,
-              year,
-              month_label: `${MONTHS[month - 1]} ${year}`,
-              number_of_questions: Number(data.number_of_questions),
-              status: data.status,
-              ...(newFile ? { pdf_url: `mock://${newFile.name}` } : {}),
-            }
-          : p
-      )
-    );
+    const questions = (data.questions ?? []).map((q) => ({
+      id: `${editPaper.id}-${q.question_label.toLowerCase().replace(/[()]/g, '')}`,
+      ...q,
+    }));
+    const patch = {
+      paper_name: data.paper_name,
+      month,
+      year,
+      month_label: `${MONTHS[month - 1]} ${year}`,
+      number_of_questions: data.number_of_questions,
+      status: data.status,
+      questions,
+      ...(newFile ? { pdf_url: `mock://${newFile.name}` } : {}),
+    };
+    const targetPaper = foundClass.papers.find((p) => p.id === editPaper.id);
+    if (targetPaper) Object.assign(targetPaper, patch);
+    setPapers((prev) => prev.map((p) => (p.id === editPaper.id ? { ...p, ...patch } : p)));
     toast.success('Paper updated');
     setEditPaper(null);
   }
 
   function handleDelete() {
+    const index = foundClass.papers.findIndex((p) => p.id === deletePaper.id);
+    if (index !== -1) foundClass.papers.splice(index, 1);
     setPapers((prev) => prev.filter((p) => p.id !== deletePaper.id));
     toast.success('Paper deleted');
     setDeletePaper(null);
@@ -131,6 +143,8 @@ export default function ClassDetailPage() {
 
   function handleTogglePublish(paper) {
     const next = paper.status === 'DRAFT' ? 'PUBLISHED' : 'DRAFT';
+    const targetPaper = foundClass.papers.find((p) => p.id === paper.id);
+    if (targetPaper) targetPaper.status = next;
     setPapers((prev) => prev.map((p) => (p.id === paper.id ? { ...p, status: next } : p)));
     toast.success(next === 'PUBLISHED' ? 'Paper published' : 'Paper unpublished');
   }
@@ -235,7 +249,7 @@ export default function ClassDetailPage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  window.location.href = `/teacher/dashboard/classes/${classId}/papers/${paper.id}`;
+                                  router.push(`/teacher/dashboard/classes/${classId}/papers/${paper.id}`);
                                 }}
                                 className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
                               />
