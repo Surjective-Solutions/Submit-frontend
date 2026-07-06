@@ -14,6 +14,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import QuestionStructureBuilder from '@/components/teacher/QuestionStructureBuilder';
+import { useQuestionBuilder } from '@/hooks/use-question-builder';
 import { paperUploadSchema } from '@/lib/validations/teacher';
 
 const MONTHS = [
@@ -47,6 +49,7 @@ function SectionDivider({ label }) {
 export default function UploadPaperDialog({ open, onOpenChange, onSuccess }) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState(null);
+  const qb = useQuestionBuilder([]);
 
   const {
     register,
@@ -59,7 +62,6 @@ export default function UploadPaperDialog({ open, onOpenChange, onSuccess }) {
       paper_name: '',
       month: '',
       year: 2026,
-      number_of_questions: '',
       status: 'DRAFT',
     },
   });
@@ -68,14 +70,23 @@ export default function UploadPaperDialog({ open, onOpenChange, onSuccess }) {
     onOpenChange(false);
     reset();
     setSelectedFileName(null);
+    qb.reset([]);
   }
 
   async function onSubmit(data) {
+    const { error, payload, count } = qb.submit();
+    if (error) return;
+
     setIsLoading(true);
     try {
-      onSuccess(data);
+      onSuccess({
+        ...data,
+        number_of_questions: count,
+        questions: payload,
+      });
       reset();
       setSelectedFileName(null);
+      qb.reset([]);
     } finally {
       setIsLoading(false);
     }
@@ -134,17 +145,6 @@ export default function UploadPaperDialog({ open, onOpenChange, onSuccess }) {
                 </Field>
               </div>
 
-              <Field label="Number of Questions" required id="number_of_questions" error={errors.number_of_questions?.message}>
-                <Input
-                  id="number_of_questions"
-                  type="number"
-                  min="1"
-                  max="100"
-                  placeholder="e.g. 10"
-                  {...register('number_of_questions')}
-                />
-              </Field>
-
               <Field label="Upload PDF" required id="pdf_file_input" error={errors.pdf_file?.message}>
                 <div className="flex items-center gap-3 rounded-lg border border-input px-3 py-2">
                   <FileText className="h-4 w-4 text-gray-400 shrink-0" />
@@ -168,6 +168,25 @@ export default function UploadPaperDialog({ open, onOpenChange, onSuccess }) {
                   })}
                 />
               </Field>
+
+              <SectionDivider label="Question Structure" />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">Add each question and, if it has parts, split it into (a) / (b).</p>
+                <span className="shrink-0 text-xs font-semibold text-gray-700">Total: {qb.totalMarks} marks</span>
+              </div>
+              {qb.error && (
+                <p className="text-xs text-destructive" role="alert">{qb.error}</p>
+              )}
+              <QuestionStructureBuilder
+                questions={qb.questions}
+                showErrors={qb.showErrors}
+                onAddQuestion={qb.addQuestion}
+                onRemoveQuestion={qb.removeQuestion}
+                onQuestionMarksChange={qb.changeQuestionMarks}
+                onAddSubpart={qb.addSubpart}
+                onRemoveSubpart={qb.removeSubpart}
+                onSubpartMarksChange={qb.changeSubpartMarks}
+              />
 
               <SectionDivider label="Status" />
               <div className="grid grid-cols-2 gap-3">
