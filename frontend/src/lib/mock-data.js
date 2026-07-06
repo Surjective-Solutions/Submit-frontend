@@ -1637,3 +1637,27 @@ export const MOCK_CASHIERS = [
     password: 'Sand!Pay8Z',
   },
 ];
+
+export const MOCK_BANK_ACCOUNTS = [
+  {
+    id: '1',
+    accountName: 'SubmitX Education (Pvt) Ltd',
+    accountNumber: '8001234567',
+    bankName: 'Bank of Ceylon',
+    additionalDetails: 'Colombo Fort Branch, Swift: BCEYLKLX',
+  },
+  {
+    id: '2',
+    accountName: 'SubmitX Education (Pvt) Ltd',
+    accountNumber: '0072345891',
+    bankName: 'Commercial Bank',
+    additionalDetails: 'Nugegoda Branch',
+  },
+  {
+    id: '3',
+    accountName: 'SubmitX Education (Pvt) Ltd',
+    accountNumber: '1159876432',
+    bankName: 'Sampath Bank',
+    additionalDetails: null,
+  },
+];

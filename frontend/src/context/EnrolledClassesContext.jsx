@@ -19,8 +19,50 @@ export function EnrolledClassesProvider({ children }) {
     setClasses((prev) => prev.filter((c) => c.id !== classId));
   }
 
+  function setMonthlyPaymentStatus(classId, month, year, patch) {
+    const cls = MOCK_STUDENT_ENROLLED_CLASSES.find((c) => c.id === classId);
+    if (cls) {
+      const entry = cls.monthly_payments.find((p) => p.month === month && p.year === year);
+      if (entry) {
+        Object.assign(entry, patch);
+      } else {
+        cls.monthly_payments.push({
+          id: `mp-${classId}-${year}-${month}`,
+          month,
+          year,
+          status: 'NOT_PAID',
+          reference_number: null,
+          paid_at: null,
+          ...patch,
+        });
+      }
+    }
+
+    setClasses((prev) =>
+      prev.map((c) => {
+        if (c.id !== classId) return c;
+        const idx = c.monthly_payments.findIndex((p) => p.month === month && p.year === year);
+        const updated = [...c.monthly_payments];
+        if (idx !== -1) {
+          updated[idx] = { ...updated[idx], ...patch };
+        } else {
+          updated.push({
+            id: `mp-${classId}-${year}-${month}`,
+            month,
+            year,
+            status: 'NOT_PAID',
+            reference_number: null,
+            paid_at: null,
+            ...patch,
+          });
+        }
+        return { ...c, monthly_payments: updated };
+      })
+    );
+  }
+
   return (
-    <EnrolledClassesContext.Provider value={{ classes, addClass, removeClass }}>
+    <EnrolledClassesContext.Provider value={{ classes, addClass, removeClass, setMonthlyPaymentStatus }}>
       {children}
     </EnrolledClassesContext.Provider>
   );
