@@ -1,5 +1,6 @@
 package com.examflow.backend.repository;
 
+import java.time.Month;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,10 @@ public interface ClassPaymentRecordRepository extends JpaRepository<ClassPayment
 
     List<ClassPaymentRecord> findByClassesAndStatus(Classes classes, Integer statusSeq);
 
+    List<ClassPaymentRecord> findByClasses(Classes classes);
+
     ClassPaymentRecord findByClassesAndStatusAndMonth(Classes classes, Integer statusSeq, Integer month);
+
+    ClassPaymentRecord findByClassesAndMonthAndYear(Classes classes, Integer month, Integer year);
 
 }
