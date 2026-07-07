@@ -35,6 +35,8 @@ public class UplaodPaper {
 
     private Classes classes;
 
+    private ClassPaymentRecord classPaymentRecord;
+
     private LocalDateTime createdDateTime;
 
     private LocalDateTime lastModifiedDateTime;
@@ -164,6 +166,7 @@ public class UplaodPaper {
         this.fileName = fileName;
     }
 
+
     @Column(name = "filePath")
     public String getFilePath() {
         return filePath;
@@ -171,6 +174,16 @@ public class UplaodPaper {
 
     public void setFilePath(String filePath) {
         this.filePath = filePath;
+    }
+
+    @ManyToOne
+    @JoinColumn(name = "class_payment_record_seq", referencedColumnName = "classPaymentRecordSeq", nullable = true)
+    public ClassPaymentRecord getClassPaymentRecord() {
+        return classPaymentRecord;
+    }
+
+    public void setClassPaymentRecord(ClassPaymentRecord classPaymentRecord) {
+        this.classPaymentRecord = classPaymentRecord;
     }
 
 }

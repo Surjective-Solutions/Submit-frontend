@@ -13,4 +13,6 @@ public interface ClassPaymentRecordRepository extends JpaRepository<ClassPayment
 
     List<ClassPaymentRecord> findByClassesAndStatus(Classes classes, Integer statusSeq);
 
+    ClassPaymentRecord findByClassesAndStatusAndMonth(Classes classes, Integer statusSeq, Integer month);
+
 }

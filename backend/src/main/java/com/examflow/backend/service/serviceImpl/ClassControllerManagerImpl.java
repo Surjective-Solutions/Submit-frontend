@@ -14,12 +14,16 @@ import com.examflow.backend.dto.CashierResponse;
 import com.examflow.backend.dto.ClassRequest;
 import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
+import com.examflow.backend.dto.MonthPapersResponse;
+import com.examflow.backend.dto.PaperResponse;
 import com.examflow.backend.dto.PaperUploadRequest;
 import com.examflow.backend.dto.UploadPaperResponse;
 import com.examflow.backend.entity.Cashier;
+import com.examflow.backend.entity.ClassPaymentRecord;
 import com.examflow.backend.entity.Classes;
 import com.examflow.backend.entity.Tutor;
 import com.examflow.backend.entity.UplaodPaper;
+import com.examflow.backend.repository.ClassPaymentRecordRepository;
 import com.examflow.backend.repository.ClassesRepository;
 import com.examflow.backend.repository.TutorRepository;
 import com.examflow.backend.repository.UploadPaperRepository;
@@ -36,16 +40,19 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
     private final FileStorageService fileStorageService;
     private final ClassesRepository classesRepository;
     private final UploadPaperRepository uploadPaperRepository;
+    private final ClassPaymentRecordRepository classPaymentRecordRepository;
 
     @Autowired
     public ClassControllerManagerImpl(HttpServletRequest request,
             TutorRepository tutorRepository,
             FileStorageService fileStorageService,
+            ClassPaymentRecordRepository classPaymentRecordRepository,
             ClassesRepository classesRepository,
             UploadPaperRepository uploadPaperRepository) {
         this.request = request;
         this.tutorRepository = tutorRepository;
         this.fileStorageService = fileStorageService;
+        this.classPaymentRecordRepository = classPaymentRecordRepository;
         this.classesRepository = classesRepository;
         this.uploadPaperRepository = uploadPaperRepository;
     }
@@ -81,7 +88,7 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
 
     @Override
     public List<ClassResponse> getAllClasses() {
-
+        System.out.println("reached to cimpl");
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         Integer tutorSeq = (Integer) request.getAttribute("userId");
@@ -99,6 +106,7 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
             classResponse.setId(classes.getClassSeq());
 
             List<UplaodPaper> papers = uploadPaperRepository.findByClassesAndStatus(classes, 2);
+
             List<UploadPaperResponse> paperResponses = new ArrayList<>();
             for (UplaodPaper paper : papers) {
                 UploadPaperResponse paperResponse = new UploadPaperResponse();
@@ -119,6 +127,7 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
 
                 paperResponses.add(paperResponse);
             }
+
             classResponse.setPapers(paperResponses);
 
             classResponseList.add(classResponse);
@@ -134,10 +143,19 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         String username = auth.getName();
         GeneralResponse response = new GeneralResponse();
         Classes classes = classesRepository.findByClassSeqAndStatus(classId, 2);
+        ClassPaymentRecord classPaymentRecord = classPaymentRecordRepository.findByClassesAndStatusAndMonth(classes, 2,
+                paperUploadRequest.getMonth());
         if (classes == null) {
             response.setMessage("Class not found");
             response.setIsSuccess(false);
 
+            return response;
+        }
+
+        if (classPaymentRecord == null) {
+
+            response.setIsSuccess(false);
+            response.setMessage("make payment record to respective month and class");
             return response;
         }
 
@@ -167,6 +185,7 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
             uploadPaper.setIsPublished(true);
         }
         uploadPaper.setClasses(classes);
+        uploadPaper.setClassPaymentRecord(classPaymentRecord);
 
         uploadPaperRepository.save(uploadPaper);
 
