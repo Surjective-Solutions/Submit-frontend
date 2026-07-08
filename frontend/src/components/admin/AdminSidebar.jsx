@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, GraduationCap, Wallet, Users, UserCheck, LogOut } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, Wallet, Users, UserCheck, Landmark, CreditCard, LogOut } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -40,6 +40,13 @@ const NAV_ITEMS = [
     activeBg: 'rgba(233,216,72,0.13)',
   },
   {
+    label: 'Payments',
+    icon: CreditCard,
+    href: '/admin/payments',
+    accent: '#B8FF8F',
+    activeBg: 'rgba(184,255,143,0.13)',
+  },
+  {
     label: 'Students',
     icon: GraduationCap,
     href: '/admin/students',
@@ -52,6 +59,13 @@ const NAV_ITEMS = [
     href: '/admin/instructors',
     accent: '#E9D848',
     activeBg: 'rgba(233,216,72,0.13)',
+  },
+  {
+    label: 'Bank Details',
+    icon: Landmark,
+    href: '/admin/bank-details',
+    accent: '#B8FF8F',
+    activeBg: 'rgba(184,255,143,0.13)',
   },
 ];
 

@@ -14,6 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import QuestionStructureBuilder from "@/components/teacher/QuestionStructureBuilder";
+import { useQuestionBuilder } from "@/hooks/use-question-builder";
 import { paperUploadSchema } from "@/lib/validations/teacher";
 import { uploadPaper } from "@/lib/api-client";
 import { useParams } from "next/navigation";
@@ -75,8 +77,6 @@ export default function UploadPaperDialog({
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState(null);
-  const params = useParams();
-  // const classId = params.id;
 
   const {
     register,
@@ -98,6 +98,7 @@ export default function UploadPaperDialog({
     onOpenChange(false);
     reset();
     setSelectedFileName(null);
+    qb.reset([]);
   }
 
   // async function onSubmit(data) {
@@ -119,26 +120,14 @@ export default function UploadPaperDialog({
   // }
 
   async function onSubmit(data) {
+    const { error, payload, count } = qb.submit();
+    if (error) return;
+
     setIsLoading(true);
-
-    const formData = new FormData();
-
-    formData.append("paper_name", data.paper_name);
-    formData.append("month", data.month);
-    formData.append("year", data.year);
-    formData.append("number_of_questions", data.number_of_questions);
-    formData.append("status", data.status);
-
-    formData.append("pdf_file", data.pdf_file[0]);
-
     try {
-      const result = await uploadPaper(classId, formData);
-
-      onSuccess(result);
-
-      handleClose();
-    } catch (error) {
-      console.error(error);
+      onSuccess(data);
+      reset();
+      setSelectedFileName(null);
     } finally {
       setIsLoading(false);
     }
@@ -272,6 +261,32 @@ export default function UploadPaperDialog({
                   })}
                 />
               </Field>
+
+              <SectionDivider label="Question Structure" />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-500">
+                  Add each question and, if it has parts, split it into (a) /
+                  (b).
+                </p>
+                <span className="shrink-0 text-xs font-semibold text-gray-700">
+                  Total: {qb.totalMarks} marks
+                </span>
+              </div>
+              {qb.error && (
+                <p className="text-xs text-destructive" role="alert">
+                  {qb.error}
+                </p>
+              )}
+              <QuestionStructureBuilder
+                questions={qb.questions}
+                showErrors={qb.showErrors}
+                onAddQuestion={qb.addQuestion}
+                onRemoveQuestion={qb.removeQuestion}
+                onQuestionMarksChange={qb.changeQuestionMarks}
+                onAddSubpart={qb.addSubpart}
+                onRemoveSubpart={qb.removeSubpart}
+                onSubpartMarksChange={qb.changeSubpartMarks}
+              />
 
               <SectionDivider label="Status" />
               <div className="grid grid-cols-2 gap-3">

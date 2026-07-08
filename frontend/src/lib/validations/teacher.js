@@ -57,7 +57,6 @@ export const paperUploadSchema = z.object({
   paper_name: z.string().min(3, 'Paper name must be at least 3 characters'),
   month: z.coerce.number().int().min(1, 'Month is required').max(12, 'Invalid month'),
   year: z.coerce.number().int().min(2020, 'Year must be 2020 or later').max(2030, 'Year must be 2030 or earlier'),
-  number_of_questions: z.coerce.number().int().min(1, 'At least 1 question required').max(100, 'Max 100 questions'),
   pdf_file: z.any().refine((val) => val && val.length > 0, 'Please select a PDF file'),
   status: z.enum(['DRAFT', 'PUBLISHED']),
 });
@@ -66,7 +65,6 @@ export const paperEditSchema = z.object({
   paper_name: z.string().min(3, 'Paper name must be at least 3 characters'),
   month: z.coerce.number().int().min(1, 'Month is required').max(12, 'Invalid month'),
   year: z.coerce.number().int().min(2020, 'Year must be 2020 or later').max(2030, 'Year must be 2030 or earlier'),
-  number_of_questions: z.coerce.number().int().min(1, 'At least 1 question required').max(100, 'Max 100 questions'),
   status: z.enum(['DRAFT', 'PUBLISHED']),
   pdf_file: z.any().optional(),
 });
