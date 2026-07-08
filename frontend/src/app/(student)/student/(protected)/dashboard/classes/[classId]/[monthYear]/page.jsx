@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { toast } from 'sonner';
 import { ArrowLeft, Eye, FileText, CheckCircle, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,12 +18,24 @@ import {
   DialogContent,
   DialogTitle,
 } from '@/components/ui/dialog';
+import PayNowDialog from '@/components/student/PayNowDialog';
+import ViewPaymentSubmissionDialog from '@/components/student/ViewPaymentSubmissionDialog';
 import { useEnrolledClasses } from '@/context/EnrolledClassesContext';
+import { MOCK_PAYMENTS } from '@/lib/mock-data';
 import {
   isPaidMonth,
+  getMonthStatus,
   formatMonthYear,
   parseMonthYearSlug,
 } from '@/lib/billing-utils';
+
+function findLatestPaymentSubmission(classId, month, year) {
+  return (
+    MOCK_PAYMENTS
+      .filter((p) => p.class_id === classId && p.month === month && p.year === year)
+      .sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at))[0] ?? null
+  );
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -224,7 +235,29 @@ function PapersTable({ papers }) {
 
 // ── Locked State ──────────────────────────────────────────────────────────────
 
-function LockedState({ classId, monthLabel }) {
+function LockedState({ classId, monthLabel, cls, month, year, status }) {
+  const { setMonthlyPaymentStatus } = useEnrolledClasses();
+  const [payOpen, setPayOpen] = useState(false);
+  const [viewSubmissionOpen, setViewSubmissionOpen] = useState(false);
+
+  const latestSubmission = findLatestPaymentSubmission(classId, month, year);
+
+  function handlePaidByCard() {
+    setMonthlyPaymentStatus(classId, month, year, {
+      status: 'PAID',
+      reference_number: `CARD-${Date.now()}`,
+      paid_at: new Date().toISOString(),
+    });
+  }
+
+  function handleSubmittedForReview() {
+    setMonthlyPaymentStatus(classId, month, year, {
+      status: 'PENDING',
+      reference_number: null,
+      paid_at: null,
+    });
+  }
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh] gap-5 text-center px-4">
       <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
@@ -233,21 +266,54 @@ function LockedState({ classId, monthLabel }) {
       <div className="space-y-2">
         <h2 className="text-base font-semibold text-gray-900">No Content Available</h2>
         <p className="text-sm text-gray-500 max-w-sm leading-relaxed">
-          You have not paid for {monthLabel}. Purchase this month to view these papers.
+          {status === 'PENDING'
+            ? `Your ${monthLabel} payment is under review. You will get access once approved.`
+            : status === 'REJECTED'
+            ? `Your ${monthLabel} payment was rejected. Please resubmit your payment.`
+            : `You have not paid for ${monthLabel}. Purchase this month to view these papers.`}
         </p>
       </div>
-      <Button
-        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold h-9 px-5"
-        onClick={() => toast.info('Payment flow coming soon')}
-      >
-        Pay Now
-      </Button>
+      <div className="flex items-center gap-3">
+        {(status === 'PENDING' || status === 'REJECTED') && latestSubmission && (
+          <Button
+            variant="outline"
+            className="font-semibold h-9 px-5"
+            onClick={() => setViewSubmissionOpen(true)}
+          >
+            View Submission
+          </Button>
+        )}
+        {status !== 'PENDING' && (
+          <Button
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold h-9 px-5"
+            onClick={() => setPayOpen(true)}
+          >
+            Pay Now
+          </Button>
+        )}
+      </div>
       <Link
         href={`/student/dashboard/classes/${classId}`}
         className="text-sm text-gray-400 hover:text-indigo-600 transition-colors"
       >
         ← Back to Class
       </Link>
+
+      <PayNowDialog
+        open={payOpen}
+        onOpenChange={setPayOpen}
+        cls={cls}
+        month={month}
+        year={year}
+        monthLabel={monthLabel}
+        onPaidByCard={handlePaidByCard}
+        onSubmittedForReview={handleSubmittedForReview}
+      />
+      <ViewPaymentSubmissionDialog
+        open={viewSubmissionOpen}
+        onOpenChange={setViewSubmissionOpen}
+        payment={latestSubmission}
+      />
     </div>
   );
 }
@@ -281,6 +347,7 @@ export default function MonthDetailPage() {
   }
 
   const paid = isPaidMonth(cls.monthly_payments, month, year);
+  const status = getMonthStatus(cls.monthly_payments, month, year);
 
   // const monthEntry = (cls.papers_by_month ?? []).find(
   //   (e) => e.month === month && e.year === year,
@@ -315,7 +382,7 @@ export default function MonthDetailPage() {
 
       {/* Content */}
       {!paid ? (
-        <LockedState classId={classId} monthLabel={monthLabel} />
+        <LockedState classId={classId} monthLabel={monthLabel} cls={cls} month={month} year={year} status={status} />
       ) : papers.length === 0 ? (
         <div className="py-16 text-center text-sm text-gray-400 bg-white rounded-xl border border-border">
           No papers available for {monthLabel}.

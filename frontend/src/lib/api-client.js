@@ -421,3 +421,14 @@ export async function teacherGradeSubmission(submissionId, gradeData) {
   // TODO: POST /teacher/submissions/:submissionId/grade
   return {};
 }
+
+export async function getSubmissionForGrading(submissionId) {
+  // TODO: GET /teacher/submissions/:submissionId
+  return {};
+}
+
+export async function submitGrades(submissionId, gradesData) {
+  // TODO: POST /teacher/submissions/:submissionId/grades
+  // body: { awarded_marks: [{ question_id, marks_awarded, comment }] }
+  return {};
+}
