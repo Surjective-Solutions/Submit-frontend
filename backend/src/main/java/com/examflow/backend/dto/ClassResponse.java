@@ -18,6 +18,7 @@ public class ClassResponse {
     private String status;
     private List<UploadPaperResponse> papers;
     private List<StudentClassPaymentRecordResponse> monthly_payments;
+    private List<MonthPapersResponse> papers_by_month;
 
     public Integer getId() {
         return id;
@@ -113,6 +114,14 @@ public class ClassResponse {
 
     public void setMonthly_payments(List<StudentClassPaymentRecordResponse> monthly_payments) {
         this.monthly_payments = monthly_payments;
+    }
+
+    public List<MonthPapersResponse> getPapers_by_month() {
+        return papers_by_month;
+    }
+
+    public void setPapers_by_month(List<MonthPapersResponse> papers_by_month) {
+        this.papers_by_month = papers_by_month;
     }
 
 }
