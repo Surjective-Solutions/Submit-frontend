@@ -17,6 +17,8 @@ import { Label } from "@/components/ui/label";
 import QuestionStructureBuilder from "@/components/teacher/QuestionStructureBuilder";
 import { useQuestionBuilder } from "@/hooks/use-question-builder";
 import { paperUploadSchema } from "@/lib/validations/teacher";
+import { uploadPaper } from "@/lib/api-client";
+import { useParams } from "next/navigation";
 
 const MONTHS = [
   "January",
@@ -75,7 +77,6 @@ export default function UploadPaperDialog({
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState(null);
-  const qb = useQuestionBuilder([]);
 
   const {
     register,
@@ -88,6 +89,7 @@ export default function UploadPaperDialog({
       paper_name: "",
       month: "",
       year: 2026,
+      number_of_questions: "",
       status: "DRAFT",
     },
   });
@@ -122,14 +124,9 @@ export default function UploadPaperDialog({
 
     setIsLoading(true);
     try {
-      onSuccess({
-        ...data,
-        number_of_questions: count,
-        questions: payload,
-      });
+      onSuccess(data);
       reset();
       setSelectedFileName(null);
-      qb.reset([]);
     } finally {
       setIsLoading(false);
     }

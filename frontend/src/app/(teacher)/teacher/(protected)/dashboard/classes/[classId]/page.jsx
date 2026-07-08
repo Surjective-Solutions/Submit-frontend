@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -14,6 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getClasses } from "@/lib/api-client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -76,8 +77,7 @@ let nextPaperId = 9000;
 
 export default function ClassDetailPage() {
   const { classId } = useParams();
-  const router = useRouter();
-  const foundClass = MOCK_TEACHER_CLASSES.find((c) => c.id === classId);
+  // const foundClass = MOCK_TEACHER_CLASSES.find((c) => c.id === classId);
 
   // const [papers, setPapers] = useState(
   //   foundClass
@@ -198,8 +198,6 @@ export default function ClassDetailPage() {
 
   function handleTogglePublish(paper) {
     const next = paper.status === "DRAFT" ? "PUBLISHED" : "DRAFT";
-    const targetPaper = foundClass.papers.find((p) => p.id === paper.id);
-    if (targetPaper) targetPaper.status = next;
     setPapers((prev) =>
       prev.map((p) => (p.id === paper.id ? { ...p, status: next } : p)),
     );
