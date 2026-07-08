@@ -1,10 +1,28 @@
 'use client';
 
+<<<<<<< HEAD
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, PlusCircle, Upload, EyeOff, Pencil, Trash2, FileText, Users } from 'lucide-react';
 import { toast } from 'sonner';
+=======
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  PlusCircle,
+  Upload,
+  EyeOff,
+  Pencil,
+  Trash2,
+  FileText,
+  Users,
+} from "lucide-react";
+import { toast } from "sonner";
+import { getClasses } from "@/lib/api-client";
+>>>>>>> 42c68b536dfc29d638f5e588d7b65fa10d303b35
 
 import { Button } from '@/components/ui/button';
 import {
@@ -56,8 +74,12 @@ let nextPaperId = 9000;
 
 export default function ClassDetailPage() {
   const { classId } = useParams();
+<<<<<<< HEAD
   const router = useRouter();
   const foundClass = MOCK_TEACHER_CLASSES.find((c) => c.id === classId);
+=======
+  // const foundClass = MOCK_TEACHER_CLASSES.find((c) => c.id === classId);
+>>>>>>> 42c68b536dfc29d638f5e588d7b65fa10d303b35
 
   const [papers, setPapers] = useState(
     foundClass
@@ -86,7 +108,7 @@ export default function ClassDetailPage() {
     const year = Number(data.year);
     const paperId = `paper-new-${nextPaperId++}`;
     const questions = (data.questions ?? []).map((q) => ({
-      id: `${paperId}-${q.question_label.toLowerCase().replace(/[()]/g, '')}`,
+      id: `${paperId}-${q.question_label.toLowerCase().replace(/[()]/g, "")}`,
       ...q,
     }));
     const newPaper = {
@@ -113,7 +135,7 @@ export default function ClassDetailPage() {
     const month = Number(data.month);
     const year = Number(data.year);
     const questions = (data.questions ?? []).map((q) => ({
-      id: `${editPaper.id}-${q.question_label.toLowerCase().replace(/[()]/g, '')}`,
+      id: `${editPaper.id}-${q.question_label.toLowerCase().replace(/[()]/g, "")}`,
       ...q,
     }));
     const patch = {
@@ -128,8 +150,15 @@ export default function ClassDetailPage() {
     };
     const targetPaper = foundClass.papers.find((p) => p.id === editPaper.id);
     if (targetPaper) Object.assign(targetPaper, patch);
+<<<<<<< HEAD
     setPapers((prev) => prev.map((p) => (p.id === editPaper.id ? { ...p, ...patch } : p)));
     toast.success('Paper updated');
+=======
+    setPapers((prev) =>
+      prev.map((p) => (p.id === editPaper.id ? { ...p, ...patch } : p)),
+    );
+    toast.success("Paper updated");
+>>>>>>> 42c68b536dfc29d638f5e588d7b65fa10d303b35
     setEditPaper(null);
   }
 
@@ -142,11 +171,21 @@ export default function ClassDetailPage() {
   }
 
   function handleTogglePublish(paper) {
+<<<<<<< HEAD
     const next = paper.status === 'DRAFT' ? 'PUBLISHED' : 'DRAFT';
     const targetPaper = foundClass.papers.find((p) => p.id === paper.id);
     if (targetPaper) targetPaper.status = next;
     setPapers((prev) => prev.map((p) => (p.id === paper.id ? { ...p, status: next } : p)));
     toast.success(next === 'PUBLISHED' ? 'Paper published' : 'Paper unpublished');
+=======
+    const next = paper.status === "DRAFT" ? "PUBLISHED" : "DRAFT";
+    setPapers((prev) =>
+      prev.map((p) => (p.id === paper.id ? { ...p, status: next } : p)),
+    );
+    toast.success(
+      next === "PUBLISHED" ? "Paper published" : "Paper unpublished",
+    );
+>>>>>>> 42c68b536dfc29d638f5e588d7b65fa10d303b35
   }
 
   return (
@@ -249,7 +288,9 @@ export default function ClassDetailPage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  router.push(`/teacher/dashboard/classes/${classId}/papers/${paper.id}`);
+                                  router.push(
+                                    `/teacher/dashboard/classes/${classId}/papers/${paper.id}`,
+                                  );
                                 }}
                                 className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
                               />
