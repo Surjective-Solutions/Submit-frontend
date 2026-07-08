@@ -77,7 +77,6 @@ let nextPaperId = 9000;
 
 export default function ClassDetailPage() {
   const { classId } = useParams();
-  const router = useRouter();
   // const foundClass = MOCK_TEACHER_CLASSES.find((c) => c.id === classId);
 
   // const [papers, setPapers] = useState(
@@ -199,8 +198,6 @@ export default function ClassDetailPage() {
 
   function handleTogglePublish(paper) {
     const next = paper.status === "DRAFT" ? "PUBLISHED" : "DRAFT";
-    const targetPaper = foundClass.papers.find((p) => p.id === paper.id);
-    if (targetPaper) targetPaper.status = next;
     setPapers((prev) =>
       prev.map((p) => (p.id === paper.id ? { ...p, status: next } : p)),
     );
