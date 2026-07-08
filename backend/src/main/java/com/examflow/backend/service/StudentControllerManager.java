@@ -17,4 +17,6 @@ public interface StudentControllerManager {
     GeneralResponse addClassToStudent(Integer classId);
 
     List<ClassResponse> getAllEnrolledClass();
+
+    StudentResponse getStudentById(Integer id);
 }

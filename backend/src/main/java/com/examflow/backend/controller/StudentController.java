@@ -15,6 +15,7 @@ import com.examflow.backend.dto.StudentResponse;
 import com.examflow.backend.service.StudentControllerManager;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
 @RequestMapping("/api/student")
@@ -31,6 +32,11 @@ public class StudentController {
     @GetMapping("/get-all-students")
     public List<StudentResponse> getStudents() {
         return studentControllerManager.getAllStudents();
+    }
+
+    @GetMapping("/get-student/{id}")
+    public StudentResponse getStudentById(@PathVariable Integer id){
+        return studentControllerManager.getStudentById(id);
     }
 
     @PostMapping("/add-class-student")

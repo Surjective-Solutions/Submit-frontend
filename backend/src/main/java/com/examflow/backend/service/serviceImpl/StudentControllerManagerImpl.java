@@ -221,4 +221,33 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
         return sendClassResponses;
     }
 
+    @Override
+    public StudentResponse getStudentById(Integer id) {
+        Student student = studentRepository.findByStudentSeq(id);
+        if (student == null) return null;
+        
+        StudentResponse studentResponse = new StudentResponse();
+        studentResponse.setId(student.getStudentSeq());
+        studentResponse.setStudent_number(null);
+        studentResponse.setFirst_name(student.getFirstName());
+        studentResponse.setLast_name(student.getLastName());
+        studentResponse.setDate_of_birth(student.getDob());
+        studentResponse.setEmail(student.getEmail());
+        studentResponse.setGender(student.getGender());
+        studentResponse.setGrade(student.getGrade());
+        studentResponse.setContact_number(student.getContactNumber());
+        studentResponse.setWhatsapp_number(student.getWhatsappNumber());
+        studentResponse.setSchool_name(student.getSchoolName());
+        studentResponse.setSubject_stream(student.getSubjectStream());
+        studentResponse.setGuardian_name(student.getGuardianName());
+        studentResponse.setGuardian_contact(student.getGuardianContactNumber());
+        studentResponse.setAddress(student.getAddress());
+        studentResponse.setDistrict(student.getDistrict());
+        if (student.getStatus() == 2) {
+            studentResponse.setStatus("ACTIVE");
+        } else {
+            studentResponse.setStatus("INACTIVE");
+        }
+        return studentResponse;
+    }
 }
