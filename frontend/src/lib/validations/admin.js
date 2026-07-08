@@ -210,6 +210,15 @@ export const paymentRejectionSchema = z.object({
   rejection_reason: z.string().min(10, 'Reason must be at least 10 characters'),
 });
 
+export const createBankAccountSchema = z.object({
+  accountName: z.string().min(1, 'Account name is required'),
+  accountNumber: z.string().min(1, 'Account number is required'),
+  bankName: z.string().min(1, 'Bank name is required'),
+  additionalDetails: z.string().optional().or(z.literal('')),
+});
+
+export const editBankAccountSchema = createBankAccountSchema;
+
 export const editCashierSchema = z
   .object({
     fullName: z.string().min(1, 'Full name is required'),
