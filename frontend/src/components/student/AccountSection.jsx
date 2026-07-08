@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import EditProfileDialog from './EditProfileDialog';
-import { MOCK_LOGGED_IN_STUDENT } from '@/lib/mock-data';
+import { getTokenPayload } from '@/lib/auth';
+import { getStudentById } from '@/lib/api-client';
 
 const STATUS_STYLES = {
   ACTIVE:    'bg-green-100 text-green-700',
@@ -33,9 +34,28 @@ function SectionDivider({ label }) {
 }
 
 export default function AccountSection() {
-  const [student, setStudent] = useState(MOCK_LOGGED_IN_STUDENT);
+  const [student, setStudent] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
+
+  useEffect(() => {
+    loadStudentProfile();
+  }, []);
+
+  async function loadStudentProfile() {
+    try {
+      const payload = getTokenPayload();
+      const userSeq = payload?.userSeq;
+      if (!userSeq) return;
+      const data = await getStudentById(userSeq);
+      setStudent(data);
+    } catch {
+      toast.error('Failed to load profile');
+    }
+  }
+
+  if (!student) 
+    return <p className="text-center text-gray-400 py-12">Loading profile...</p>;
 
   const initials = `${student.first_name[0]}${student.last_name[0]}`.toUpperCase();
   const statusClass = STATUS_STYLES[student.status] ?? STATUS_STYLES.INACTIVE;

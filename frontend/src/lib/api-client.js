@@ -284,6 +284,11 @@ export async function getStudents() {
   return protectedRequest("/api/student/get-all-students", { method: "GET" });
 }
 
+//get single student by id for profile display
+export async function getStudentById(id) {
+  return protectedRequest(`/api/student/get-student/${id}`, { method: 'GET' });
+}
+
 //get enrolled classes fro students
 export async function getEnrolledClass() {
   return protectedRequest("/api/student/get-all-enrolled-class", { method: "GET" });
