@@ -1,15 +1,24 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, PlusCircle, FileText } from 'lucide-react';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, PlusCircle, FileText } from "lucide-react";
 
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogDescription,
+<<<<<<< HEAD
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { paperUploadSchema } from "@/lib/validations/teacher";
+import { uploadPaper } from "@/lib/api-client";
+import { useParams } from "next/navigation";
+=======
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +26,7 @@ import { Label } from '@/components/ui/label';
 import QuestionStructureBuilder from '@/components/teacher/QuestionStructureBuilder';
 import { useQuestionBuilder } from '@/hooks/use-question-builder';
 import { paperUploadSchema } from '@/lib/validations/teacher';
-import { uploadPaper } from "@/lib/api-client";
+>>>>>>> origin
 
 const MONTHS = [
   "January",
@@ -76,7 +85,12 @@ export default function UploadPaperDialog({
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState(null);
+<<<<<<< HEAD
+  const params = useParams();
+  // const classId = params.id;
+=======
   const qb = useQuestionBuilder([]);
+>>>>>>> origin
 
   const {
     register,
@@ -89,7 +103,12 @@ export default function UploadPaperDialog({
       paper_name: "",
       month: "",
       year: 2026,
+<<<<<<< HEAD
+      number_of_questions: "",
       status: "DRAFT",
+=======
+      status: 'DRAFT',
+>>>>>>> origin
     },
   });
 
@@ -101,19 +120,18 @@ export default function UploadPaperDialog({
   }
 
   // async function onSubmit(data) {
-  //   const { error, payload, count } = qb.submit();
-  //   if (error) return;
-
   //   setIsLoading(true);
   //   try {
-  //     onSuccess({
-  //       ...data,
-  //       number_of_questions: count,
-  //       questions: payload,
-  //     });
-  //     reset();
-  //     setSelectedFileName(null);
-  //     qb.reset([]);
+  //     const result = await uploadPaper(classId, data);
+  //     console.log("Upload result:", result);
+  //     onSuccess(result);
+  //     handleClose();
+  //   } catch (error) {
+  //     console.error("Upload failed:", error);
+  //     // Optionally, you can show an error message to the user here
+  //     // onSuccess(data);
+  //     // reset();
+  //     // setSelectedFileName(null);
   //   } finally {
   //     setIsLoading(false);
   //   }
@@ -126,33 +144,35 @@ export default function UploadPaperDialog({
 
     setIsLoading(true);
 
+    const formData = new FormData();
+
+    formData.append("paper_name", data.paper_name);
+    formData.append("month", data.month);
+    formData.append("year", data.year);
+    formData.append("number_of_questions", data.number_of_questions);
+    formData.append("status", data.status);
+
+    formData.append("pdf_file", data.pdf_file[0]);
+
     try {
-      const formData = new FormData();
+<<<<<<< HEAD
+      const result = await uploadPaper(classId, formData);
 
-      formData.append("paperName", data.paper_name);
-      formData.append("month", data.month);
-      formData.append("year", data.year);
-      formData.append("status", data.status);
-      formData.append("numberOfQuestions", count);
+      onSuccess(result);
 
-      // Add questions JSON
-      formData.append("questions", JSON.stringify(payload));
-
-      if (data.pdf_file?.[0]) {
-        formData.append("pdf_file", data.pdf_file[0]);
-      }
-
-      const response = await uploadPaper(classId, formData);
-
-      console.log("Paper uploaded:", response);
-
-      onSuccess(response);
-
+      handleClose();
+    } catch (error) {
+      console.error(error);
+=======
+      onSuccess({
+        ...data,
+        number_of_questions: count,
+        questions: payload,
+      });
       reset();
       setSelectedFileName(null);
       qb.reset([]);
-    } catch (error) {
-      console.error("Upload paper failed:", error);
+>>>>>>> origin
     } finally {
       setIsLoading(false);
     }
@@ -241,12 +261,32 @@ export default function UploadPaperDialog({
                 </Field>
               </div>
 
+<<<<<<< HEAD
+              <Field
+                label="Number of Questions"
+                required
+                id="number_of_questions"
+                error={errors.number_of_questions?.message}
+              >
+                <Input
+                  id="number_of_questions"
+                  type="number"
+                  min="1"
+                  max="100"
+                  placeholder="e.g. 10"
+                  {...register("number_of_questions")}
+                />
+              </Field>
+
               <Field
                 label="Upload PDF"
                 required
                 id="pdf_file_input"
                 error={errors.pdf_file?.message}
               >
+=======
+              <Field label="Upload PDF" required id="pdf_file_input" error={errors.pdf_file?.message}>
+>>>>>>> origin
                 <div className="flex items-center gap-3 rounded-lg border border-input px-3 py-2">
                   <FileText className="h-4 w-4 text-gray-400 shrink-0" />
                   <span className="text-sm text-gray-500 flex-1 truncate min-w-0">
