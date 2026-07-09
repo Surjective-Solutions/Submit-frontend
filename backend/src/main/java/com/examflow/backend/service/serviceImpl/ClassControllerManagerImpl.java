@@ -143,6 +143,7 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         String username = auth.getName();
         GeneralResponse response = new GeneralResponse();
         Classes classes = classesRepository.findByClassSeqAndStatus(classId, 2);
+        System.out.println(classId);
         ClassPaymentRecord classPaymentRecord = classPaymentRecordRepository.findByClassesAndStatusAndMonth(classes, 2,
                 paperUploadRequest.getMonth());
         if (classes == null) {
