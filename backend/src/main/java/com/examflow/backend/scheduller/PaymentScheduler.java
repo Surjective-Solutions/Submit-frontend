@@ -24,4 +24,13 @@ public class PaymentScheduler {
 
     }
 
+    @Scheduled(cron = "0 42 01 * * *")
+    public void generateMonthlyPaymentsForStudentPaymentRecords() {
+
+        System.out.println("Running scheduler : " + LocalDateTime.now());
+
+        monthlyPaymentService.generateStudentClassPaymentRecord();
+
+    }
+
 }
