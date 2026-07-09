@@ -8,6 +8,8 @@ public class PaperUploadRequest {
 
     private Integer paper_id;
 
+    private String questions;
+
     // private Integer number_of_questions;
 
     private Integer year;
@@ -60,6 +62,14 @@ public class PaperUploadRequest {
 
     public void setMonth(Integer month) {
         this.month = month;
+    }
+
+    public String getQuestions() {
+        return questions;
+    }
+
+    public void setQuestions(String questions) {
+        this.questions = questions;
     }
 
 }

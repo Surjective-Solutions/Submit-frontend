@@ -75,20 +75,33 @@ function formatFullDate(dateStr) {
 let nextPaperId = 9000;
 
 export default function ClassDetailPage() {
+
+  const [classes, setClasses] = useState([]);
+
   const { classId } = useParams();
   console.log(classId);
-  const foundClass = MOCK_TEACHER_CLASSES.find((c) => c.id === classId);
+  // const foundClass = classes.find((c) => c.id === classId);
+  const foundClass = classes.find((c) => c.id === Number(classId));
 
-  const [papers, setPapers] = useState(
-    foundClass
-      ? [...foundClass.papers].sort(
+  const [papers, setPapers] = useState([]);
+
+  useEffect(() => {
+    if (foundClass?.papers) {
+      setPapers(
+        [...foundClass.papers].sort(
           (a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at),
-        )
-      : [],
-  );
+        ),
+      );
+    }
+  }, [foundClass]);
+
   const [uploadOpen, setUploadOpen] = useState(false);
   const [editPaper, setEditPaper] = useState(null);
   const [deletePaper, setDeletePaper] = useState(null);
+
+  useEffect(() => {
+    loadClasses();
+  }, []);
 
   if (!foundClass) {
     return (
@@ -132,6 +145,15 @@ export default function ClassDetailPage() {
     setPapers((prev) => [newPaper, ...prev]);
     toast.success("Paper uploaded successfully");
     setUploadOpen(false);
+  }
+
+  async function loadClasses() {
+    try {
+      const data = await getClasses();
+      setClasses(data);
+    } catch (error) {
+      toast.error("Failed to load classes");
+    }
   }
 
   function handleEditSave(data) {
@@ -319,12 +341,11 @@ export default function ClassDetailPage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const url = paper.pdf_url;
-                                  if (
-                                    url &&
-                                    (url.startsWith("http://") ||
-                                      url.startsWith("https://"))
-                                  ) {
+                                  if (paper.pdf_url) {
+                                    const url = `http://localhost:8080/uploads/papers/${encodeURIComponent(
+                                      paper.pdf_url,
+                                    )}`;
+
                                     window.open(url, "_blank");
                                   } else {
                                     toast.info(

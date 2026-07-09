@@ -132,8 +132,12 @@ export default function UploadPaperDialog({
     formData.append("year", data.year);
     formData.append("number_of_questions", data.number_of_questions);
     formData.append("status", data.status);
+    formData.append("questions", JSON.stringify(qb.questions));
 
     formData.append("pdf_file", data.pdf_file[0]);
+
+    console.log(count);
+    console.log(qb.questions);
 
     try {
       console.log(classId);

@@ -17,20 +17,29 @@ import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.MonthPapersResponse;
 import com.examflow.backend.dto.PaperResponse;
 import com.examflow.backend.dto.PaperUploadRequest;
+import com.examflow.backend.dto.QuestionRequestDTO;
+import com.examflow.backend.dto.SubQuestionRequestDTO;
 import com.examflow.backend.dto.UploadPaperResponse;
 import com.examflow.backend.entity.Cashier;
 import com.examflow.backend.entity.ClassPaymentRecord;
 import com.examflow.backend.entity.Classes;
 import com.examflow.backend.entity.Tutor;
 import com.examflow.backend.entity.UplaodPaper;
+import com.examflow.backend.entity.UploadPaperQuestion;
+import com.examflow.backend.entity.UploadPaperQuestionSubQuestion;
 import com.examflow.backend.repository.ClassPaymentRecordRepository;
 import com.examflow.backend.repository.ClassesRepository;
 import com.examflow.backend.repository.TutorRepository;
+import com.examflow.backend.repository.UploadPaperQuestionRepository;
+import com.examflow.backend.repository.UploadPaperQuestionSubQuestionRepository;
 import com.examflow.backend.repository.UploadPaperRepository;
 import com.examflow.backend.service.ClassControllerManager;
 import com.examflow.backend.service.FileStorageService;
 
+
 import jakarta.servlet.http.HttpServletRequest;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class ClassControllerManagerImpl implements ClassControllerManager {
@@ -41,10 +50,14 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
     private final ClassesRepository classesRepository;
     private final UploadPaperRepository uploadPaperRepository;
     private final ClassPaymentRecordRepository classPaymentRecordRepository;
+    private final UploadPaperQuestionRepository uploadPaperQuestionRepository;
+    private final UploadPaperQuestionSubQuestionRepository uploadPaperQuestionSubQuestionRepository;
 
     @Autowired
     public ClassControllerManagerImpl(HttpServletRequest request,
             TutorRepository tutorRepository,
+            UploadPaperQuestionRepository uploadPaperQuestionRepository,
+            UploadPaperQuestionSubQuestionRepository uploadPaperQuestionSubQuestionRepository,
             FileStorageService fileStorageService,
             ClassPaymentRecordRepository classPaymentRecordRepository,
             ClassesRepository classesRepository,
@@ -54,6 +67,8 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         this.fileStorageService = fileStorageService;
         this.classPaymentRecordRepository = classPaymentRecordRepository;
         this.classesRepository = classesRepository;
+        this.uploadPaperQuestionRepository = uploadPaperQuestionRepository;
+        this.uploadPaperQuestionSubQuestionRepository = uploadPaperQuestionSubQuestionRepository;
         this.uploadPaperRepository = uploadPaperRepository;
     }
 
@@ -139,6 +154,12 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
     @Override
     public GeneralResponse uploadPapers(PaperUploadRequest paperUploadRequest, Integer classId,
             MultipartFile pdf_file) {
+        ObjectMapper mapper = new ObjectMapper();
+        List<QuestionRequestDTO> questions = mapper.readValue(
+                paperUploadRequest.getQuestions(),
+                new TypeReference<List<QuestionRequestDTO>>() {
+                });
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         GeneralResponse response = new GeneralResponse();
@@ -174,6 +195,7 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         uploadPaper.setFilePath(System.getProperty("user.home")
                 + "/lms/uploads/papers/" + fileName);
         uploadPaper.setCreatedDateTime(LocalDateTime.now());
+
         uploadPaper.setLastModifiedDateTime(LocalDateTime.now());
         uploadPaper.setStatus(2);
 
@@ -189,10 +211,57 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         uploadPaper.setClassPaymentRecord(classPaymentRecord);
 
         uploadPaperRepository.save(uploadPaper);
+        System.out.println("Paper uploaded successfully");
+        Integer numberOfQuetions = 0;
+        for (QuestionRequestDTO question : questions) {
+            UploadPaperQuestion uploadPaperQuestion = new UploadPaperQuestion();
+            numberOfQuetions++;
+            uploadPaperQuestion.setMarks(question.getMarks());
+            uploadPaperQuestion.setQuestionKey(question.getKey());
+            uploadPaperQuestion.setUplaodPaper(uploadPaper);
+            uploadPaperQuestion.setStatus(2);
+            uploadPaperQuestion.setCreatedDateTime(LocalDateTime.now());
+            uploadPaperQuestion.setLastModifiedDateTime(LocalDateTime.now());
+            uploadPaperQuestion.setCreatedBy(username);
+            uploadPaperQuestion.setLastModifiedBy(username);
+
+            uploadPaperQuestionRepository.save(uploadPaperQuestion);
+
+            System.out.println("Question key: " + question.getKey() + "created.");
+            System.out.println("Marks: " + question.getMarks());
+
+            Integer totalSubQuestionMarks = 0;
+            for (SubQuestionRequestDTO subpart : question.getSubparts()) {
+                UploadPaperQuestionSubQuestion uploadPaperQuestionSubQuestion = new UploadPaperQuestionSubQuestion();
+
+                uploadPaperQuestionSubQuestion.setMark(subpart.getMarks());
+                totalSubQuestionMarks = +subpart.getMarks();
+                uploadPaperQuestionSubQuestion.setQuestionKey(subpart.getKey());
+                uploadPaperQuestionSubQuestion.setUploadPaperQuestion(uploadPaperQuestion);
+                uploadPaperQuestionSubQuestion.setStatus(2);
+                uploadPaperQuestionSubQuestion.setCreatedDateTime(LocalDateTime.now());
+                uploadPaperQuestionSubQuestion.setLastModifiedDateTime(LocalDateTime.now());
+                uploadPaperQuestionSubQuestion.setCreatedBy(username);
+                uploadPaperQuestionSubQuestion.setLastModifiedBy(username);
+
+                uploadPaperQuestionSubQuestionRepository.save(uploadPaperQuestionSubQuestion);
+                System.out.println(
+                        "Subpart key: " + subpart.getKey()
+                                + " Marks: " + subpart.getMarks() + "created");
+            }
+            if (uploadPaperQuestion.getMarks() == null) {
+                uploadPaperQuestion.setMarks(totalSubQuestionMarks);
+                uploadPaperQuestionRepository.save(uploadPaperQuestion);
+            }
+
+        }
+
+        uploadPaper.setNoOfQuestions(numberOfQuetions);
+        uploadPaperRepository.save(uploadPaper);
 
         response.setMessage("Paper uploaded successfully");
         response.setIsSuccess(true);
-        System.out.println("Paper uploaded successfully");
+
 
         return response;
     }
