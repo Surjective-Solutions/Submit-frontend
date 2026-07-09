@@ -167,7 +167,7 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         uploadPaper.setPaperName(paperUploadRequest.getPaper_name());
         uploadPaper.setMonth(paperUploadRequest.getMonth().toString());
         uploadPaper.setYear(paperUploadRequest.getYear().toString());
-        uploadPaper.setNoOfQuestions(paperUploadRequest.getNumber_of_questions());
+        // uploadPaper.setNoOfQuestions(paperUploadRequest.getNumber_of_questions());
         uploadPaper.setCreatedBy(username);
         uploadPaper.setLastModifiedBy(username);
         uploadPaper.setFileName(fileName);
