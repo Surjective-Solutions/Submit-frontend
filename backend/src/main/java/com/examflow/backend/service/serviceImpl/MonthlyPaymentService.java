@@ -101,7 +101,7 @@ public class MonthlyPaymentService {
                         .findByClasses(studentClass.getClasses());
                 for (ClassPaymentRecord classPaymentRecord : classPaymentRecords) {
                     System.out.println(
-                            "-------------------------------------------Generated respective payment records for Student---------------------------------------");
+                            "-------------------------------------------checking  respective payment records for Student---------------------------------------");
                     YearMonth enrolledDate = YearMonth.from(studentClass.getCreatedDateTime());
 
                     YearMonth classDate = YearMonth.of(classPaymentRecord.getYear(), classPaymentRecord.getMonth());
@@ -122,6 +122,8 @@ public class MonthlyPaymentService {
                             studentClassPaymentRecord.setLastModifiedDateTime(LocalDateTime.now());
 
                             studentClassPaymentRecordsRepository.save(studentClassPaymentRecord);
+                            System.out.println(
+                                    "-------------------------------------------Generated  respective payment records for Student---------------------------------------");
 
                         }
                     }
