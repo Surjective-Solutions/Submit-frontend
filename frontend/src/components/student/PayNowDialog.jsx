@@ -1,32 +1,43 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, CreditCard, Landmark, FileText } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, CreditCard, Landmark, FileText } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { cardPaymentSchema, bankTransferPaymentSchema } from '@/lib/validations/student';
-import { MOCK_BANK_ACCOUNTS, MOCK_PAYMENTS, MOCK_LOGGED_IN_STUDENT } from '@/lib/mock-data';
+} from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  cardPaymentSchema,
+  bankTransferPaymentSchema,
+} from "@/lib/validations/student";
+import {
+  MOCK_BANK_ACCOUNTS,
+  MOCK_PAYMENTS,
+  MOCK_LOGGED_IN_STUDENT,
+} from "@/lib/mock-data";
+import { getBankAccounts, makeBankTransfer } from "@/lib/api-client";
 
 function formatLKR(amount) {
-  return `LKR ${Number(amount).toLocaleString('en-LK')}`;
+  return `LKR ${Number(amount).toLocaleString("en-LK")}`;
 }
 
 function Field({ label, required, error, id, children }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className={error ? 'text-destructive' : 'text-gray-700'}>
+      <Label
+        htmlFor={id}
+        className={error ? "text-destructive" : "text-gray-700"}
+      >
         {label}
         {required && <span className="text-destructive ml-0.5">*</span>}
       </Label>
@@ -41,11 +52,18 @@ function Field({ label, required, error, id, children }) {
 }
 
 function AmountBanner({ amount, tone }) {
-  const toneClass = tone === 'amber' ? 'border-amber-100 bg-amber-50/50' : 'border-indigo-100 bg-indigo-50/50';
+  const toneClass =
+    tone === "amber"
+      ? "border-amber-100 bg-amber-50/50"
+      : "border-indigo-100 bg-indigo-50/50";
   return (
-    <div className={`rounded-xl border px-4 py-3 flex items-center justify-between ${toneClass}`}>
+    <div
+      className={`rounded-xl border px-4 py-3 flex items-center justify-between ${toneClass}`}
+    >
       <span className="text-sm text-gray-600">Amount due</span>
-      <span className="text-lg font-bold text-gray-900">{formatLKR(amount)}</span>
+      <span className="text-lg font-bold text-gray-900">
+        {formatLKR(amount)}
+      </span>
     </div>
   );
 }
@@ -59,7 +77,7 @@ function CardPaymentForm({ amount, onSuccess }) {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(cardPaymentSchema),
-    defaultValues: { card_number: '', card_name: '', expiry: '', cvv: '' },
+    defaultValues: { card_number: "", card_name: "", expiry: "", cvv: "" },
   });
 
   async function onSubmit() {
@@ -76,22 +94,54 @@ function CardPaymentForm({ amount, onSuccess }) {
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
       <AmountBanner amount={amount} tone="indigo" />
 
-      <Field label="Card Number" required id="card_number" error={errors.card_number?.message}>
-        <Input id="card_number" placeholder="1234 5678 9012 3456" {...register('card_number')} />
+      <Field
+        label="Card Number"
+        required
+        id="card_number"
+        error={errors.card_number?.message}
+      >
+        <Input
+          id="card_number"
+          placeholder="1234 5678 9012 3456"
+          {...register("card_number")}
+        />
       </Field>
-      <Field label="Name on Card" required id="card_name" error={errors.card_name?.message}>
-        <Input id="card_name" placeholder="AMAL PERERA" {...register('card_name')} />
+      <Field
+        label="Name on Card"
+        required
+        id="card_name"
+        error={errors.card_name?.message}
+      >
+        <Input
+          id="card_name"
+          placeholder="AMAL PERERA"
+          {...register("card_name")}
+        />
       </Field>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Expiry (MM/YY)" required id="expiry" error={errors.expiry?.message}>
-          <Input id="expiry" placeholder="MM/YY" {...register('expiry')} />
+        <Field
+          label="Expiry (MM/YY)"
+          required
+          id="expiry"
+          error={errors.expiry?.message}
+        >
+          <Input id="expiry" placeholder="MM/YY" {...register("expiry")} />
         </Field>
         <Field label="CVV" required id="cvv" error={errors.cvv?.message}>
-          <Input id="cvv" type="password" placeholder="123" {...register('cvv')} />
+          <Input
+            id="cvv"
+            type="password"
+            placeholder="123"
+            {...register("cvv")}
+          />
         </Field>
       </div>
 
-      <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" disabled={isLoading}>
+      <Button
+        type="submit"
+        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+        disabled={isLoading}
+      >
         {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
         Pay {formatLKR(amount)}
       </Button>
@@ -105,6 +155,11 @@ function CardPaymentForm({ amount, onSuccess }) {
 function BankTransferForm({ amount, onSubmitTransfer }) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState(null);
+  const [bank, setBank] = useState([]);
+
+  useEffect(() => {
+    loadBankAccounts();
+  }, []);
 
   const {
     register,
@@ -112,15 +167,44 @@ function BankTransferForm({ amount, onSubmitTransfer }) {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(bankTransferPaymentSchema),
-    defaultValues: { bank_account_id: MOCK_BANK_ACCOUNTS[0]?.id ?? '' },
+    defaultValues: { bank_account_id: bank[0]?.id ?? "" },
   });
+
+  // async function onSubmit(data) {
+  //   setIsLoading(true);
+  //   try {
+  //     // onSubmitTransfer(data);
+  //     const response = await makeBankTransfer();
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // }
 
   async function onSubmit(data) {
     setIsLoading(true);
+
     try {
-      onSubmitTransfer(data);
+      const formData = new FormData();
+
+      formData.append("bank_account_id", data.bank_account_id);
+      formData.append("receipt_file", data.receipt_file[0]);
+
+      const response = await makeBankTransfer(formData);
+
+      toast.success("Transfer submitted successfully");
+    } catch (err) {
+      toast.error("Failed to submit transfer");
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function loadBankAccounts() {
+    try {
+      const data = await getBankAccounts();
+      setBank(data);
+    } catch (error) {
+      toast.error("Failed to load cashiers");
     }
   }
 
@@ -131,33 +215,51 @@ function BankTransferForm({ amount, onSubmitTransfer }) {
       <div className="space-y-2">
         <Label className="text-gray-700">Transfer To</Label>
         <div className="space-y-2">
-          {MOCK_BANK_ACCOUNTS.map((acc) => (
+          {bank.map((acc) => (
             <label
               key={acc.id}
               className="flex items-start gap-2.5 cursor-pointer rounded-lg border border-input px-3 py-2.5 has-[:checked]:border-indigo-400 has-[:checked]:bg-indigo-50 transition-colors"
             >
-              <input type="radio" value={acc.id} className="accent-indigo-600 mt-0.5" {...register('bank_account_id')} />
+              <input
+                type="radio"
+                value={acc.id}
+                className="accent-indigo-600 mt-0.5"
+                {...register("bank_account_id")}
+              />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-gray-900">{acc.bankName}</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {acc.bankName}
+                </p>
                 <p className="text-xs text-gray-600">{acc.accountName}</p>
-                <p className="font-mono text-xs text-gray-500 mt-0.5">{acc.accountNumber}</p>
+                <p className="font-mono text-xs text-gray-500 mt-0.5">
+                  {acc.accountNumber}
+                </p>
                 {acc.additionalDetails && (
-                  <p className="text-[11px] text-gray-400 mt-0.5">{acc.additionalDetails}</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">
+                    {acc.additionalDetails}
+                  </p>
                 )}
               </div>
             </label>
           ))}
         </div>
         {errors.bank_account_id && (
-          <p className="text-xs text-destructive" role="alert">{errors.bank_account_id.message}</p>
+          <p className="text-xs text-destructive" role="alert">
+            {errors.bank_account_id.message}
+          </p>
         )}
       </div>
 
-      <Field label="Upload Bank Slip" required id="receipt_file_input" error={errors.receipt_file?.message}>
+      <Field
+        label="Upload Bank Slip"
+        required
+        id="receipt_file_input"
+        error={errors.receipt_file?.message}
+      >
         <div className="flex items-center gap-3 rounded-lg border border-input px-3 py-2">
           <FileText className="h-4 w-4 text-gray-400 shrink-0" />
           <span className="text-sm text-gray-500 flex-1 truncate min-w-0">
-            {selectedFileName ?? 'No file selected'}
+            {selectedFileName ?? "No file selected"}
           </span>
           <label
             htmlFor="receipt_file_input"
@@ -171,13 +273,18 @@ function BankTransferForm({ amount, onSubmitTransfer }) {
           type="file"
           accept="image/*,.pdf"
           className="hidden"
-          {...register('receipt_file', {
-            onChange: (e) => setSelectedFileName(e.target.files?.[0]?.name ?? null),
+          {...register("receipt_file", {
+            onChange: (e) =>
+              setSelectedFileName(e.target.files?.[0]?.name ?? null),
           })}
         />
       </Field>
 
-      <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" disabled={isLoading}>
+      <Button
+        type="submit"
+        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+        disabled={isLoading}
+      >
         {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
         Submit for Review
       </Button>

@@ -103,6 +103,7 @@ public class MonthlyPaymentService {
                     System.out.println(
                             "-------------------------------------------checking  respective payment records for Student---------------------------------------");
                     YearMonth enrolledDate = YearMonth.from(studentClass.getCreatedDateTime());
+                    enrolledDate = enrolledDate.minusMonths(1);
 
                     YearMonth classDate = YearMonth.of(classPaymentRecord.getYear(), classPaymentRecord.getMonth());
                     if (!classDate.isBefore(enrolledDate)) {
