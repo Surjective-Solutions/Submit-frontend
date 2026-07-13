@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   PlusCircle,
@@ -35,7 +35,6 @@ import DeleteConfirmDialog from "@/components/admin/DeleteConfirmDialog";
 import UploadPaperDialog from "@/components/teacher/UploadPaperDialog";
 import EditPaperDialog from "@/components/teacher/EditPaperDialog";
 import { MOCK_TEACHER_CLASSES } from "@/lib/mock-data";
-import { uploadPaper } from "@/lib/api-client";
 
 const MONTHS = [
   "January",
@@ -76,46 +75,33 @@ function formatFullDate(dateStr) {
 let nextPaperId = 9000;
 
 export default function ClassDetailPage() {
-  const { classId } = useParams();
-  // const foundClass = MOCK_TEACHER_CLASSES.find((c) => c.id === classId);
 
-  // const [papers, setPapers] = useState(
-  //   foundClass
-  //     ? [...foundClass.papers].sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at))
-  //     : []
-  // );
+  const [classes, setClasses] = useState([]);
+
+  const { classId } = useParams();
+  console.log(classId);
+  // const foundClass = classes.find((c) => c.id === classId);
+  const foundClass = classes.find((c) => c.id === Number(classId));
 
   const [papers, setPapers] = useState([]);
+
+  useEffect(() => {
+    if (foundClass?.papers) {
+      setPapers(
+        [...foundClass.papers].sort(
+          (a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at),
+        ),
+      );
+    }
+  }, [foundClass]);
+
   const [uploadOpen, setUploadOpen] = useState(false);
   const [editPaper, setEditPaper] = useState(null);
   const [deletePaper, setDeletePaper] = useState(null);
-  const [classes, setClasses] = useState([]);
-
-  const foundClass = classes.find((c) => String(c.id) === String(classId));
 
   useEffect(() => {
     loadClasses();
   }, []);
-
-  async function loadClasses() {
-    try {
-      const data = await getClasses();
-      setClasses(data);
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to load classes");
-    }
-  }
-
-  useEffect(() => {
-    if (!foundClass) return;
-
-    const sortedPapers = [...foundClass.papers].sort(
-      (a, b) => new Date(b.uploaded_at || 0) - new Date(a.uploaded_at || 0),
-    );
-
-    setPapers(sortedPapers);
-  }, [foundClass]);
 
   if (!foundClass) {
     return (
@@ -133,51 +119,73 @@ export default function ClassDetailPage() {
     );
   }
 
-  async function handleUpload(data) {
+  function handleUpload(data) {
     const file = data.pdf_file?.[0];
     const month = Number(data.month);
     const year = Number(data.year);
+    const paperId = `paper-new-${nextPaperId++}`;
+    const questions = (data.questions ?? []).map((q) => ({
+      id: `${paperId}-${q.question_label.toLowerCase().replace(/[()]/g, "")}`,
+      ...q,
+    }));
     const newPaper = {
-      id: `paper-new-${nextPaperId++}`,
+      id: paperId,
       paper_name: data.paper_name,
       month,
       year,
       month_label: `${MONTHS[month - 1]} ${year}`,
-      number_of_questions: Number(data.number_of_questions),
+      number_of_questions: data.number_of_questions,
       pdf_url: file ? `mock://${file.name}` : null,
       uploaded_at: new Date().toISOString(),
       status: data.status,
+      questions,
+      submissions: [],
     };
+    foundClass.papers.unshift(newPaper);
     setPapers((prev) => [newPaper, ...prev]);
     toast.success("Paper uploaded successfully");
     setUploadOpen(false);
+  }
+
+  async function loadClasses() {
+    try {
+      const data = await getClasses();
+      setClasses(data);
+    } catch (error) {
+      toast.error("Failed to load classes");
+    }
   }
 
   function handleEditSave(data) {
     const newFile = data.pdf_file?.[0];
     const month = Number(data.month);
     const year = Number(data.year);
+    const questions = (data.questions ?? []).map((q) => ({
+      id: `${editPaper.id}-${q.question_label.toLowerCase().replace(/[()]/g, "")}`,
+      ...q,
+    }));
+    const patch = {
+      paper_name: data.paper_name,
+      month,
+      year,
+      month_label: `${MONTHS[month - 1]} ${year}`,
+      number_of_questions: data.number_of_questions,
+      status: data.status,
+      questions,
+      ...(newFile ? { pdf_url: `mock://${newFile.name}` } : {}),
+    };
+    const targetPaper = foundClass.papers.find((p) => p.id === editPaper.id);
+    if (targetPaper) Object.assign(targetPaper, patch);
     setPapers((prev) =>
-      prev.map((p) =>
-        p.id === editPaper.id
-          ? {
-              ...p,
-              paper_name: data.paper_name,
-              month,
-              year,
-              month_label: `${MONTHS[month - 1]} ${year}`,
-              number_of_questions: Number(data.number_of_questions),
-              status: data.status,
-              ...(newFile ? { pdf_url: `mock://${newFile.name}` } : {}),
-            }
-          : p,
-      ),
+      prev.map((p) => (p.id === editPaper.id ? { ...p, ...patch } : p)),
     );
     toast.success("Paper updated");
     setEditPaper(null);
   }
 
   function handleDelete() {
+    const index = foundClass.papers.findIndex((p) => p.id === deletePaper.id);
+    if (index !== -1) foundClass.papers.splice(index, 1);
     setPapers((prev) => prev.filter((p) => p.id !== deletePaper.id));
     toast.success("Paper deleted");
     setDeletePaper(null);
@@ -313,7 +321,9 @@ export default function ClassDetailPage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  window.location.href = `/teacher/dashboard/classes/${classId}/papers/${paper.id}`;
+                                  router.push(
+                                    `/teacher/dashboard/classes/${classId}/papers/${paper.id}`,
+                                  );
                                 }}
                                 className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
                               />
@@ -331,17 +341,17 @@ export default function ClassDetailPage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (!paper.pdf_url) {
+                                  if (paper.pdf_url) {
+                                    const url = `http://localhost:8080/uploads/papers/${encodeURIComponent(
+                                      paper.pdf_url,
+                                    )}`;
+
+                                    window.open(url, "_blank");
+                                  } else {
                                     toast.info(
                                       "No PDF uploaded for this paper.",
                                     );
-                                    return;
                                   }
-
-                                  // If pdf_url only contains the filename
-                                  const pdfUrl = `http://localhost:8080/uploads/papers/${encodeURIComponent(paper.pdf_url)}`;
-
-                                  window.open(pdfUrl, "_blank");
                                 }}
                                 className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
                               />
@@ -349,7 +359,6 @@ export default function ClassDetailPage() {
                           >
                             <FileText className="h-3.5 w-3.5 text-indigo-500" />
                           </TooltipTrigger>
-
                           <TooltipContent>View Paper</TooltipContent>
                         </Tooltip>
 
@@ -420,8 +429,8 @@ export default function ClassDetailPage() {
       <UploadPaperDialog
         open={uploadOpen}
         onOpenChange={setUploadOpen}
-        classId={classId}
         onSuccess={handleUpload}
+        classId={classId}
       />
       <EditPaperDialog
         open={!!editPaper}

@@ -70,6 +70,27 @@ export const studentStep2Schema = z
     path: ['confirmPassword'],
   });
 
+export const cardPaymentSchema = z.object({
+  card_number: z
+    .string()
+    .min(1, 'Card number is required')
+    .regex(/^\d{4} ?\d{4} ?\d{4} ?\d{4}$/, 'Enter a valid 16-digit card number'),
+  card_name: z.string().min(1, 'Name on card is required'),
+  expiry: z
+    .string()
+    .min(1, 'Expiry date is required')
+    .regex(/^(0[1-9]|1[0-2])\/\d{2}$/, 'Use MM/YY format'),
+  cvv: z
+    .string()
+    .min(1, 'CVV is required')
+    .regex(/^\d{3,4}$/, 'Enter a valid CVV'),
+});
+
+export const bankTransferPaymentSchema = z.object({
+  bank_account_id: z.string().min(1, 'Please select a bank account'),
+  receipt_file: z.any().refine((val) => val && val.length > 0, 'Please upload the bank slip'),
+});
+
 export const SRI_LANKA_DISTRICTS = [
   'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo', 'Galle',
   'Gampaha', 'Hambantota', 'Jaffna', 'Kalutara', 'Kandy', 'Kegalle',

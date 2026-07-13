@@ -2,6 +2,7 @@ package com.examflow.backend.service.serviceImpl;
 
 import com.examflow.backend.repository.StudentClassesRepository;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -186,7 +187,9 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
                 MonthPapersResponse newMonthPapersResponse = new MonthPapersResponse();
                 newMonthPapersResponse.setMonth(classPaymentRecord.getMonth());
                 newMonthPapersResponse.setYear(classPaymentRecord.getYear());
-                newMonthPapersResponse.setMonth_label("mount 123");
+                String monthLable = Month.of(classPaymentRecord.getMonth()).name() + " -  "
+                        + classPaymentRecord.getYear();
+                newMonthPapersResponse.setMonth_label(monthLable);
 
                 List<UplaodPaper> monthUploadPapers = uploadPaperRepository
                         .findByClassesAndStatusAndClassPaymentRecord(studentClass.getClasses(), 2, classPaymentRecord);
@@ -195,7 +198,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
                 for (UplaodPaper monthUploadPaper : monthUploadPapers) {
 
                     PaperResponse paperResponse = new PaperResponse();
-                    paperResponse.setId("1234");
+                    paperResponse.setId(monthUploadPaper.getUploadPaperSeq() + " - " + "PAPER");
                     paperResponse.setPaper_name(monthUploadPaper.getPaperName());
                     paperResponse.setDue_date(LocalDateTime.now());
                     paperResponse.setSubmission_status("NOT_SUBMITTED");

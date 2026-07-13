@@ -12,4 +12,5 @@ import com.examflow.backend.entity.StudentClass;
 public interface StudentClassesRepository extends JpaRepository<StudentClass, Integer> {
 
     List<StudentClass> findByStudentAndStatusSeq(Student student, Integer statusSeq);
+
 }

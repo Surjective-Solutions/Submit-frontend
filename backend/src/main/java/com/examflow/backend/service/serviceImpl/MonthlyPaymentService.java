@@ -12,8 +12,14 @@ import org.springframework.stereotype.Service;
 
 import com.examflow.backend.entity.ClassPaymentRecord;
 import com.examflow.backend.entity.Classes;
+import com.examflow.backend.entity.Student;
+import com.examflow.backend.entity.StudentClass;
+import com.examflow.backend.entity.StudentClassPaymentRecord;
 import com.examflow.backend.repository.ClassPaymentRecordRepository;
 import com.examflow.backend.repository.ClassesRepository;
+import com.examflow.backend.repository.StudentClassPaymentRecordsRepository;
+import com.examflow.backend.repository.StudentClassesRepository;
+import com.examflow.backend.repository.StudentRepository;
 
 import jakarta.transaction.Transactional;
 
@@ -21,12 +27,21 @@ import jakarta.transaction.Transactional;
 public class MonthlyPaymentService {
 
     private final ClassPaymentRecordRepository classPaymentRecordRepository;
+    private final StudentClassesRepository studentClassesRepository;
+    private final StudentClassPaymentRecordsRepository studentClassPaymentRecordsRepository;
     private final ClassesRepository classesRepository;
+    private final StudentRepository studentRepository;
 
     @Autowired
     public MonthlyPaymentService(ClassPaymentRecordRepository classPaymentRecordRepository,
+            StudentClassesRepository studentClassesRepository,
+            StudentRepository studentRepository,
+            StudentClassPaymentRecordsRepository studentClassPaymentRecordsRepository,
             ClassesRepository classesRepository) {
         this.classPaymentRecordRepository = classPaymentRecordRepository;
+        this.studentClassesRepository = studentClassesRepository;
+        this.studentClassPaymentRecordsRepository = studentClassPaymentRecordsRepository;
+        this.studentRepository = studentRepository;
         this.classesRepository = classesRepository;
     }
 
@@ -69,6 +84,54 @@ public class MonthlyPaymentService {
 
     @Transactional
     public void generateStudentClassPaymentRecord() {
+        System.out.println(
+                "-------------------------------------------Generating Student payment Reacords---------------------------------------");
+        List<Student> students = studentRepository.findByStatus(2);
+        for (Student oneStudent : students) {
+            System.out.println(
+                    "-------------------------------------------Getting Students for payment Reacords---------------------------------------");
+
+            List<StudentClass> enrolledClass = studentClassesRepository.findByStudentAndStatusSeq(oneStudent, 2);
+            for (StudentClass studentClass : enrolledClass) {
+
+                System.out.println(
+                        "-------------------------------------------Getting Enrolled Class for Students---------------------------------------");
+
+                List<ClassPaymentRecord> classPaymentRecords = classPaymentRecordRepository
+                        .findByClasses(studentClass.getClasses());
+                for (ClassPaymentRecord classPaymentRecord : classPaymentRecords) {
+                    System.out.println(
+                            "-------------------------------------------checking  respective payment records for Student---------------------------------------");
+                    YearMonth enrolledDate = YearMonth.from(studentClass.getCreatedDateTime());
+                    enrolledDate = enrolledDate.minusMonths(1);
+
+                    YearMonth classDate = YearMonth.of(classPaymentRecord.getYear(), classPaymentRecord.getMonth());
+                    if (!classDate.isBefore(enrolledDate)) {
+                        List<StudentClassPaymentRecord> existsStudentClassPaymentRecord = studentClassPaymentRecordsRepository
+                                .findByStudentAndClassPaymentRecord(oneStudent, classPaymentRecord);
+                        if (existsStudentClassPaymentRecord.size() == 0) {
+
+                            StudentClassPaymentRecord studentClassPaymentRecord = new StudentClassPaymentRecord();
+
+                            studentClassPaymentRecord.setClassPaymentRecord(classPaymentRecord);
+                            studentClassPaymentRecord.setStudent(oneStudent);
+                            studentClassPaymentRecord.setIsPayed(false);
+                            studentClassPaymentRecord.setStatus(2);
+                            studentClassPaymentRecord.setCreatedBy("SYSTEM");
+                            studentClassPaymentRecord.setLastModifiedBy("SYSTEM");
+                            studentClassPaymentRecord.setCreatedDateTime(LocalDateTime.now());
+                            studentClassPaymentRecord.setLastModifiedDateTime(LocalDateTime.now());
+
+                            studentClassPaymentRecordsRepository.save(studentClassPaymentRecord);
+                            System.out.println(
+                                    "-------------------------------------------Generated  respective payment records for Student---------------------------------------");
+
+                        }
+                    }
+                }
+            }
+        }
+
         return;
     }
 
