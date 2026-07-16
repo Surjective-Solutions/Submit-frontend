@@ -452,3 +452,11 @@ export async function makeBankTransfer(formData) {
     body: formData,
   });
 }
+
+// ── Instructors ──────────────────────────────────────────────────────────────────
+
+//get single instrctor by ID for profile display
+export async function getInstructorById(id) {
+  return protectedRequest(`/api/instructor/get-instructor/${id}`, { method: 'GET' });
+}
+

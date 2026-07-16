@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import com.examflow.backend.dto.CashierResponse;
 import com.examflow.backend.dto.InstructorResponse;
@@ -28,6 +29,10 @@ public class InstructorController {
     @GetMapping("/get-all-instructors")
     public List<InstructorResponse> getInstructors() {
         return instructorControllerManager.getAllInstructors();
+    }
+    @GetMapping("/get-instructor/{id}")
+    public InstructorResponse getInstructorById(@PathVariable Integer id) {
+        return instructorControllerManager.getInstructorById(id);
     }
 
 }

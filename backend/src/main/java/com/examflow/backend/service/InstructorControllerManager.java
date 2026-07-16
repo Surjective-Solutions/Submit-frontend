@@ -11,4 +11,5 @@ import com.examflow.backend.entity.Instructor;
 public interface InstructorControllerManager {
 
     List<InstructorResponse> getAllInstructors();
+    InstructorResponse getInstructorById(Integer id);
 }

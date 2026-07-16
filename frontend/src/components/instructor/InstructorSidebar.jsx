@@ -3,6 +3,9 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Users, CalendarDays, HelpCircle, User, LogOut } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { getTokenPayload } from '@/lib/auth';
+import { getInstructorById } from '@/lib/api-client';
 import {
   Sidebar,
   SidebarContent,
@@ -16,7 +19,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { MOCK_LOGGED_IN_INSTRUCTOR } from '@/lib/mock-data';
+
 
 const NAV_ITEMS = [
   { label: 'Teachers',   section: 'teachers',  icon: Users,        accent: '#B8FF8F', activeBg: 'rgba(184,255,143,0.13)' },
@@ -31,8 +34,27 @@ export default function InstructorSidebar() {
   const collapsed = state === 'collapsed';
 
   const activeSection = searchParams.get('section') ?? 'teachers';
-  const instructor = MOCK_LOGGED_IN_INSTRUCTOR;
-  const initials = `${instructor.first_name[0]}${instructor.last_name[0]}`.toUpperCase();
+  const [instructor, setInstructor] = useState(null);
+  
+  useEffect(() => {
+    loadInstructor();
+  }, []);
+
+  async function loadInstructor() {
+    try {
+      const payload = getTokenPayload();
+      const userSeq = payload?.userSeq;
+      if (!userSeq) return;
+      const data = await getInstructorById(userSeq);
+      setInstructor(data);
+    } catch {
+      console.error('Failed to load instructor');
+    }
+  }
+
+  const initials = instructor
+    ? `${instructor.first_name?.[0] ?? ''}${instructor.last_name?.[0] ?? ''}`.toUpperCase() || '?'
+    : '?';
 
   return (
     <Sidebar
@@ -191,7 +213,7 @@ export default function InstructorSidebar() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-white truncate leading-none mb-1">
-                {instructor.first_name} {instructor.last_name}
+                {instructor?.first_name} {instructor?.last_name}
               </p>
               <span
                 className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold leading-tight"
@@ -213,7 +235,10 @@ export default function InstructorSidebar() {
               tooltip="Logout"
               className="h-8 rounded-lg text-[13px] mt-0.5 transition-colors"
               style={{ color: 'rgba(255,255,255,0.38)' }}
-              onClick={() => {}}
+              onClick={() => {
+                localStorage.clear();
+                window.location.href = '/instructor/login';                
+              }}
             >
               <LogOut className="h-3.5 w-3.5 shrink-0" />
               {!collapsed && <span>Logout</span>}
