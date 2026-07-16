@@ -32,6 +32,8 @@ public class StudentClassPaymentRecord {
 
     private LocalDateTime approvedTime;
 
+    private String reciptPath;
+
     private String payedBy;
 
     private String approvedBy;
@@ -181,6 +183,15 @@ public class StudentClassPaymentRecord {
 
     public void setLastModifiedBy(String lastModifiedBy) {
         this.lastModifiedBy = lastModifiedBy;
+    }
+
+    @Column(name = "reciptPath")
+    public String getReciptPath() {
+        return reciptPath;
+    }
+
+    public void setReciptPath(String reciptPath) {
+        this.reciptPath = reciptPath;
     }
 
 }

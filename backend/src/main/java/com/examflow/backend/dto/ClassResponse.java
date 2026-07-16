@@ -14,7 +14,7 @@ public class ClassResponse {
     private LocalDateTime enrolled_at;
     private String class_name;
     private String subject;
-    private Integer monthly_fee;
+    private Double monthly_fee;
     private String status;
     private List<UploadPaperResponse> papers;
     private List<StudentClassPaymentRecordResponse> monthly_payments;
@@ -52,11 +52,11 @@ public class ClassResponse {
         this.subject_name = subject_name;
     }
 
-    public Integer getMonthly_fee() {
+    public Double getMonthly_fee() {
         return monthly_fee;
     }
 
-    public void setMonthly_fee(Integer monthly_fee) {
+    public void setMonthly_fee(Double monthly_fee) {
         this.monthly_fee = monthly_fee;
     }
 

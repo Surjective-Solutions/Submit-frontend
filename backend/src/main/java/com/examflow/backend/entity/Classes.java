@@ -22,7 +22,7 @@ public class Classes {
 
     private String subjectName;
 
-    private Integer monthlyFee;
+    private Double monthlyFee;
 
     private Integer status;
 
@@ -75,11 +75,11 @@ public class Classes {
     }
 
     @Column(name = "monthly_fee")
-    public Integer getMonthlyFee() {
+    public Double getMonthlyFee() {
         return monthlyFee;
     }
 
-    public void setMonthlyFee(Integer monthlyFee) {
+    public void setMonthlyFee(Double monthlyFee) {
         this.monthlyFee = monthlyFee;
     }
 

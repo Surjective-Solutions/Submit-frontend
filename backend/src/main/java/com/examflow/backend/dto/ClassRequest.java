@@ -5,7 +5,7 @@ public class ClassRequest {
     private String description;
     private String display_name;
     private String subject_name;
-    private Integer monthly_fee;
+    private Double monthly_fee;
     private Integer classSeq;
 
     public String getDescription() {
@@ -32,11 +32,11 @@ public class ClassRequest {
         this.subject_name = subject_name;
     }
 
-    public Integer getMonthly_fee() {
+    public Double getMonthly_fee() {
         return monthly_fee;
     }
 
-    public void setMonthly_fee(Integer monthly_fee) {
+    public void setMonthly_fee(Double monthly_fee) {
         this.monthly_fee = monthly_fee;
     }
 

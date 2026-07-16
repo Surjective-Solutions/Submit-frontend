@@ -3,11 +3,15 @@ package com.examflow.backend.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.examflow.backend.dto.BankAccountResponse;
+import com.examflow.backend.dto.GeneralResponse;
 
 @Service
 public interface PaymentControllerManager {
 
     List<BankAccountResponse> getBankAccounts();
+
+    GeneralResponse recordClassPayNow(Integer bankAccountId, Integer classId, MultipartFile receiptFile);
 }

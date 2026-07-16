@@ -15,4 +15,8 @@ public interface StudentClassPaymentRecordsRepository extends JpaRepository<Stud
 
     List<StudentClassPaymentRecord> findByStudentAndClassPaymentRecord(Student student,
             ClassPaymentRecord classPaymentRecord);
+
+    StudentClassPaymentRecord findByStudentAndStatusAndClassPaymentRecord(Student student, Integer status,
+                    ClassPaymentRecord classPaymentRecord);
+
 }

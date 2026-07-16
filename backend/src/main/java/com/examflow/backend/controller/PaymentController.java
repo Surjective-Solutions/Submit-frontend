@@ -41,13 +41,11 @@ public class PaymentController {
     @PostMapping(value = "/makeBakTransfer", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public GeneralResponse makeBankTransfer(
             @RequestParam("bank_account_id") Integer bankAccountId,
+            @RequestParam("class_id") Integer classId,
             @RequestParam("receipt_file") MultipartFile receiptFile) {
 
         GeneralResponse generalResponse = new GeneralResponse();
-
-        System.out.println(bankAccountId);
-        System.out.println(receiptFile.getOriginalFilename());
-
+        generalResponse = paymentControllerManager.recordClassPayNow(bankAccountId, classId, receiptFile);
         return generalResponse;
     }
 

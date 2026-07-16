@@ -20,7 +20,7 @@ public class StudentClass {
 
     private Classes classes;
 
-    private Integer monthlyFee;
+    private Double monthlyFee;
 
     private Integer statusSeq;
 
@@ -64,11 +64,11 @@ public class StudentClass {
     }
 
     @Column(name = "monthlyFee")
-    public Integer getMonthlyFee() {
+    public Double getMonthlyFee() {
         return monthlyFee;
     }
 
-    public void setMonthlyFee(Integer monthlyFee) {
+    public void setMonthlyFee(Double monthlyFee) {
         this.monthlyFee = monthlyFee;
     }
 
