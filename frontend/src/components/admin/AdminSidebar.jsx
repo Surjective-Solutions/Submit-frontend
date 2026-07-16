@@ -257,7 +257,10 @@ export default function AdminSidebar() {
               tooltip="Logout"
               className="h-8 rounded-lg text-[13px] mt-0.5 transition-colors"
               style={{ color: 'rgba(255,255,255,0.38)' }}
-              onClick={() => {}}
+              onClick={() => {
+                localStorage.clear();
+                window.location.href = '/admin/login';                
+              }}
             >
               <LogOut className="h-3.5 w-3.5 shrink-0" />
               {!collapsed && <span>Logout</span>}
