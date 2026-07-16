@@ -3,6 +3,9 @@
 import Link from 'next/link';
 import { useSearchParams, usePathname } from 'next/navigation';
 import { BookOpen, User, GraduationCap, BarChart2, CalendarDays, HelpCircle, LogOut } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { getTokenPayload } from '@/lib/auth';
+import { getStudentById } from '@/lib/api-client';
 import {
   Sidebar,
   SidebarContent,
@@ -16,7 +19,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { MOCK_LOGGED_IN_STUDENT } from '@/lib/mock-data';
 
 const NAV_ITEMS = [
   { label: 'My Classes',  section: 'classes',     icon: BookOpen,      accent: '#B8FF8F', activeBg: 'rgba(184,255,143,0.13)' },
@@ -38,8 +40,27 @@ export default function StudentSidebar() {
     : pathname.includes('/dashboard/teachers/')
     ? 'teachers'
     : (searchParams.get('section') ?? 'classes');
-  const student = MOCK_LOGGED_IN_STUDENT;
-  const initials = `${student.first_name[0]}${student.last_name[0]}`.toUpperCase();
+
+  const [student, setStudent] = useState(null);
+
+  useEffect(() => {
+    loadStudent();
+  }, []);
+
+  async function loadStudent() {
+    try {
+      const payload = getTokenPayload();
+      const userSeq = payload?.userSeq;
+      if (!userSeq) return;
+      const data = await getStudentById(userSeq);
+      setStudent(data);
+    } catch {
+      console.error('Failed to load student');
+    }
+  }
+
+  const initials = `${student?.first_name?.[0] ?? ''}${student?.last_name?.[0] ?? ''}`.toUpperCase() || '?';
+  const fullName = student ? `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() : '';
 
   return (
     <Sidebar
@@ -157,7 +178,7 @@ export default function StudentSidebar() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-white truncate leading-none mb-1">
-                {student.first_name} {student.last_name}
+                {fullName}
               </p>
               <span
                 className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold leading-tight"
@@ -174,7 +195,10 @@ export default function StudentSidebar() {
               tooltip="Logout"
               className="h-8 rounded-lg text-[13px] mt-0.5 transition-colors"
               style={{ color: 'rgba(255,255,255,0.38)' }}
-              onClick={() => {}}
+              onClick={() => {
+                localStorage.clear();
+                window.location.href = '/login';                
+              }}
             >
               <LogOut className="h-3.5 w-3.5 shrink-0" />
               {!collapsed && <span>Logout</span>}
