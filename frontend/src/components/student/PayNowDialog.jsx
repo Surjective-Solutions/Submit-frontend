@@ -152,7 +152,7 @@ function CardPaymentForm({ amount, onSuccess }) {
   );
 }
 
-function BankTransferForm({ amount, onSubmitTransfer }) {
+function BankTransferForm({ amount, onSubmitTransfer, classId }) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState(null);
   const [bank, setBank] = useState([]);
@@ -188,6 +188,7 @@ function BankTransferForm({ amount, onSubmitTransfer }) {
 
       formData.append("bank_account_id", data.bank_account_id);
       formData.append("receipt_file", data.receipt_file[0]);
+      formData.append("class_id", classId);
 
       const response = await makeBankTransfer(formData);
 
@@ -371,7 +372,7 @@ export default function PayNowDialog({ open, onOpenChange, cls, month, year, mon
               <CardPaymentForm amount={cls.monthly_fee} onSuccess={handleCardSuccess} />
             </TabsContent>
             <TabsContent value="bank">
-              <BankTransferForm amount={cls.monthly_fee} onSubmitTransfer={handleBankSubmit} />
+              <BankTransferForm amount={cls.monthly_fee} onSubmitTransfer={handleBankSubmit} classId={cls.id}/>
             </TabsContent>
           </Tabs>
         </div>
