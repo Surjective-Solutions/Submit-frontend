@@ -56,9 +56,9 @@ public class ClassController {
             @PathVariable Integer classId) {
         System.out.println("reached to controller");
         GeneralResponse response = new GeneralResponse();
-
         System.out.println(pdf_file.getOriginalFilename());
         response = classControllerManager.uploadPapers(paperUploadRequest, classId, pdf_file);
         return response;
+
     }
 }
