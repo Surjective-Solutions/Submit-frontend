@@ -365,6 +365,11 @@ export async function createStudent(data) {
 
 // ── Tutors ────────────────────────────────────────────────────────────────────
 
+// get single tutor by ID for profile display
+export async function getTutorById(id) {
+  return protectedRequest(`/api/tutor/get-tutor/${id}`, { method: 'GET' });
+}
+
 // TODO: replace with actual microservice endpoint
 export async function getTutors() {
   return protectedRequest("/api/tutor/get-all-tutors", { method: "GET" });

@@ -276,4 +276,23 @@ public class TutorControllerManagerImpl implements TutorControllermanager {
         return tutorResponses;
     }
 
+    @Override
+    public TutorResponse getTutorById(Integer id) {
+        Tutor tutor = tutorRepository.findByTutorSeq(id);
+        if (tutor == null) return null;
+
+        TutorResponse tutorResponse = new TutorResponse();
+        tutorResponse.setId(tutor.getTutorSeq());
+        tutorResponse.setDisplayName(tutor.getName());
+        tutorResponse.setEmail(tutor.getEmail());
+        tutorResponse.setContactNumber(tutor.getContactNumber());
+        tutorResponse.setSubject(tutor.getSubject());
+        tutorResponse.setUsername(tutor.getUserName());
+        tutorResponse.setTeacher_name(tutor.getName());
+        tutorResponse.setSubject_area(tutor.getSubject());
+        tutorResponse.setBio(tutor.getSubject());
+
+        return tutorResponse;
+    }
+
 }

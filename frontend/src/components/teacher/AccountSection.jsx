@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import EditTeacherProfileDialog from './EditTeacherProfileDialog';
-import { MOCK_LOGGED_IN_TEACHER } from '@/lib/mock-data';
+import { getTokenPayload } from '@/lib/auth';
+import { getTutorById } from '@/lib/api-client';
 
 const STATUS_STYLES = {
   ACTIVE:   'bg-green-100 text-green-700',
@@ -37,12 +38,29 @@ function formatMemberSince(dateStr) {
 }
 
 export default function AccountSection() {
-  const [teacher, setTeacher] = useState(MOCK_LOGGED_IN_TEACHER);
+  const [teacher, setTeacher] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
 
-  const initials = `${teacher.first_name[0]}${teacher.last_name[0]}`.toUpperCase();
-  const statusClass = STATUS_STYLES[teacher.status] ?? STATUS_STYLES.INACTIVE;
+  useEffect(() => {
+    loadTeacherProfile();
+  }, []);
+
+  async function loadTeacherProfile() {
+    try {
+      const payload = getTokenPayload();
+      const userSeq = payload?.userSeq;
+      if (!userSeq) return;
+      const data = await getTutorById(userSeq);
+      setTeacher(data);
+    } catch {
+      toast.error('Failed to load profile');
+    }
+  }
+
+  if (!teacher) return <p className="text-center text-gray-400 py-12">Loading profile...</p>;
+    const initials = `${teacher.displayName?.[0] ?? ''}`.toUpperCase() || '?';
+    const statusClass = STATUS_STYLES[teacher.status] ?? STATUS_STYLES.INACTIVE;
 
   async function handleSave(data) {
     setEditLoading(true);
@@ -64,7 +82,7 @@ export default function AccountSection() {
           {teacher.profile_image_url ? (
             <img
               src={teacher.profile_image_url}
-              alt={`${teacher.first_name} ${teacher.last_name}`}
+              alt={teacher.displayName}
               className="w-20 h-20 rounded-full object-cover ring-4 ring-indigo-100"
             />
           ) : (
@@ -78,7 +96,7 @@ export default function AccountSection() {
 
           <div className="flex flex-col items-center gap-1.5">
             <p className="text-lg font-bold text-gray-900">
-              {teacher.first_name} {teacher.last_name}
+              {teacher.displayName}
             </p>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-700 font-semibold">
               {teacher.subject_area}

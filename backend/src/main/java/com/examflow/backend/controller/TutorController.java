@@ -55,6 +55,11 @@ public class TutorController {
         return tutorControllermanager.getAllTutors();
     }
 
+    @GetMapping("/get-tutor/{id}")
+    public TutorResponse getTutorById(@PathVariable Integer id) {
+        return tutorControllermanager.getTutorById(id);
+    }
+
     @GetMapping("/get-engaged-instructors")
     public List<InstructorResponse> getEngagedInstructors() {
         return tutorControllermanager.getEngagedInstructors();

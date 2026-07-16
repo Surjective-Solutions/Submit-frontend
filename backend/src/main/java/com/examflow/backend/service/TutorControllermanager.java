@@ -16,6 +16,7 @@ public interface TutorControllermanager {
     GeneralResponse createTutor(TutorRequest tutorRequest);
 
     List<TutorResponse> getAllTutors();
+    TutorResponse getTutorById(Integer id);
 
     List<InstructorResponse> getEngagedInstructors();
 
