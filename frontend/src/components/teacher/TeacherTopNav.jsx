@@ -4,8 +4,31 @@ import { Bell } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { useState, useEffect } from 'react';
+import { getTokenPayload } from '@/lib/auth';
+import { getTutorById } from '@/lib/api-client';
 
 export default function TeacherTopNav() {
+  const [teacher, setTeacher] = useState(null);
+
+  useEffect(() => {
+    loadTeacher();
+  }, []);
+
+  async function loadTeacher() {
+    try {
+      const payload = getTokenPayload();
+      const userSeq = payload?.userSeq;
+      if (!userSeq) return;
+      const data = await getTutorById(userSeq);
+      setTeacher(data);
+    } catch {
+      console.error('Failed to load teacher');
+    }
+  }
+
+  const initials = teacher?.displayName?.[0]?.toUpperCase() || '?';
+
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-white px-4">
       <SidebarTrigger className="-ml-1 text-gray-400 hover:text-gray-700" />
@@ -31,7 +54,7 @@ export default function TeacherTopNav() {
           style={{ background: 'linear-gradient(135deg, #3940A0 0%, #5a62ff 100%)' }}
           aria-label="Teacher menu"
         >
-          T
+          {initials}
         </div>
       </div>
     </header>
