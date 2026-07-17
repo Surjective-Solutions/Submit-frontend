@@ -16,6 +16,8 @@ import com.examflow.backend.service.StudentControllerManager;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import com.examflow.backend.dto.UserSignUpRequest;
 
 @RestController
 @RequestMapping("/api/student")
@@ -51,4 +53,8 @@ public class StudentController {
         return studentControllerManager.getAllEnrolledClass();
     }
 
+    @PutMapping("/update/{id}")
+    public GeneralResponse updateStudent(@PathVariable Integer id, @RequestBody UserSignUpRequest studentRequest) {
+        return studentControllerManager.updateStudent(id, studentRequest);
+    }
 }

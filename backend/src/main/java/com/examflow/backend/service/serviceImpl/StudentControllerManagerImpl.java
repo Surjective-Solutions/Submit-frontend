@@ -30,6 +30,7 @@ import com.examflow.backend.repository.StudentClassPaymentRecordsRepository;
 import com.examflow.backend.repository.StudentRepository;
 import com.examflow.backend.repository.UploadPaperRepository;
 import com.examflow.backend.service.StudentControllerManager;
+import com.examflow.backend.dto.UserSignUpRequest;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -252,5 +253,32 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
             studentResponse.setStatus("INACTIVE");
         }
         return studentResponse;
+    }
+
+    @Override
+    public GeneralResponse updateStudent(Integer id, UserSignUpRequest studentRequest) {
+        GeneralResponse response = new GeneralResponse();
+        Student student = studentRepository.findByStudentSeq(id);
+        if (student == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Student not found");
+            return response;
+        }
+        student.setFirstName(studentRequest.getFirstName());
+        student.setLastName(studentRequest.getLastName());
+        student.setEmail(studentRequest.getEmail());
+        student.setContactNumber(studentRequest.getContactNumber());
+        student.setWhatsappNumber(studentRequest.getWhatsappNumber());
+        student.setSchoolName(studentRequest.getSchoolName());
+        student.setGrade(studentRequest.getGrade());
+        student.setSubjectStream(studentRequest.getSubjectStream());
+        student.setGuardianName(studentRequest.getGuardianName());
+        student.setGuardianContactNumber(studentRequest.getGuardianContactNumber());
+        student.setAddress(studentRequest.getAddress());
+        student.setDistrict(studentRequest.getDistrict());
+        studentRepository.save(student);
+        response.setIsSuccess(true);
+        response.setMessage("Student updated successfully");
+        return response;
     }
 }
