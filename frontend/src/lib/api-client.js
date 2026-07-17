@@ -303,9 +303,8 @@ export async function getStudentsTeachers() {
   return protectedRequestPath("/api/tutor/get-all-teachers", { method: "GET" });
 }
 
-// TODO: replace with actual microservice endpoint
 export async function updateStudent(id, data) {
-  return request(`/admin/students/${id}`, { method: "PUT", body: data });
+  return protectedRequestPath(`/api/student/update/${id}`, { method: "PUT", body: data });
 }
 
 // ── Admin Instructors ─────────────────────────────────────────────────────────

@@ -73,6 +73,7 @@ export default function EditProfileDialog({ open, onOpenChange, student, onSave,
         address:          student.address ?? '',
         new_password:     '',
         confirm_password: '',
+        status:           student.status ?? 'ACTIVE',
       });
       setPhotoUrl(student.profile_photo_url ?? null);
     }
