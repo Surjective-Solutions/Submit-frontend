@@ -12,11 +12,15 @@ public class InstructorResponse {
 
     private String email;
 
+    private String name;
+
     private String contact_number;
 
     private String subject_area;
 
-    private Integer status;
+    private String status;
+
+    private Integer statusSeq;
 
     private String profile_photo_url;
 
@@ -76,11 +80,11 @@ public class InstructorResponse {
         this.subject_area = subject_area;
     }
 
-    public Integer getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public void setStatus(Integer status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 
@@ -90,6 +94,22 @@ public class InstructorResponse {
 
     public void setProfile_photo_url(String profile_photo_url) {
         this.profile_photo_url = profile_photo_url;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Integer getStatusSeq() {
+        return statusSeq;
+    }
+
+    public void setStatusSeq(Integer statusSeq) {
+        this.statusSeq = statusSeq;
     }
 
 }

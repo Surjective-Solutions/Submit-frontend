@@ -1,27 +1,29 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Search } from 'lucide-react';
-import { MOCK_TUTORS } from '@/lib/mock-data';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Search } from "lucide-react";
+import { MOCK_TUTORS } from "@/lib/mock-data";
+import { getStudentsTeachers } from "@/lib/api-client";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const SUBJECT_COLORS = {
-  Mathematics:            'bg-blue-50 text-blue-700',
-  Physics:                'bg-orange-50 text-orange-700',
-  Chemistry:              'bg-purple-50 text-purple-700',
-  Biology:                'bg-green-50 text-green-700',
-  'English Literature':   'bg-pink-50 text-pink-700',
-  'Combined Mathematics': 'bg-cyan-50 text-cyan-700',
-  default:                'bg-gray-100 text-gray-600',
+  Mathematics: "bg-blue-50 text-blue-700",
+  Physics: "bg-orange-50 text-orange-700",
+  Chemistry: "bg-purple-50 text-purple-700",
+  Biology: "bg-green-50 text-green-700",
+  "English Literature": "bg-pink-50 text-pink-700",
+  "Combined Mathematics": "bg-cyan-50 text-cyan-700",
+  default: "bg-gray-100 text-gray-600",
 };
 
 function TeacherInitials({ name, size = 80 }) {
-  const parts = (name ?? '').trim().split(' ');
-  const abbr = parts.length >= 2
-    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-    : (parts[0]?.slice(0, 2) ?? '?').toUpperCase();
+  const parts = (name ?? "").trim().split(" ");
+  const abbr =
+    parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : (parts[0]?.slice(0, 2) ?? "?").toUpperCase();
   return (
     <div
       className="rounded-full flex items-center justify-center font-bold text-white shrink-0"
@@ -29,7 +31,7 @@ function TeacherInitials({ name, size = 80 }) {
         width: size,
         height: size,
         fontSize: Math.round(size * 0.28),
-        background: 'linear-gradient(135deg, #3940A0 0%, #34A0C5 100%)',
+        background: "linear-gradient(135deg, #3940A0 0%, #34A0C5 100%)",
       }}
     >
       {abbr}
@@ -40,19 +42,23 @@ function TeacherInitials({ name, size = 80 }) {
 // ── Teacher Card ──────────────────────────────────────────────────────────────
 
 function TeacherCard({ teacher }) {
-  const subjectColor = SUBJECT_COLORS[teacher.subject_area] ?? SUBJECT_COLORS.default;
+  const subjectColor =
+    SUBJECT_COLORS[teacher.subject_area] ?? SUBJECT_COLORS.default;
 
   return (
     <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
       <div className="flex flex-col items-center pt-6 pb-4 px-4 gap-3">
         <TeacherInitials name={teacher.teacher_name} size={80} />
         <div className="text-center space-y-1.5">
-          <p className="font-semibold text-gray-900 text-sm leading-tight">{teacher.teacher_name}</p>
-          <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${subjectColor}`}>
+          <p className="font-semibold text-gray-900 text-sm leading-tight">
+            {teacher.teacher_name}
+          </p>
+          <span
+            className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${subjectColor}`}
+          >
             {teacher.subject_area}
           </span>
         </div>
-
       </div>
       <div className="px-4 pb-4 mt-auto">
         <Link
@@ -69,9 +75,14 @@ function TeacherCard({ teacher }) {
 // ── Section ───────────────────────────────────────────────────────────────────
 
 export default function TeachersSection() {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
+  const [teachers, setteachers] = useState([]);
 
-  const filtered = MOCK_TUTORS.filter((t) => {
+  useEffect(() => {
+    loadTutors();
+  }, []);
+
+  const filtered = teachers.filter((t) => {
     const q = query.toLowerCase();
     return (
       t.teacher_name.toLowerCase().includes(q) ||
@@ -79,12 +90,23 @@ export default function TeachersSection() {
     );
   });
 
+  async function loadTutors() {
+    try {
+      const data = await getStudentsTeachers();
+      setteachers(data);
+    } catch (error) {
+      toast.error("Failed to load teachers");
+    }
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex items-center gap-2.5 shrink-0">
           <h2 className="text-xl font-semibold text-gray-900">Teachers</h2>
-          <span className="text-sm text-gray-400">•&nbsp;{MOCK_TUTORS.length} on platform</span>
+          <span className="text-sm text-gray-400">
+            •&nbsp;{MOCK_TUTORS.length} on platform
+          </span>
         </div>
         <div className="relative sm:max-w-xs w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
@@ -99,7 +121,9 @@ export default function TeachersSection() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="py-16 text-center text-sm text-gray-400">No teachers match your search.</div>
+        <div className="py-16 text-center text-sm text-gray-400">
+          No teachers match your search.
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((teacher) => (

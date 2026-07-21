@@ -324,9 +324,13 @@ export default function MonthDetailPage() {
   const { classId, monthYear } = useParams();
   const { classes } = useEnrolledClasses();
 
-  const cls = classes.find((c) => c.id === classId);
-  const { month, year } = parseMonthYearSlug(monthYear ?? '');
+  // const cls = classes.find((c) => c.id === classId);
+  const cls = classes.find((c) => c.id === Number(classId));
+  const { month, year } = parseMonthYearSlug(monthYear ?? "");
   const monthLabel = month > 0 ? formatMonthYear(month, year) : null;
+
+  const parsedMonth = Number(month);
+  const parsedYear = Number(year);
 
   if (!cls || !monthLabel) {
     return (
@@ -345,8 +349,12 @@ export default function MonthDetailPage() {
   const paid = isPaidMonth(cls.monthly_payments, month, year);
   const status = getMonthStatus(cls.monthly_payments, month, year);
 
+  // const monthEntry = (cls.papers_by_month ?? []).find(
+  //   (e) => e.month === month && e.year === year,
+  // );
+
   const monthEntry = (cls.papers_by_month ?? []).find(
-    (e) => e.month === month && e.year === year,
+    (e) => e.month === parsedMonth && e.year === parsedYear,
   );
   const papers = monthEntry?.papers ?? [];
 
@@ -366,7 +374,9 @@ export default function MonthDetailPage() {
           <h1 className="text-base font-bold text-gray-900 leading-tight truncate">
             {cls.class_name} — {monthLabel}
           </h1>
-          <p className="text-xs text-gray-400 mt-0.5">{cls.teacher_name} · {cls.subject} · {cls.class_year}</p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {cls.teacher_name} · {cls.subject} · {cls.class_year}
+          </p>
         </div>
       </div>
 

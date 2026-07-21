@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { BookOpen, Users, BarChart2, LogOut, User } from 'lucide-react';
-import { MOCK_LOGGED_IN_TEACHER } from '@/lib/mock-data';
+import { useState, useEffect } from 'react';
+import { getTokenPayload } from '@/lib/auth';
+import { getTutorById } from '@/lib/api-client';
 import {
   Sidebar,
   SidebarContent,
@@ -54,10 +56,27 @@ export default function TeacherSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
 
-  const initials = `${MOCK_LOGGED_IN_TEACHER.first_name[0]}${MOCK_LOGGED_IN_TEACHER.last_name[0]}`.toUpperCase();
-  const fullName = `${MOCK_LOGGED_IN_TEACHER.first_name} ${MOCK_LOGGED_IN_TEACHER.last_name}`;
-
   const activeSection = searchParams.get('section') ?? 'classes';
+  const [teacher, setTeacher] = useState(null);
+
+  useEffect(() => {
+    loadTeacher();
+  }, []);
+
+  async function loadTeacher() {
+    try {
+      const payload = getTokenPayload();
+      const userSeq = payload?.userSeq;
+      if (!userSeq) return;
+      const data = await getTutorById(userSeq);
+      setTeacher(data);
+    } catch {
+      console.error('Failed to load teacher');
+    }
+  }
+
+  const initials = teacher?.displayName?.[0]?.toUpperCase() || '?';
+  const fullName = teacher?.displayName ?? '';
 
   return (
     <Sidebar
@@ -236,7 +255,10 @@ export default function TeacherSidebar() {
               tooltip="Logout"
               className="h-8 rounded-lg text-[13px] mt-0.5 transition-colors"
               style={{ color: 'rgba(255,255,255,0.38)' }}
-              onClick={() => {}}
+              onClick={() => {
+                localStorage.clear();
+                window.location.href = '/teacher/login';                
+              }}
             >
               <LogOut className="h-3.5 w-3.5 shrink-0" />
               {!collapsed && <span>Logout</span>}

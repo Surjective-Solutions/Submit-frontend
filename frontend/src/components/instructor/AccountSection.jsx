@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Pencil, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import EditProfileDialog from './EditProfileDialog';
-import { MOCK_LOGGED_IN_INSTRUCTOR } from '@/lib/mock-data';
+import { getTokenPayload } from '@/lib/auth';
+import { getInstructorById } from '@/lib/api-client';
 
 const STATUS_STYLES = {
   ACTIVE:   'bg-green-100 text-green-700',
@@ -60,11 +61,28 @@ function formatMemberSince(dateStr) {
 }
 
 export default function AccountSection() {
-  const [instructor, setInstructor] = useState(MOCK_LOGGED_IN_INSTRUCTOR);
+  const [instructor, setInstructor] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
 
-  const initials = `${instructor.first_name[0]}${instructor.last_name[0]}`.toUpperCase();
+  useEffect(() => {
+    loadInstructorProfile();
+  }, []);
+
+  async function loadInstructorProfile() {
+    try {
+      const payload = getTokenPayload();
+      const userSeq = payload?.userSeq;
+      if (!userSeq) return;
+      const data = await getInstructorById(userSeq);
+      setInstructor(data);
+    } catch {
+      toast.error('Failed to load profile');
+    }
+  }
+  if (!instructor) return <p className="text-center text-gray-400 py-12">Loading profile...</p>;
+
+  const initials = `${instructor.first_name?.[0] ?? ''}${instructor.last_name?.[0] ?? ''}`.toUpperCase() || '?';
   const statusClass = STATUS_STYLES[instructor.status] ?? STATUS_STYLES.INACTIVE;
 
   async function handleSave(data) {

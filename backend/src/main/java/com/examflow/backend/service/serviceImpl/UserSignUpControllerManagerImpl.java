@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.examflow.backend.config.NoConfig;
 import com.examflow.backend.dto.InstructorSignUpRequest;
 import com.examflow.backend.dto.OtpRespond;
 import com.examflow.backend.dto.UserSignUpRequest;
@@ -27,16 +28,20 @@ public class UserSignUpControllerManagerImpl implements UserSignUpControllermana
     private final InstructorRepository instructorRepository;
     private final OtpConfigurationRepository otpConfigurationRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final NoConfig noConfig;
 
     @Autowired
     public UserSignUpControllerManagerImpl(StudentRepository studentRepository,
             InstructorRepository instructorRepository,
             OtpConfigurationRepository otpConfigurationRepository,
-            BCryptPasswordEncoder passwordEncoder) {
+            BCryptPasswordEncoder passwordEncoder,
+            NoConfig noConfig) {
         this.studentRepository = studentRepository;
         this.passwordEncoder = passwordEncoder;
         this.instructorRepository = instructorRepository;
         this.otpConfigurationRepository = otpConfigurationRepository;
+        this.noConfig = noConfig;
+
     }
 
     @Override
@@ -137,6 +142,8 @@ public class UserSignUpControllerManagerImpl implements UserSignUpControllermana
             instructor.setStatus(2);
             instructor.setIsOtpVerified(false);
             instructor.setFullName(instructorSignUpRequest.getFullName());
+            String instrutorNo = noConfig.instructorNoConfigCreation();
+            instructor.setInstrutorNo(instrutorNo);
 
             instructorRepository.save(instructor);
             System.out.println("Instructor saved successfully");
@@ -144,7 +151,8 @@ public class UserSignUpControllerManagerImpl implements UserSignUpControllermana
                     instructor);
             response.setMessage("Instructor signed up successfully");
             response.setStatus("success");
-            response.setStudentSeq(instructor.getInstructorSeq());
+            response.setInstructorSeq(instructor.getInstructorSeq());
+            response.setStudentSeq(null);
             return response;
         }
     }

@@ -74,6 +74,39 @@ async function protectedRequest(path, options = {}) {
   return await response.json();
 }
 
+//protected request with file handling for FormData
+async function protectedRequestWithFileHandling(path, options = {}) {
+  const token = localStorage.getItem("token");
+
+  const { method = "POST", body } = options;
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+  };
+
+  // Only add Content-Type for JSON requests
+  if (!(body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const response = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers,
+    body:
+      body instanceof FormData
+        ? body
+        : body
+        ? JSON.stringify(body)
+        : undefined,
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP Error ${response.status}`);
+  }
+
+  return await response.json();
+}
+
 export async function studentLogin(identifier, password) {
   return actualRequest("/api/auth/student-login", {
     body: { identifier, password },
@@ -150,7 +183,7 @@ export async function teacherLogin(username, password) {
 
 // TODO: replace with actual microservice endpoint
 export async function getClasses() {
-  return request("/teacher/classes", { method: "GET" });
+  return protectedRequest("/api/class/get-all-classes", { method: "GET" });
 }
 
 // TODO: replace with actual microservice endpoint
@@ -159,9 +192,16 @@ export async function createClass(data) {
   return protectedRequest("/api/class/create", { body: data });
 }
 
-// TODO: replace with actual microservice endpoint
 export async function updateClass(id, data) {
-  return request(`/teacher/classes/${id}`, { method: "PUT", body: data });
+  return protectedRequest(`/api/class/update/${id}`, {
+    method: "PUT",
+    body: {
+      display_name: data.display_name,
+      description: data.description,
+      subject_name: data.subject_name,
+      monthly_fee: data.monthly_fee,
+    },
+  });
 }
 
 // TODO: replace with actual microservice endpoint
@@ -178,7 +218,13 @@ export async function getClassPapers(classId) {
 
 // TODO: replace with actual microservice endpoint
 export async function uploadPaper(classId, paperData) {
-  return request(`/teacher/classes/${classId}/papers`, { body: paperData });
+  console.log("Uploading paper for classId:", classId, "with data:", paperData);
+  if (!classId) {
+    classId = 1; // Default classId for testing
+  }
+  return protectedRequestWithFileHandling(`/api/class/${classId}/uploadpaper`, {
+    body: paperData,
+  });
 }
 
 // TODO: replace with actual microservice endpoint
@@ -214,9 +260,15 @@ export async function getInstructors() {
   return protectedRequest("/api/instructor/get-all-instructors", { method: "GET" });
 }
 
+//get engaged instructors for a specific tutor
+export async function getEngagedInstructors() {
+  return protectedRequestPath("/api/tutor/get-engaged-instructors", { method: "GET" });
+}
+
 // TODO: replace with actual microservice endpoint
 export async function createInstructor(data) {
-  return request("/teacher/instructors", { body: data });
+  console.log("Creating instructor with data:", data);
+  return protectedRequest("/api/tutor/add/instructor", { body: data });
 }
 
 // TODO: replace with actual microservice endpoint
@@ -239,9 +291,27 @@ export async function getStudents() {
   return protectedRequest("/api/student/get-all-students", { method: "GET" });
 }
 
-// TODO: replace with actual microservice endpoint
+//get single student by id for profile display
+export async function getStudentById(id) {
+  return protectedRequest(`/api/student/get-student/${id}`, { method: 'GET' });
+}
+
+//get enrolled classes fro students
+export async function getEnrolledClass() {
+  return protectedRequest("/api/student/get-all-enrolled-class", { method: "GET" });
+}
+
+//api method to handle api request for addClass
+export async function addClasstostudent(data) {
+  return protectedRequest("/api/student/add-class-student", { body: data });
+}
+
+export async function getStudentsTeachers() {
+  return protectedRequestPath("/api/tutor/get-all-teachers", { method: "GET" });
+}
+
 export async function updateStudent(id, data) {
-  return request(`/admin/students/${id}`, { method: "PUT", body: data });
+  return protectedRequestPath(`/api/student/update/${id}`, { method: "PUT", body: data });
 }
 
 // ── Admin Instructors ─────────────────────────────────────────────────────────
@@ -300,6 +370,11 @@ export async function createStudent(data) {
 }
 
 // ── Tutors ────────────────────────────────────────────────────────────────────
+
+// get single tutor by ID for profile display
+export async function getTutorById(id) {
+  return protectedRequest(`/api/tutor/get-tutor/${id}`, { method: 'GET' });
+}
 
 // TODO: replace with actual microservice endpoint
 export async function getTutors() {
@@ -373,3 +448,26 @@ export async function submitGrades(submissionId, gradesData) {
   // body: { awarded_marks: [{ question_id, marks_awarded, comment }] }
   return {};
 }
+
+
+// get bank accounts
+export async function getBankAccounts() {
+  return protectedRequest("/api/payments/get-all-bankAcoounts", { method: "GET" });
+}
+
+
+//make banktransfer payment
+export async function makeBankTransfer(formData) {
+    return protectedRequestWithFileHandling("/api/payments/makeBakTransfer", {
+    method: "POST",
+    body: formData,
+  });
+}
+
+// ── Instructors ──────────────────────────────────────────────────────────────────
+
+//get single instrctor by ID for profile display
+export async function getInstructorById(id) {
+  return protectedRequest(`/api/instructor/get-instructor/${id}`, { method: 'GET' });
+}
+

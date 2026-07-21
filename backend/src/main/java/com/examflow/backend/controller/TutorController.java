@@ -1,6 +1,7 @@
 package com.examflow.backend.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -13,9 +14,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.examflow.backend.dto.CashierRequest;
-import com.examflow.backend.dto.CashierResponse;
+
 import com.examflow.backend.dto.GeneralResponse;
+import com.examflow.backend.dto.InstructorResponse;
 import com.examflow.backend.dto.TutorRequest;
 import com.examflow.backend.dto.TutorResponse;
 import com.examflow.backend.service.TutorControllermanager;
@@ -40,9 +41,28 @@ public class TutorController {
         return response;
     }
 
+    @PostMapping("/add/instructor")
+    public GeneralResponse addInstructor(@RequestBody Map<String, String> request) {
+        String employeeId = request.get("employee_id");
+        System.out.println("reached to controller with employee_id: " + employeeId);
+        GeneralResponse response = new GeneralResponse();
+        response = tutorControllermanager.addInstructor(employeeId);
+        return response;
+    }
+
     @GetMapping("/get-all-tutors")
     public List<TutorResponse> getCashiers() {
         return tutorControllermanager.getAllTutors();
+    }
+
+    @GetMapping("/get-tutor/{id}")
+    public TutorResponse getTutorById(@PathVariable Integer id) {
+        return tutorControllermanager.getTutorById(id);
+    }
+
+    @GetMapping("/get-engaged-instructors")
+    public List<InstructorResponse> getEngagedInstructors() {
+        return tutorControllermanager.getEngagedInstructors();
     }
 
     @PutMapping("update/{id}")
@@ -58,6 +78,11 @@ public class TutorController {
         int tutorSeq = Integer.parseInt(id);
         String result = tutorControllermanager.deleteTutor(tutorSeq);
         return result;
+    }
+
+    @GetMapping("/get-all-teachers")
+    public List<TutorResponse> getAllTeachers() {
+        return tutorControllermanager.getAllTutorsForStudent();
     }
 
 }

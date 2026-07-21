@@ -41,13 +41,32 @@ public class InstructorControllerManagerImpl implements InstructorControllerMana
             instructorResponse.setEmail(instructor.getEmail());
             instructorResponse.setContact_number(instructor.getContactNumber());
             instructorResponse.setSubject_area(null);
-            instructorResponse.setStatus(instructor.getStatus());
+            instructorResponse.setStatusSeq(instructor.getStatus());
             instructorResponse.setProfile_photo_url(null);
 
             instructorResponseList.add(instructorResponse);
         }
 
         return instructorResponseList;
+    }
+
+    @Override
+    public InstructorResponse getInstructorById(Integer id) {
+        Instructor instructor = instructorRepository.findByInstructorSeq(id);
+        if (instructor == null) return null;
+
+        InstructorResponse instructorResponse = new InstructorResponse();
+        instructorResponse.setId(instructor.getInstructorSeq());
+        instructorResponse.setEmployee_id(null);
+        instructorResponse.setFirst_name(instructor.getFullName());
+        instructorResponse.setLast_name(null);
+        instructorResponse.setEmail(instructor.getEmail());
+        instructorResponse.setContact_number(instructor.getContactNumber());
+        instructorResponse.setSubject_area(null);
+        instructorResponse.setStatusSeq(instructor.getStatus());
+        instructorResponse.setProfile_photo_url(null);
+
+        return instructorResponse;
     }
 
 }

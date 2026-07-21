@@ -426,9 +426,11 @@ function PreviousPapersSection({ cls }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ClassDetailPage() {
-  const { classId } = useParams();
+  // const { classId } = useParams();
   const { classes } = useEnrolledClasses();
-  const cls = classes.find((c) => c.id === classId);
+  const { classId } = useParams();
+
+  const cls = classes.find((c) => c.id === Number(classId));
 
   if (!cls) {
     return (
@@ -468,14 +470,21 @@ export default function ClassDetailPage() {
         </Link>
         <div className="w-px h-5 bg-gray-200 shrink-0" />
         <div className="min-w-0">
-          <h1 className="text-base font-bold text-gray-900 leading-tight truncate">{cls.class_name}</h1>
-          <p className="text-xs text-gray-400 mt-0.5">{cls.teacher_name} · {cls.subject} · {cls.class_year}</p>
+          <h1 className="text-base font-bold text-gray-900 leading-tight truncate">
+            {cls.class_name}
+          </h1>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {cls.teacher_name} · {cls.subject} · {cls.class_year}
+          </p>
         </div>
       </div>
 
       {/* Current Papers */}
-      {currentStatus === 'PAID' ? (
-        <PaidCurrentPapersSection monthLabel={currentMonthLabel} papers={currentPapers} />
+      {currentStatus === "PAID" ? (
+        <PaidCurrentPapersSection
+          monthLabel={currentMonthLabel}
+          papers={currentPapers}
+        />
       ) : (
         <UnpaidCurrentSection
           status={currentStatus}

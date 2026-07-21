@@ -4,11 +4,32 @@ import { Bell } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { MOCK_LOGGED_IN_INSTRUCTOR } from '@/lib/mock-data';
+import { useState, useEffect } from 'react';
+import { getTokenPayload } from '@/lib/auth';
+import { getInstructorById } from '@/lib/api-client';
 
 export default function InstructorTopNav() {
-  const instructor = MOCK_LOGGED_IN_INSTRUCTOR;
-  const initials = `${instructor.first_name[0]}${instructor.last_name[0]}`.toUpperCase();
+  const [instructor, setInstructor] = useState(null);
+
+  useEffect(() => {
+    loadInstructor();
+  }, []);
+
+  async function loadInstructor() {
+    try {
+      const payload = getTokenPayload();
+      const userSeq = payload?.userSeq;
+      if (!userSeq) return;
+      const data = await getInstructorById(userSeq);
+      setInstructor(data);
+    } catch {
+      console.error('Failed to load instructor');
+    }
+  }
+
+  const initials = instructor
+    ? `${instructor.first_name?.[0] ?? ''}${instructor.last_name?.[0] ?? ''}`.toUpperCase() || '?'
+    : '?';
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-white px-4">

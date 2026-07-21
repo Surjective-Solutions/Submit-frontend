@@ -1,26 +1,32 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus } from 'lucide-react';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import ClassCard from './ClassCard';
-import AddClassDialog from './AddClassDialog';
-import EditClassDialog from './EditClassDialog';
-import { MOCK_TEACHER_CLASSES } from '@/lib/mock-data';
+import { useState, useEffect } from "react";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import ClassCard from "./ClassCard";
+import AddClassDialog from "./AddClassDialog";
+import EditClassDialog from "./EditClassDialog";
+import { MOCK_TEACHER_CLASSES } from "@/lib/mock-data";
+import { getClasses } from "@/lib/api-client";
 
 let nextId = MOCK_TEACHER_CLASSES.length + 1;
 
 export default function ClassesSection() {
-  const [classes, setClasses] = useState(MOCK_TEACHER_CLASSES);
+  // const [classes, setClasses] = useState(MOCK_TEACHER_CLASSES);
+  const [classes, setClasses] = useState([]);
   const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
+
+  useEffect(() => {
+    loadClasses();
+  }, []);
 
   function handleAdd(data) {
     const newClass = {
       ...data,
       id: String(nextId++),
-      status: 'ACTIVE',
+      status: "ACTIVE",
       monthly_fee: Number(data.monthly_fee),
       papers: [],
     };
@@ -28,13 +34,32 @@ export default function ClassesSection() {
   }
 
   function handleSave(updated) {
-    setClasses((prev) => prev.map((c) => (c.id === updated.id ? { ...c, ...updated, monthly_fee: Number(updated.monthly_fee) } : c)));
+    setClasses((prev) =>
+      prev.map((c) =>
+        c.id === updated.id
+          ? { ...c, ...updated, monthly_fee: Number(updated.monthly_fee) }
+          : c,
+      ),
+    );
   }
 
   function handleToggleStatus(classItem) {
-    const next = classItem.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    setClasses((prev) => prev.map((c) => (c.id === classItem.id ? { ...c, status: next } : c)));
-    toast.success(`${classItem.display_name} marked as ${next === 'ACTIVE' ? 'Active' : 'Inactive'}`);
+    const next = classItem.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+    setClasses((prev) =>
+      prev.map((c) => (c.id === classItem.id ? { ...c, status: next } : c)),
+    );
+    toast.success(
+      `${classItem.display_name} marked as ${next === "ACTIVE" ? "Active" : "Inactive"}`,
+    );
+  }
+
+  async function loadClasses() {
+    try {
+      const data = await getClasses();
+      setClasses(data);
+    } catch (error) {
+      toast.error("Failed to load classes");
+    }
   }
 
   return (
@@ -43,12 +68,16 @@ export default function ClassesSection() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">My Classes</h2>
-          <p className="text-sm text-gray-500 mt-0.5">{classes.length} class{classes.length !== 1 ? 'es' : ''}</p>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {classes.length} class{classes.length !== 1 ? "es" : ""}
+          </p>
         </div>
         <Button
           onClick={() => setAddOpen(true)}
           className="gap-2 text-white"
-          style={{ background: 'linear-gradient(135deg, #3940A0 0%, #5a62ff 100%)' }}
+          style={{
+            background: "linear-gradient(135deg, #3940A0 0%, #5a62ff 100%)",
+          }}
         >
           <Plus className="h-4 w-4" />
           Add Class
@@ -58,7 +87,9 @@ export default function ClassesSection() {
       {/* Grid */}
       {classes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <p className="text-gray-400 text-sm">No classes yet. Add your first class.</p>
+          <p className="text-gray-400 text-sm">
+            No classes yet. Add your first class.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -74,10 +105,16 @@ export default function ClassesSection() {
       )}
 
       {/* Dialogs */}
-      <AddClassDialog open={addOpen} onOpenChange={setAddOpen} onSuccess={handleAdd} />
+      <AddClassDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onSuccess={handleAdd}
+      />
       <EditClassDialog
         open={!!editItem}
-        onOpenChange={(v) => { if (!v) setEditItem(null); }}
+        onOpenChange={(v) => {
+          if (!v) setEditItem(null);
+        }}
         classItem={editItem}
         onSave={handleSave}
       />

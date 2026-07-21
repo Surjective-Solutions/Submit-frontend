@@ -1,14 +1,28 @@
 package com.examflow.backend.controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.examflow.backend.dto.ClassRequest;
+import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
+import com.examflow.backend.dto.PaperUploadRequest;
+import com.examflow.backend.entity.UplaodPaper;
 import com.examflow.backend.service.ClassControllerManager;
 
 @RestController
@@ -28,6 +42,29 @@ public class ClassController {
         System.out.println("reached to controller");
         GeneralResponse response = new GeneralResponse();
         response = classControllerManager.createClass(classRequest);
+        return response;
+    }
+
+
+    @GetMapping("/get-all-classes")
+    public List<ClassResponse> getAllClasses() {
+        return classControllerManager.getAllClasses();
+    }
+
+    @PutMapping("/update/{classId}")
+    public GeneralResponse updateClass(@PathVariable Integer classId, @RequestBody ClassRequest classRequest) {
+        return classControllerManager.updateClass(classId, classRequest);
+    }
+
+    @PostMapping("/{classId}/uploadpaper")
+    public GeneralResponse uploadPapers(@ModelAttribute PaperUploadRequest paperUploadRequest,
+            @RequestParam MultipartFile pdf_file,
+            @PathVariable Integer classId) {
+        System.out.println("reached to controller");
+        GeneralResponse response = new GeneralResponse();
+
+        System.out.println(pdf_file.getOriginalFilename());
+        response = classControllerManager.uploadPapers(paperUploadRequest, classId, pdf_file);
         return response;
     }
 }

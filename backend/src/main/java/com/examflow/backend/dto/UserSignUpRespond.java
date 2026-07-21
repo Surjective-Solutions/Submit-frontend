@@ -8,6 +8,8 @@ public class UserSignUpRespond {
 
     private Integer studentSeq;
 
+    private Integer instructorSeq;
+
     public String getMessage() {
         return message;
     }
@@ -32,4 +34,10 @@ public class UserSignUpRespond {
         this.studentSeq = studentSeq;
     }
 
+    public Integer getInstructorSeq() {
+            return instructorSeq;
+    }
+    public void setInstructorSeq(Integer instructorSeq){
+        this.instructorSeq = instructorSeq;
+    }
 }

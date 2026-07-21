@@ -1,37 +1,40 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { toast } from 'sonner';
-import { ArrowLeft, BookOpen, CheckCircle, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import DeleteConfirmDialog from '@/components/admin/DeleteConfirmDialog';
-import { useEnrolledClasses } from '@/context/EnrolledClassesContext';
-import { MOCK_TUTORS } from '@/lib/mock-data';
-import { getLastPaidMonth } from '@/lib/billing-utils';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { toast } from "sonner";
+import { ArrowLeft, BookOpen, CheckCircle, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import DeleteConfirmDialog from "@/components/admin/DeleteConfirmDialog";
+import { useEnrolledClasses } from "@/context/EnrolledClassesContext";
+import { MOCK_TUTORS } from "@/lib/mock-data";
+import { getStudentsTeachers } from "@/lib/api-client";
+import { addClasstostudent } from "@/lib/api-client";
+import { getLastPaidMonth } from "@/lib/billing-utils";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const SUBJECT_COLORS = {
-  Mathematics:            'bg-blue-50 text-blue-700',
-  Physics:                'bg-orange-50 text-orange-700',
-  Chemistry:              'bg-purple-50 text-purple-700',
-  Biology:                'bg-green-50 text-green-700',
-  'English Literature':   'bg-pink-50 text-pink-700',
-  'Combined Mathematics': 'bg-cyan-50 text-cyan-700',
-  default:                'bg-gray-100 text-gray-600',
+  Mathematics: "bg-blue-50 text-blue-700",
+  Physics: "bg-orange-50 text-orange-700",
+  Chemistry: "bg-purple-50 text-purple-700",
+  Biology: "bg-green-50 text-green-700",
+  "English Literature": "bg-pink-50 text-pink-700",
+  "Combined Mathematics": "bg-cyan-50 text-cyan-700",
+  default: "bg-gray-100 text-gray-600",
 };
 
 function formatLKR(amount) {
-  return `LKR ${Number(amount).toLocaleString('en-LK')}`;
+  return `LKR ${Number(amount).toLocaleString("en-LK")}`;
 }
 
 function TeacherInitials({ name, size = 48 }) {
-  const parts = (name ?? '').trim().split(' ');
-  const abbr = parts.length >= 2
-    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-    : (parts[0]?.slice(0, 2) ?? '?').toUpperCase();
+  const parts = (name ?? "").trim().split(" ");
+  const abbr =
+    parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : (parts[0]?.slice(0, 2) ?? "?").toUpperCase();
   return (
     <div
       className="rounded-full flex items-center justify-center font-bold text-white shrink-0"
@@ -39,7 +42,7 @@ function TeacherInitials({ name, size = 48 }) {
         width: size,
         height: size,
         fontSize: Math.round(size * 0.28),
-        background: 'linear-gradient(135deg, #3940A0 0%, #34A0C5 100%)',
+        background: "linear-gradient(135deg, #3940A0 0%, #34A0C5 100%)",
       }}
     >
       {abbr}
@@ -52,12 +55,16 @@ function TeacherInitials({ name, size = 48 }) {
 function ClassCard({ cls, enrolledEntry, onAdd, onRemove }) {
   const subjectColor = SUBJECT_COLORS[cls.subject] ?? SUBJECT_COLORS.default;
   const isEnrolled = !!enrolledEntry;
-  const canRemove = isEnrolled && getLastPaidMonth(enrolledEntry?.monthly_payments) === null;
+  const canRemove =
+    isEnrolled && getLastPaidMonth(enrolledEntry?.monthly_payments) === null;
 
   return (
     <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
       {/* Image */}
-      <div className="relative w-full overflow-hidden bg-gray-100" style={{ aspectRatio: '16/9' }}>
+      <div
+        className="relative w-full overflow-hidden bg-gray-100"
+        style={{ aspectRatio: "16/9" }}
+      >
         {cls.image_url ? (
           <img
             src={cls.image_url}
@@ -75,16 +82,20 @@ function ClassCard({ cls, enrolledEntry, onAdd, onRemove }) {
       <div className="p-4 flex flex-col flex-1 gap-3">
         <div className="space-y-1.5">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-semibold text-gray-900 text-sm leading-tight">{cls.class_name}</h3>
+            <h3 className="font-semibold text-gray-900 text-sm leading-tight">
+              {cls.class_name}
+            </h3>
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 shrink-0 whitespace-nowrap font-medium">
               {cls.class_year}
             </span>
           </div>
-          <span className={`inline-block text-[11px] px-2 py-0.5 rounded-full font-medium ${subjectColor}`}>
+          <span
+            className={`inline-block text-[11px] px-2 py-0.5 rounded-full font-medium ${subjectColor}`}
+          >
             {cls.subject}
           </span>
           <p className="text-xs text-gray-400">
-            {formatLKR(cls.monthly_fee)}{' '}
+            {formatLKR(cls.monthly_fee)}{" "}
             <span className="text-gray-300">/ month</span>
           </p>
         </div>
@@ -129,9 +140,23 @@ function ClassCard({ cls, enrolledEntry, onAdd, onRemove }) {
 
 export default function TeacherClassesPage() {
   const { teacherId } = useParams();
-  const teacher = MOCK_TUTORS.find((t) => t.id === teacherId);
+  const [teachers, setteachers] = useState([]);
+  const teacher = teachers.find((t) => t.id === Number(teacherId));
   const { classes, addClass, removeClass } = useEnrolledClasses();
   const [classToRemove, setClassToRemove] = useState(null);
+
+  useEffect(() => {
+    loadTutors();
+  }, []);
+
+  async function loadTutors() {
+    try {
+      const data = await getStudentsTeachers();
+      setteachers(data);
+    } catch (error) {
+      toast.error("Failed to load teachers");
+    }
+  }
 
   if (!teacher) {
     return (
@@ -147,13 +172,14 @@ export default function TeacherClassesPage() {
     );
   }
 
-  const subjectColor = SUBJECT_COLORS[teacher.subject_area] ?? SUBJECT_COLORS.default;
+  const subjectColor =
+    SUBJECT_COLORS[teacher.subject_area] ?? SUBJECT_COLORS.default;
 
   function getEnrolledEntry(classId) {
     return classes.find((c) => c.id === classId) ?? null;
   }
 
-  function handleAdd(cls) {
+  async function handleAdd(cls) {
     if (getEnrolledEntry(cls.id)) return;
     addClass({
       id: cls.id,
@@ -164,17 +190,22 @@ export default function TeacherClassesPage() {
       image_url: cls.image_url,
       enrolled_at: new Date().toISOString(),
       monthly_fee: cls.monthly_fee,
-      description: cls.description ?? '',
+      description: cls.description ?? "",
       monthly_payments: [],
       papers_by_month: [],
     });
-    toast.success('Added to My Classes! Complete your payment to get access.');
+
+    const requestdata = { classSeq: cls.id };
+
+    const response = await addClasstostudent(requestdata);
+
+    toast.success("Added to My Classes! Complete your payment to get access.");
   }
 
   function handleConfirmRemove() {
     if (!classToRemove) return;
     removeClass(classToRemove.id);
-    toast.success('Class removed');
+    toast.success("Class removed");
     setClassToRemove(null);
   }
 
@@ -196,13 +227,19 @@ export default function TeacherClassesPage() {
           <TeacherInitials name={teacher.teacher_name} size={48} />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-base font-bold text-gray-900 leading-tight">{teacher.teacher_name}</h1>
-              <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${subjectColor}`}>
+              <h1 className="text-base font-bold text-gray-900 leading-tight">
+                {teacher.teacher_name}
+              </h1>
+              <span
+                className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${subjectColor}`}
+              >
                 {teacher.subject_area}
               </span>
             </div>
             {teacher.bio && (
-              <p className="text-xs text-gray-400 mt-0.5 truncate">{teacher.bio}</p>
+              <p className="text-xs text-gray-400 mt-0.5 truncate">
+                {teacher.bio}
+              </p>
             )}
           </div>
         </div>
@@ -215,7 +252,7 @@ export default function TeacherClassesPage() {
             Classes by {teacher.teacher_name}
           </h2>
           <span className="text-sm text-gray-400">
-            •&nbsp;{classCount} {classCount === 1 ? 'class' : 'classes'}
+            •&nbsp;{classCount} {classCount === 1 ? "class" : "classes"}
           </span>
         </div>
 
@@ -246,7 +283,7 @@ export default function TeacherClassesPage() {
         description={
           classToRemove
             ? `Are you sure you want to remove "${classToRemove.class_name}" from your classes? You can add it again later.`
-            : ''
+            : ""
         }
         confirmLabel="Remove"
         onConfirm={handleConfirmRemove}

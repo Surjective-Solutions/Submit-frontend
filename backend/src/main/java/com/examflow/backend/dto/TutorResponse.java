@@ -1,5 +1,7 @@
 package com.examflow.backend.dto;
 
+import java.util.List;
+
 public class TutorResponse {
 
     private Integer id;
@@ -21,6 +23,8 @@ public class TutorResponse {
     private String bio;
 
     private String profile_image_url;
+
+    private List<ClassResponse> classes;
 
     public Integer getId() {
         return id;
@@ -100,6 +104,14 @@ public class TutorResponse {
 
     public void setProfile_image_url(String profile_image_url) {
         this.profile_image_url = profile_image_url;
+    }
+
+    public List<ClassResponse> getClasses() {
+        return classes;
+    }
+
+    public void setClasses(List<ClassResponse> classes) {
+        this.classes = classes;
     }
 
 }
