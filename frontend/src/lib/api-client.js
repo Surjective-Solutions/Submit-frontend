@@ -192,9 +192,16 @@ export async function createClass(data) {
   return protectedRequest("/api/class/create", { body: data });
 }
 
-// TODO: replace with actual microservice endpoint
 export async function updateClass(id, data) {
-  return request(`/teacher/classes/${id}`, { method: "PUT", body: data });
+  return protectedRequest(`/api/class/update/${id}`, {
+    method: "PUT",
+    body: {
+      display_name: data.display_name,
+      description: data.description,
+      subject_name: data.subject_name,
+      monthly_fee: data.monthly_fee,
+    },
+  });
 }
 
 // TODO: replace with actual microservice endpoint
