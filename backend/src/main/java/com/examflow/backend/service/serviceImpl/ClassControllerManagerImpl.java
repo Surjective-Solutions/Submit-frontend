@@ -266,4 +266,29 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         return response;
     }
 
+    @Override
+    public GeneralResponse updateClass(Integer classId, ClassRequest classRequest) {
+        GeneralResponse response = new GeneralResponse();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Classes classes = classesRepository.findByClassSeqAndStatus(classId, 2);
+
+        if (classes == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Class not found");
+            return response;
+        }
+
+        classes.setDisplayName(classRequest.getDisplay_name());
+        classes.setDescription(classRequest.getDescription());
+        classes.setMonthlyFee(classRequest.getMonthly_fee());
+        classes.setSubjectName(classRequest.getSubject_name());
+        classes.setLastModifiedBy(username);
+        classes.setLastModifiedDateTime(LocalDateTime.now());
+
+        classesRepository.save(classes);
+        response.setMessage("Class updated successfully");
+        response.setIsSuccess(true);
+        return response;
+    }
 }

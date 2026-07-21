@@ -18,5 +18,7 @@ public interface ClassControllerManager {
     GeneralResponse uploadPapers(PaperUploadRequest paperUploadRequest, Integer classId, MultipartFile pdf_file);
 
     List<ClassResponse> getAllClasses();
+
+    GeneralResponse updateClass(Integer classId, ClassRequest classRequest);
 }
     
