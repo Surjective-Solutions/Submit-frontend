@@ -12,6 +12,8 @@ import com.examflow.backend.entity.Cashier;
 import com.examflow.backend.entity.Instructor;
 import com.examflow.backend.repository.InstructorRepository;
 import com.examflow.backend.service.InstructorControllerManager;
+import com.examflow.backend.dto.GeneralResponse;
+import com.examflow.backend.dto.InstructorSignUpRequest;
 
 @Service
 public class InstructorControllerManagerImpl implements InstructorControllerManager {
@@ -67,6 +69,25 @@ public class InstructorControllerManagerImpl implements InstructorControllerMana
         instructorResponse.setProfile_photo_url(null);
 
         return instructorResponse;
+    }
+
+    @Override
+    public GeneralResponse updateInstructor(Integer id, InstructorSignUpRequest instructorRequest) {
+        GeneralResponse response = new GeneralResponse();
+        Instructor instructor = instructorRepository.findByInstructorSeq(id);
+        if (instructor == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Instructor not found");
+            return response;
+        }
+        instructor.setFullName(instructorRequest.getFullName());
+        instructor.setEmail(instructorRequest.getEmail());
+        instructor.setContactNumber(instructorRequest.getContactNumber());
+        instructor.setAddress(instructorRequest.getAddress());
+        instructorRepository.save(instructor);
+        response.setIsSuccess(true);
+        response.setMessage("Instructor updated successfully");
+        return response;
     }
 
 }
