@@ -321,9 +321,16 @@ export async function getAdminInstructors() {
   return request("/admin/instructors", { method: "GET" });
 }
 
-// TODO: replace with actual microservice endpoint
 export async function updateAdminInstructor(id, data) {
-  return request(`/admin/instructors/${id}`, { method: "PUT", body: data });
+  return protectedRequest(`/api/instructor/update/${id}`, {
+    method: "PUT",
+    body: {
+      fullName: `${data.first_name} ${data.last_name}`,
+      email: data.email,
+      contactNumber: data.contact_number,
+      address: data.address ?? '',
+    },
+  });
 }
 
 // ── Student Profile ───────────────────────────────────────────────────────────
