@@ -1,6 +1,7 @@
 package com.examflow.backend.service.serviceImpl;
 
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -94,16 +95,39 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         newClass.setStatus(2); // Set status to 2 for active
 
         classesRepository.save(newClass);
+
         response.setMessage("Class created successfully");
         response.setIsSuccess(true);
         System.out.println("Class created successfully");
+
+        try {
+            ClassPaymentRecord classPaymentRecord = new ClassPaymentRecord();
+            YearMonth month = YearMonth.of(newClass.getCreatedDateTime().getYear(),
+                    newClass.getCreatedDateTime().getMonth());
+            Integer monthnumber = month.getMonthValue();
+            Integer yearnumber = month.getYear();
+
+            classPaymentRecord.setClasses(newClass);
+            classPaymentRecord.setMonth(monthnumber);
+            classPaymentRecord.setYear(yearnumber);
+            classPaymentRecord.setStatus(2);
+            classPaymentRecord.setCreatedBy("SYSTEM");
+            classPaymentRecord.setLastModifiedBy("SYSTEM");
+            classPaymentRecord.setCreatedDateTime(LocalDateTime.now());
+            classPaymentRecord.setLastModifiedDateTime(LocalDateTime.now());
+            classPaymentRecord.setClassPaymentRecordSearial(monthnumber + "-" + yearnumber + '-' + "payment");
+            classPaymentRecordRepository.save(classPaymentRecord);
+
+        } catch (Exception e) {
+
+        }
 
         return response;
     }
 
     @Override
     public List<ClassResponse> getAllClasses() {
-        System.out.println("reached to cimpl");
+        System.out.println("reached to impl");
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         Integer tutorSeq = (Integer) request.getAttribute("userId");

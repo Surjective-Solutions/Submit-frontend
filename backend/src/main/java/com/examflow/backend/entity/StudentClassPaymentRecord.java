@@ -22,9 +22,15 @@ public class StudentClassPaymentRecord {
 
     private Boolean isPayed;
 
+    private Boolean isApproved;
+
     private Integer status;
 
     private String reffrenceNo;
+
+    private String reson;
+
+    private Boolean isForPayments;
 
     private Double payedAmount;
 
@@ -118,6 +124,7 @@ public class StudentClassPaymentRecord {
         return payedTime;
     }
 
+
     public void setPayedTime(LocalDateTime payedTime) {
         this.payedTime = payedTime;
     }
@@ -192,6 +199,33 @@ public class StudentClassPaymentRecord {
 
     public void setReciptPath(String reciptPath) {
         this.reciptPath = reciptPath;
+    }
+
+    @Column(name = "isApproved")
+    public Boolean getIsApproved() {
+        return isApproved;
+    }
+
+    public void setIsApproved(Boolean isApproved) {
+        this.isApproved = isApproved;
+    }
+
+    @Column(name = "isForPayments")
+    public Boolean getIsForPayments() {
+        return isForPayments;
+    }
+
+    public void setIsForPayments(Boolean isForPayments) {
+        this.isForPayments = isForPayments;
+    }
+
+    @Column(name = "reson")
+    public String getReson() {
+        return reson;
+    }
+
+    public void setReson(String reson) {
+        this.reson = reson;
     }
 
 }

@@ -7,7 +7,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,6 +17,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.examflow.backend.dto.BankAccountResponse;
 import com.examflow.backend.dto.GeneralResponse;
+import com.examflow.backend.dto.PaymentRequest;
+import com.examflow.backend.dto.PaymentsListResponse;
 import com.examflow.backend.repository.BankAccountRepository;
 import com.examflow.backend.service.PaymentControllerManager;
 
@@ -47,6 +51,29 @@ public class PaymentController {
         GeneralResponse generalResponse = new GeneralResponse();
         generalResponse = paymentControllerManager.recordClassPayNow(bankAccountId, classId, receiptFile);
         return generalResponse;
+    }
+
+    @GetMapping("/get-all-payments")
+    public List<PaymentsListResponse> getAllPayments() {
+        return paymentControllerManager.getAllPayments();
+    }
+
+    @PostMapping("/{paymentId}/approve")
+    public GeneralResponse approvePayment(@PathVariable Integer paymentId,
+            @RequestBody PaymentRequest paymentRequest) {
+        System.out.println(paymentId);
+        System.out.println(paymentRequest.getReference_number());
+        return paymentControllerManager.approvePayment(paymentId, paymentRequest.getReference_number());
+
+    }
+
+    @PostMapping("/{paymentId}/reject")
+    public GeneralResponse rejectPayment(@PathVariable Integer paymentId,
+            @RequestBody PaymentRequest paymentRequest) {
+        System.out.println(paymentId);
+        System.out.println(paymentRequest.getRejection_reason());
+        return paymentControllerManager.rejectPayment(paymentId, paymentRequest.getRejection_reason());
+
     }
 
 }

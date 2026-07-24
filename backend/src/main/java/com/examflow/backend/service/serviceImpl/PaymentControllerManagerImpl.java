@@ -12,11 +12,13 @@ import org.springframework.security.core.Authentication;
 
 import com.examflow.backend.dto.BankAccountResponse;
 import com.examflow.backend.dto.GeneralResponse;
+import com.examflow.backend.dto.PaymentsListResponse;
 import com.examflow.backend.entity.BankAccount;
 import com.examflow.backend.entity.ClassPaymentRecord;
 import com.examflow.backend.entity.Classes;
 import com.examflow.backend.entity.Student;
 import com.examflow.backend.entity.StudentClassPaymentRecord;
+import com.examflow.backend.enums.paymentStatus;
 import com.examflow.backend.repository.BankAccountRepository;
 import com.examflow.backend.repository.ClassPaymentRecordRepository;
 import com.examflow.backend.repository.ClassesRepository;
@@ -26,6 +28,7 @@ import com.examflow.backend.service.FileStorageService;
 import com.examflow.backend.service.PaymentControllerManager;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.Null;
 
 @Service
 public class PaymentControllerManagerImpl implements PaymentControllerManager {
@@ -103,13 +106,13 @@ public class PaymentControllerManagerImpl implements PaymentControllerManager {
             studentClassPaymentRecord.setPayedAmount(classPaymentRecord.getClasses().getMonthlyFee());
             studentClassPaymentRecord.setPayedBy(username);
             studentClassPaymentRecord.setPayedTime(LocalDateTime.now());
-            studentClassPaymentRecord.setStatus(3);// set status to pending approved
+            studentClassPaymentRecord.setIsApproved(null);
+            studentClassPaymentRecord.setIsForPayments(true);
 
             studentClassPaymentRecordsRepository.save(studentClassPaymentRecord);
 
             String fileName = fileStorageService.savePaymentReceipt(receiptFile);
-            studentClassPaymentRecord.setReciptPath(System.getProperty("user.home")
-                    + "/lms/uploads/payment_recipts/" + fileName);
+            studentClassPaymentRecord.setReciptPath("/uploads/payment_recipts/" + fileName);
 
             studentClassPaymentRecordsRepository.save(studentClassPaymentRecord);
 
@@ -125,6 +128,114 @@ public class PaymentControllerManagerImpl implements PaymentControllerManager {
         response.setMessage("student class payment record not found");
 
         return response;
+    }
+
+    @Override
+    public List<PaymentsListResponse> getAllPayments() {
+
+        List<PaymentsListResponse> paymentsListResponses = new ArrayList<>();
+        List<StudentClassPaymentRecord> studentClassPaymentRecords = studentClassPaymentRecordsRepository
+                .findByStatusNotAndIsForPayments(0, true);
+
+        for (StudentClassPaymentRecord paymentRecord : studentClassPaymentRecords) {
+            PaymentsListResponse oneRecord = new PaymentsListResponse();
+            oneRecord.setId(paymentRecord.getStudentClassPaymentRecordSeq());
+            oneRecord.setStudent_id(paymentRecord.getStudent().getStudentSeq());
+            oneRecord.setStudent_name(
+                    paymentRecord.getStudent().getFirstName() + paymentRecord.getStudent().getLastName());
+            oneRecord.setStudent_number(null);// need to implement
+            oneRecord.setTeacher_name(paymentRecord.getClassPaymentRecord().getClasses().getTutor().getName());
+            oneRecord.setClass_name(paymentRecord.getClassPaymentRecord().getClasses().getDisplayName());
+            oneRecord.setAmount(paymentRecord.getPayedAmount());
+            oneRecord.setRejection_reason(paymentRecord.getReson());
+            oneRecord.setReceipt_url(paymentRecord.getReciptPath());
+            if (paymentRecord.getIsApproved() == null) {
+                oneRecord.setStatus("PENDING");
+            } else if (paymentRecord.getIsApproved() == true) {
+                oneRecord.setStatus("APPROVED");
+            } else {
+                oneRecord.setStatus("REJECTED");
+            }
+
+            oneRecord.setReference_number(paymentRecord.getReffrenceNo());
+            oneRecord.setSubmitted_at(paymentRecord.getPayedTime());
+            oneRecord.setReviewed_at(paymentRecord.getApprovedTime());
+            oneRecord.setReviewed_by(paymentRecord.getApprovedBy());
+
+            paymentsListResponses.add(oneRecord);
+        }
+
+        return paymentsListResponses;
+    }
+
+    @Override
+    public GeneralResponse approvePayment(Integer paymentSeq, String refferenceNumber) {
+
+        GeneralResponse generalResponse = new GeneralResponse();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
+        StudentClassPaymentRecord studentClassPaymentRecord = studentClassPaymentRecordsRepository
+                .findByStudentClassPaymentRecordSeq(paymentSeq);
+        if (studentClassPaymentRecord != null) {
+            studentClassPaymentRecord.setIsPayed(true);
+            studentClassPaymentRecord.setIsApproved(true);
+            studentClassPaymentRecord.setApprovedBy(username);
+            studentClassPaymentRecord.setApprovedTime(LocalDateTime.now());
+            studentClassPaymentRecord.setReffrenceNo(refferenceNumber);
+
+            studentClassPaymentRecordsRepository.save(studentClassPaymentRecord);
+            generalResponse.setIsSuccess(true);
+            generalResponse.setMessage("Payment Approved Successfully.");
+            return generalResponse;
+        }
+
+        generalResponse.setIsSuccess(false);
+        generalResponse.setMessage("Payment record does not found.");
+
+        return generalResponse;
+    }
+
+    @Override
+    public GeneralResponse rejectPayment(Integer paymentSeq, String reason) {
+        GeneralResponse generalResponse = new GeneralResponse();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
+        StudentClassPaymentRecord studentClassPaymentRecord = studentClassPaymentRecordsRepository
+                .findByStudentClassPaymentRecordSeq(paymentSeq);
+        if (studentClassPaymentRecord != null) {
+            studentClassPaymentRecord.setIsPayed(false);
+            studentClassPaymentRecord.setIsApproved(false);
+            studentClassPaymentRecord.setApprovedBy(username);
+            studentClassPaymentRecord.setApprovedTime(LocalDateTime.now());
+            studentClassPaymentRecord.setStatus(paymentStatus.fromStatusName("REJECTED").getSequence());
+            studentClassPaymentRecord.setReson(reason);
+
+            studentClassPaymentRecordsRepository.save(studentClassPaymentRecord);
+            generalResponse.setIsSuccess(true);
+            generalResponse.setMessage("Payment Rejected Successfully.");
+
+            StudentClassPaymentRecord newrRecord = new StudentClassPaymentRecord();
+
+            newrRecord.setClassPaymentRecord(studentClassPaymentRecord.getClassPaymentRecord());
+            newrRecord.setStudent(studentClassPaymentRecord.getStudent());
+            newrRecord.setCreatedBy("SYSYTEM");
+            newrRecord.setLastModifiedBy("SYSYTEM");
+            newrRecord.setIsPayed(false);
+            newrRecord.setCreatedDateTime(LocalDateTime.now());
+            newrRecord.setLastModifiedDateTime(LocalDateTime.now());
+            newrRecord.setStatus(2);
+
+            studentClassPaymentRecordsRepository.save(newrRecord);
+
+            return generalResponse;
+        }
+
+        generalResponse.setIsSuccess(false);
+        generalResponse.setMessage("Payment record does not found.");
+
+        return generalResponse;
     }
 
 }

@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.examflow.backend.dto.BankAccountResponse;
 import com.examflow.backend.dto.GeneralResponse;
+import com.examflow.backend.dto.PaymentsListResponse;
 
 @Service
 public interface PaymentControllerManager {
@@ -14,4 +15,11 @@ public interface PaymentControllerManager {
     List<BankAccountResponse> getBankAccounts();
 
     GeneralResponse recordClassPayNow(Integer bankAccountId, Integer classId, MultipartFile receiptFile);
+
+    List<PaymentsListResponse> getAllPayments();
+
+    GeneralResponse approvePayment(Integer paymentSeq, String refferenceNumber);
+
+    GeneralResponse rejectPayment(Integer paymentSeq, String reason);
+
 }

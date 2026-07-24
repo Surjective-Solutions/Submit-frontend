@@ -15,6 +15,7 @@ import com.examflow.backend.entity.Classes;
 import com.examflow.backend.entity.Student;
 import com.examflow.backend.entity.StudentClass;
 import com.examflow.backend.entity.StudentClassPaymentRecord;
+import com.examflow.backend.enums.paymentStatus;
 import com.examflow.backend.repository.ClassPaymentRecordRepository;
 import com.examflow.backend.repository.ClassesRepository;
 import com.examflow.backend.repository.StudentClassPaymentRecordsRepository;
@@ -103,7 +104,7 @@ public class MonthlyPaymentService {
                     System.out.println(
                             "-------------------------------------------checking  respective payment records for Student---------------------------------------");
                     YearMonth enrolledDate = YearMonth.from(studentClass.getCreatedDateTime());
-                    enrolledDate = enrolledDate.minusMonths(1);
+                    // enrolledDate = enrolledDate.minusMonths(1);
 
                     YearMonth classDate = YearMonth.of(classPaymentRecord.getYear(), classPaymentRecord.getMonth());
                     if (!classDate.isBefore(enrolledDate)) {
