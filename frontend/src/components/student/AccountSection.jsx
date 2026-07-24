@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import EditProfileDialog from './EditProfileDialog';
 import { getTokenPayload } from '@/lib/auth';
 import { getStudentById } from '@/lib/api-client';
+import { updateStudent } from '@/lib/api-client';
 
 const STATUS_STYLES = {
   ACTIVE:    'bg-green-100 text-green-700',
@@ -63,9 +64,25 @@ export default function AccountSection() {
   async function handleSave(data) {
     setEditLoading(true);
     try {
+      await updateStudent(student.id, {
+        firstName: data.first_name,
+        lastName: data.last_name,
+        email: data.email,
+        contactNumber: data.contact_number,
+        whatsappNumber: data.whatsapp_number,
+        schoolName: data.school_name,
+        grade: data.grade,
+        subjectStream: data.subject_stream,
+        guardianName: data.guardian_name,
+        guardianContactNumber: data.guardian_contact,
+        address: data.address,
+        district: data.district,
+      });
       setStudent((prev) => ({ ...prev, ...data }));
       toast.success('Profile updated');
       setEditOpen(false);
+    } catch {
+      toast.error('Failed to update profile');
     } finally {
       setEditLoading(false);
     }

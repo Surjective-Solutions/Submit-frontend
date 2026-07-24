@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { teacherClassSchema } from '@/lib/validations/teacher';
+import { updateClass } from '@/lib/api-client';
 
 function Field({ label, required, error, id, children }) {
   return (
@@ -60,6 +61,7 @@ export default function EditClassDialog({ open, onOpenChange, classItem, onSave 
   async function onSubmit(data) {
     setIsLoading(true);
     try {
+      await updateClass(classItem.id, data);
       toast.success('Class updated successfully');
       onOpenChange(false);
       onSave({ ...classItem, ...data });

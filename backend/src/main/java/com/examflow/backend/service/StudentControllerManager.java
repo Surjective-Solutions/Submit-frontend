@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
+import com.examflow.backend.dto.UserSignUpRequest;
 import com.examflow.backend.dto.StudentResponse;
 import com.examflow.backend.entity.Student;
 
@@ -19,4 +20,6 @@ public interface StudentControllerManager {
     List<ClassResponse> getAllEnrolledClass();
 
     StudentResponse getStudentById(Integer id);
+
+    GeneralResponse updateStudent(Integer id, UserSignUpRequest studentRequest);
 }

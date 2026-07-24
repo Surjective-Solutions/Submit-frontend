@@ -192,9 +192,16 @@ export async function createClass(data) {
   return protectedRequest("/api/class/create", { body: data });
 }
 
-// TODO: replace with actual microservice endpoint
 export async function updateClass(id, data) {
-  return request(`/teacher/classes/${id}`, { method: "PUT", body: data });
+  return protectedRequest(`/api/class/update/${id}`, {
+    method: "PUT",
+    body: {
+      display_name: data.display_name,
+      description: data.description,
+      subject_name: data.subject_name,
+      monthly_fee: data.monthly_fee,
+    },
+  });
 }
 
 // TODO: replace with actual microservice endpoint
@@ -303,9 +310,8 @@ export async function getStudentsTeachers() {
   return protectedRequestPath("/api/tutor/get-all-teachers", { method: "GET" });
 }
 
-// TODO: replace with actual microservice endpoint
 export async function updateStudent(id, data) {
-  return request(`/admin/students/${id}`, { method: "PUT", body: data });
+  return protectedRequestPath(`/api/student/update/${id}`, { method: "PUT", body: data });
 }
 
 // ── Admin Instructors ─────────────────────────────────────────────────────────
@@ -315,9 +321,16 @@ export async function getAdminInstructors() {
   return request("/admin/instructors", { method: "GET" });
 }
 
-// TODO: replace with actual microservice endpoint
 export async function updateAdminInstructor(id, data) {
-  return request(`/admin/instructors/${id}`, { method: "PUT", body: data });
+  return protectedRequest(`/api/instructor/update/${id}`, {
+    method: "PUT",
+    body: {
+      fullName: `${data.first_name} ${data.last_name}`,
+      email: data.email,
+      contactNumber: data.contact_number,
+      address: data.address ?? '',
+    },
+  });
 }
 
 // ── Student Profile ───────────────────────────────────────────────────────────
