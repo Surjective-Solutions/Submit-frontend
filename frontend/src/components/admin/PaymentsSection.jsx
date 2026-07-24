@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { Eye } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { Eye } from "lucide-react";
+import { toast } from "sonner";
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import {
   Table,
   TableHeader,
@@ -13,15 +17,16 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from '@/components/ui/table';
-import ReviewPaymentDialog from '@/components/cashier/ReviewPaymentDialog';
-import ViewPaymentDetailDialog from '@/components/cashier/ViewPaymentDetailDialog';
-import { MOCK_PAYMENTS } from '@/lib/mock-data';
+} from "@/components/ui/table";
+import ReviewPaymentDialog from "@/components/cashier/ReviewPaymentDialog";
+import ViewPaymentDetailDialog from "@/components/cashier/ViewPaymentDetailDialog";
+import { MOCK_PAYMENTS } from "@/lib/mock-data";
+import { getPaymentRecords } from "@/lib/api-client";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatLKR(amount) {
-  return `LKR ${Number(amount).toLocaleString('en-LK')}`;
+  return `LKR ${Number(amount).toLocaleString("en-LK")}`;
 }
 
 function relativeDate(iso) {
@@ -29,33 +34,35 @@ function relativeDate(iso) {
   const mins = Math.floor(diff / 60000);
   const hours = Math.floor(mins / 60);
   const days = Math.floor(hours / 24);
-  if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-  if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  if (mins > 0) return `${mins} min${mins > 1 ? 's' : ''} ago`;
-  return 'just now';
+  if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+  if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  if (mins > 0) return `${mins} min${mins > 1 ? "s" : ""} ago`;
+  return "just now";
 }
 
 function formatFullDate(iso) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
 function Initials({ name }) {
-  const parts = (name ?? '').trim().split(' ');
+  const parts = (name ?? "").trim().split(" ");
   const abbr =
     parts.length >= 2
       ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-      : (parts[0]?.slice(0, 2) ?? '?').toUpperCase();
+      : (parts[0]?.slice(0, 2) ?? "?").toUpperCase();
   return (
     <div
       className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0"
-      style={{ background: 'linear-gradient(135deg, #3940A0 0%, #34A0C5 100%)' }}
+      style={{
+        background: "linear-gradient(135deg, #3940A0 0%, #34A0C5 100%)",
+      }}
     >
       {abbr}
     </div>
@@ -76,18 +83,23 @@ function DateCell({ iso }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function PaymentsSection() {
-  const [payments, setPayments] = useState(() => [...MOCK_PAYMENTS]);
+  // const [payments, setPayments] = useState(() => [...MOCK_PAYMENTS]);
+  const [payments, setPayments] = useState([]);
   const [reviewPayment, setReviewPayment] = useState(null);
   const [viewDetail, setViewDetail] = useState(null);
 
+  useEffect(() => {
+    loadPaymentResponses();
+  }, []);
+
   const pending = payments
-    .filter((p) => p.status === 'PENDING')
+    .filter((p) => p.status === "PENDING")
     .sort((a, b) => new Date(a.submitted_at) - new Date(b.submitted_at));
   const approved = payments
-    .filter((p) => p.status === 'APPROVED')
+    .filter((p) => p.status === "APPROVED")
     .sort((a, b) => new Date(b.reviewed_at) - new Date(a.reviewed_at));
   const rejected = payments
-    .filter((p) => p.status === 'REJECTED')
+    .filter((p) => p.status === "REJECTED")
     .sort((a, b) => new Date(b.reviewed_at) - new Date(a.reviewed_at));
 
   function handleApprove(id, referenceNumber) {
@@ -96,16 +108,16 @@ export default function PaymentsSection() {
         p.id === id
           ? {
               ...p,
-              status: 'APPROVED',
+              status: "APPROVED",
               reference_number: referenceNumber,
               reviewed_at: new Date().toISOString(),
-              reviewed_by: 'Admin',
+              reviewed_by: "Admin",
             }
-          : p
-      )
+          : p,
+      ),
     );
     setReviewPayment(null);
-    toast.success('Payment approved successfully');
+    toast.success("Payment approved successfully");
   }
 
   function handleReject(id, reason) {
@@ -114,16 +126,25 @@ export default function PaymentsSection() {
         p.id === id
           ? {
               ...p,
-              status: 'REJECTED',
+              status: "REJECTED",
               rejection_reason: reason,
               reviewed_at: new Date().toISOString(),
-              reviewed_by: 'Admin',
+              reviewed_by: "Admin",
             }
-          : p
-      )
+          : p,
+      ),
     );
     setReviewPayment(null);
-    toast.success('Payment rejected');
+    toast.success("Payment rejected");
+  }
+
+  async function loadPaymentResponses() {
+    try {
+      const data = await getPaymentRecords();
+      setPayments(data);
+    } catch (error) {
+      toast.error("Failed to load cashiers");
+    }
   }
 
   return (
@@ -169,7 +190,10 @@ export default function PaymentsSection() {
               <TableBody>
                 {pending.length === 0 ? (
                   <TableRow className="odd:bg-white even:bg-white hover:bg-white">
-                    <TableCell colSpan={7} className="py-14 text-center text-gray-400 text-sm">
+                    <TableCell
+                      colSpan={7}
+                      className="py-14 text-center text-gray-400 text-sm"
+                    >
                       No pending payments.
                     </TableCell>
                   </TableRow>
@@ -181,18 +205,28 @@ export default function PaymentsSection() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium text-gray-900 text-sm whitespace-nowrap">{p.student_name}</p>
-                          <p className="font-mono text-[10px] text-gray-400">{p.student_number}</p>
+                          <p className="font-medium text-gray-900 text-sm whitespace-nowrap">
+                            {p.student_name}
+                          </p>
+                          <p className="font-mono text-[10px] text-gray-400">
+                            {p.student_number}
+                          </p>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-700 whitespace-nowrap">{p.teacher_name}</span>
+                        <span className="text-sm text-gray-700 whitespace-nowrap">
+                          {p.teacher_name}
+                        </span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-700">{p.class_name}</span>
+                        <span className="text-sm text-gray-700">
+                          {p.class_name}
+                        </span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">{formatLKR(p.amount)}</span>
+                        <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">
+                          {formatLKR(p.amount)}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <DateCell iso={p.submitted_at} />
@@ -233,7 +267,10 @@ export default function PaymentsSection() {
               <TableBody>
                 {approved.length === 0 ? (
                   <TableRow className="odd:bg-white even:bg-white hover:bg-white">
-                    <TableCell colSpan={8} className="py-14 text-center text-gray-400 text-sm">
+                    <TableCell
+                      colSpan={8}
+                      className="py-14 text-center text-gray-400 text-sm"
+                    >
                       No approved payments yet.
                     </TableCell>
                   </TableRow>
@@ -245,18 +282,28 @@ export default function PaymentsSection() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium text-gray-900 text-sm whitespace-nowrap">{p.student_name}</p>
-                          <p className="font-mono text-[10px] text-gray-400">{p.student_number}</p>
+                          <p className="font-medium text-gray-900 text-sm whitespace-nowrap">
+                            {p.student_name}
+                          </p>
+                          <p className="font-mono text-[10px] text-gray-400">
+                            {p.student_number}
+                          </p>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-700 whitespace-nowrap">{p.teacher_name}</span>
+                        <span className="text-sm text-gray-700 whitespace-nowrap">
+                          {p.teacher_name}
+                        </span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-700">{p.class_name}</span>
+                        <span className="text-sm text-gray-700">
+                          {p.class_name}
+                        </span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">{formatLKR(p.amount)}</span>
+                        <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">
+                          {formatLKR(p.amount)}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold whitespace-nowrap">
@@ -305,7 +352,10 @@ export default function PaymentsSection() {
               <TableBody>
                 {rejected.length === 0 ? (
                   <TableRow className="odd:bg-white even:bg-white hover:bg-white">
-                    <TableCell colSpan={8} className="py-14 text-center text-gray-400 text-sm">
+                    <TableCell
+                      colSpan={8}
+                      className="py-14 text-center text-gray-400 text-sm"
+                    >
                       No rejected payments.
                     </TableCell>
                   </TableRow>
@@ -317,26 +367,38 @@ export default function PaymentsSection() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium text-gray-900 text-sm whitespace-nowrap">{p.student_name}</p>
-                          <p className="font-mono text-[10px] text-gray-400">{p.student_number}</p>
+                          <p className="font-medium text-gray-900 text-sm whitespace-nowrap">
+                            {p.student_name}
+                          </p>
+                          <p className="font-mono text-[10px] text-gray-400">
+                            {p.student_number}
+                          </p>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-700 whitespace-nowrap">{p.teacher_name}</span>
+                        <span className="text-sm text-gray-700 whitespace-nowrap">
+                          {p.teacher_name}
+                        </span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-700">{p.class_name}</span>
+                        <span className="text-sm text-gray-700">
+                          {p.class_name}
+                        </span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">{formatLKR(p.amount)}</span>
+                        <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">
+                          {formatLKR(p.amount)}
+                        </span>
                       </TableCell>
                       <TableCell className="max-w-[180px]">
                         <Tooltip>
                           <TooltipTrigger className="text-sm text-gray-600 text-left line-clamp-1 cursor-default">
-                            {(p.rejection_reason ?? '').slice(0, 40)}
-                            {(p.rejection_reason ?? '').length > 40 ? '…' : ''}
+                            {(p.rejection_reason ?? "").slice(0, 40)}
+                            {(p.rejection_reason ?? "").length > 40 ? "…" : ""}
                           </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">{p.rejection_reason}</TooltipContent>
+                          <TooltipContent className="max-w-xs">
+                            {p.rejection_reason}
+                          </TooltipContent>
                         </Tooltip>
                       </TableCell>
                       <TableCell>

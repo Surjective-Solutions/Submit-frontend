@@ -346,14 +346,14 @@ export async function getPayments() {
 
 // TODO: replace with actual microservice endpoint
 export async function approvePayment(id, referenceNumber) {
-  return request(`/cashier/payments/${id}/approve`, {
+  return protectedRequest(`/api/payments/${id}/approve`, {
     body: { reference_number: referenceNumber },
   });
 }
 
 // TODO: replace with actual microservice endpoint
 export async function rejectPayment(id, rejectionReason) {
-  return request(`/cashier/payments/${id}/reject`, {
+  return protectedRequest(`/api/payments/${id}/reject`, {
     body: { rejection_reason: rejectionReason },
   });
 }
@@ -367,7 +367,7 @@ export async function createStudent(data) {
 
 // get single tutor by ID for profile display
 export async function getTutorById(id) {
-  return protectedRequest(`/api/tutor/get-tutor/${id}`, { method: 'GET' });
+  return protectedRequest(`/api/tutor/get-tutor/${id}`, { method: "GET" });
 }
 
 // TODO: replace with actual microservice endpoint
@@ -382,19 +382,27 @@ export async function createTutor(data) {
 
 // TODO: replace with actual microservice endpoint
 export async function updateTutor(id, data) {
-  return protectedRequestPath(`/api/tutor/update/${id}`, { method: "PUT", body: data });
+  return protectedRequestPath(`/api/tutor/update/${id}`, {
+    method: "PUT",
+    body: data,
+  });
 }
 
 // TODO: replace with actual microservice endpoint
 export async function deleteTutor(id) {
-  return protectedRequestPath(`/api/tutor/delete/${id}`, { method: "DELETE", body: { id } });
+  return protectedRequestPath(`/api/tutor/delete/${id}`, {
+    method: "DELETE",
+    body: { id },
+  });
 }
 
 // ── Cashiers ──────────────────────────────────────────────────────────────────
 
 // TODO: replace with actual microservice endpoint
 export async function getCashiers() {
-  return protectedRequestPath("/api/cashier/get-all-cashiers", { method: "GET" });
+  return protectedRequestPath("/api/cashier/get-all-cashiers", {
+    method: "GET",
+  });
 }
 
 // TODO: replace with actual microservice endpoint
@@ -404,12 +412,18 @@ export async function createCashier(data) {
 
 // TODO: replace with actual microservice endpoint
 export async function updateCashier(id, data) {
-  return protectedRequestPath(`/api/cashier/update/${id}`, { method: "PUT", body: data });
+  return protectedRequestPath(`/api/cashier/update/${id}`, {
+    method: "PUT",
+    body: data,
+  });
 }
 
 // TODO: replace with actual microservice endpoint
 export async function deleteCashier(id) {
-  return protectedRequestPath(`/api/cashier/delete/${id}`, { method: "DELETE", body: { id } });
+  return protectedRequestPath(`/api/cashier/delete/${id}`, {
+    method: "DELETE",
+    body: { id },
+  });
 }
 
 export async function getTeacherPapers(teacherId) {
@@ -443,18 +457,25 @@ export async function submitGrades(submissionId, gradesData) {
   return {};
 }
 
-
 // get bank accounts
 export async function getBankAccounts() {
-  return protectedRequest("/api/payments/get-all-bankAcoounts", { method: "GET" });
+  return protectedRequest("/api/payments/get-all-bankAcoounts", {
+    method: "GET",
+  });
 }
-
 
 //make banktransfer payment
 export async function makeBankTransfer(formData) {
-    return protectedRequestWithFileHandling("/api/payments/makeBakTransfer", {
+  return protectedRequestWithFileHandling("/api/payments/makeBakTransfer", {
     method: "POST",
     body: formData,
+  });
+}
+
+// TODO: replace with actual microservice endpoint
+export async function getPaymentRecords() {
+  return protectedRequestPath("/api/payments/get-all-payments", {
+    method: "GET",
   });
 }
 
