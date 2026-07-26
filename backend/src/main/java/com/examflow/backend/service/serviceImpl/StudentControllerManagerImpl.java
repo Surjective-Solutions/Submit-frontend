@@ -83,6 +83,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
             studentResponse.setWhatsapp_number(student.getWhatsappNumber());
             studentResponse.setSchool_name(student.getSchoolName());
             studentResponse.setSubject_stream(student.getSubjectStream());
+            studentResponse.setStudent_number(student.getStudentNo());
             studentResponse.setSubject_stream(student.getSubjectStream());
             studentResponse.setGuardian_name(student.getGuardianName());
             studentResponse.setGuardian_contact(student.getGuardianContactNumber());

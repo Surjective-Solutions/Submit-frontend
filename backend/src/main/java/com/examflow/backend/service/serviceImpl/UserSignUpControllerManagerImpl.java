@@ -88,6 +88,7 @@ public class UserSignUpControllerManagerImpl implements UserSignUpControllermana
             student.setMarketingConsent(userSignUpRequest.getMarketingConsent());
             student.setRegisterDateTime(LocalDateTime.now());
             student.setDob(userSignUpRequest.getDateOfBirth());
+            student.setStudentNo(noConfig.NoConfigCreation("student"));
             student.setTermsAccepted(userSignUpRequest.getTermsAccepted());
             student.setFinalPassword(passwordEncoder.encode(userSignUpRequest.getConfirmPassword()));
             student.setStatus(2);// set status to approved status
@@ -142,7 +143,8 @@ public class UserSignUpControllerManagerImpl implements UserSignUpControllermana
             instructor.setStatus(2);
             instructor.setIsOtpVerified(false);
             instructor.setFullName(instructorSignUpRequest.getFullName());
-            String instrutorNo = noConfig.instructorNoConfigCreation();
+            String instrutorNo = noConfig.NoConfigCreation("Instructor");
+            System.out.println(instrutorNo);
             instructor.setInstrutorNo(instrutorNo);
 
             instructorRepository.save(instructor);

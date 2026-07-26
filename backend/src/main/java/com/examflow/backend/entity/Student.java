@@ -32,6 +32,7 @@ public class Student {
     private LocalDate dob;
     private String grade;
     private String schoolName;
+    private String studentNo;
     private String whatsappNumber;
     private Boolean marketingConsent;
     private Boolean termsAccepted;
@@ -236,6 +237,15 @@ public class Student {
 
     public void setDob(LocalDate dob) {
         this.dob = dob;
+    }
+
+    @Column(name = "studentNo")
+    public String getStudentNo() {
+        return studentNo;
+    }
+
+    public void setStudentNo(String studentNo) {
+        this.studentNo = studentNo;
     }
 
 }
