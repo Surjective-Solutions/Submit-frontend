@@ -16,13 +16,13 @@ public class NoConfiguration {
 
     private Integer noConfigValue;
 
-    private String Suffix;
+    private String suffix;
 
     private Integer nextNumber;
 
     @Id
     @GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
-    @Column(name = "no_config_seq")
+    @Column(name = "noConfigSeq")
     public Integer getNoConfigSeq() {
         return noConfigSeq;
     }
@@ -49,14 +49,6 @@ public class NoConfiguration {
         this.noConfigValue = noConfigValue;
     }
 
-    @Column(name = "Suffix")
-    public String getSuffix() {
-        return Suffix;
-    }
-
-    public void setSuffix(String suffix) {
-        Suffix = suffix;
-    }
 
     @Column(name = "nextNumber")
     public Integer getNextNumber() {
@@ -65,6 +57,15 @@ public class NoConfiguration {
 
     public void setNextNumber(Integer nextNumber) {
         this.nextNumber = nextNumber;
+    }
+
+    @Column(name = "suffix")
+    public String getSuffix() {
+        return suffix;
+    }
+
+    public void setSuffix(String suffix) {
+        this.suffix = suffix;
     }
 
 }

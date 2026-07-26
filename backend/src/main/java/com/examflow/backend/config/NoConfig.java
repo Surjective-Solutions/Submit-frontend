@@ -16,14 +16,15 @@ public class NoConfig {
         this.noConfigRepository = noConfigRepository;
     }
 
-    public String instructorNoConfigCreation() {
+    public String NoConfigCreation(String role) {
         String instructorNo = "";
-        NoConfiguration noConfig = noConfigRepository.findByNoConfigName("Instructor");
+        NoConfiguration noConfig = noConfigRepository.findByNoConfigName(role);
         if (noConfig != null) {
             Integer nextNo = noConfig.getNextNumber();
             String suffix = noConfig.getSuffix();
             instructorNo = suffix + nextNo;
-            noConfig.setNextNumber(nextNo + 1);
+            noConfig.setNextNumber(nextNo + noConfig.getNoConfigValue());
+            System.out.println(instructorNo);
             noConfigRepository.save(noConfig);
 
         }
