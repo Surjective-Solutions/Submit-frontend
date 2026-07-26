@@ -4,6 +4,10 @@ public class InstructorSignUpRequest {
 
     private String fullName;
 
+    private String firstName;
+
+    private String lastName;
+
     private String address;
 
     private String contactNumber;
@@ -12,9 +16,14 @@ public class InstructorSignUpRequest {
 
     private String nicNumber;
 
+    private String employeeId;
+
     private Boolean termsAccepted;
 
     private String password;
+
+    private String status;
+    private String subjectArea;
 
     private String confirmPassword;
 
@@ -80,6 +89,46 @@ public class InstructorSignUpRequest {
 
     public void setConfirmPassword(String confirmPassword) {
         this.confirmPassword = confirmPassword;
+    }
+
+    public String getEmployeeId() {
+        return employeeId;
+    }
+
+    public void setEmployeeId(String employeeId) {
+        this.employeeId = employeeId;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getSubjectArea() {
+        return subjectArea;
+    }
+
+    public void setSubjectArea(String subjectArea) {
+        this.subjectArea = subjectArea;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
 }

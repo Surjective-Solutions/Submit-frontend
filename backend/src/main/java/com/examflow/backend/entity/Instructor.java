@@ -1,6 +1,8 @@
 package com.examflow.backend.entity;
 
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -32,9 +34,15 @@ public class Instructor {
 
     private Integer status;
 
+    private String subjectArea;
+
     private String email;
 
     private Boolean isOtpVerified;
+
+    private String lastModifiedBy;
+
+    private LocalDateTime lastModifiedDateTime;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -153,6 +161,33 @@ public class Instructor {
 
     public void setInstrutorNo(String instrutorNo) {
         this.instrutorNo = instrutorNo;
+    }
+
+    @Column(name = "subjectArea")
+    public String getSubjectArea() {
+        return subjectArea;
+    }
+
+    public void setSubjectArea(String subjectArea) {
+        this.subjectArea = subjectArea;
+    }
+
+    @Column(name = "lastModifiedBy")
+    public String getLastModifiedBy() {
+        return lastModifiedBy;
+    }
+
+    public void setLastModifiedBy(String lastModifiedBy) {
+        this.lastModifiedBy = lastModifiedBy;
+    }
+
+    @Column(name = "lastModifiedDateTime")
+    public LocalDateTime getLastModifiedDateTime() {
+        return lastModifiedDateTime;
+    }
+
+    public void setLastModifiedDateTime(LocalDateTime lastModifiedDateTime) {
+        this.lastModifiedDateTime = lastModifiedDateTime;
     }
 
 }

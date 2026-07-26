@@ -19,6 +19,8 @@ public interface InstructorRepository extends JpaRepository<Instructor, Integer>
 
     List<Instructor> findByStatus(Integer status);
 
+    List<Instructor> findByStatusNot(Integer status);
+
     Instructor findByInstrutorNo(String instructorNo);
 
 }
