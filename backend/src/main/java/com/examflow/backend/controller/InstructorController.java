@@ -16,6 +16,7 @@ import com.examflow.backend.dto.InstructorResponse;
 import com.examflow.backend.service.InstructorControllerManager;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.InstructorSignUpRequest;
+import com.examflow.backend.dto.InstructorTeacherResponse;
 
 @RestController
 @RequestMapping("/api/instructor")
@@ -42,6 +43,11 @@ public class InstructorController {
     @PutMapping("/update/{id}")
     public GeneralResponse updateInstructor(@PathVariable Integer id, @RequestBody InstructorSignUpRequest instructorRequest) {
         return instructorControllerManager.updateInstructor(id, instructorRequest);
+    }
+
+    @GetMapping("/get-instructor-teachers")
+    public List<InstructorTeacherResponse> getInstructorTeacher() {
+        return instructorControllerManager.getIntructorTeachers();
     }
 
 }
