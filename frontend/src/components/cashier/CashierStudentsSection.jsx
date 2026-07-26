@@ -1,12 +1,16 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Search, Eye, Pencil, UserPlus } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState, useMemo, useEffect } from "react";
+import { Search, Eye, Pencil, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import {
   Table,
   TableHeader,
@@ -14,37 +18,41 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from '@/components/ui/table';
-import ViewStudentDialog from '@/components/admin/ViewStudentDialog';
-import EditStudentDialog from '@/components/admin/EditStudentDialog';
-import AddStudentDialog from './AddStudentDialog';
-import { MOCK_STUDENTS } from '@/lib/mock-data';
+} from "@/components/ui/table";
+import ViewStudentDialog from "@/components/admin/ViewStudentDialog";
+import EditStudentDialog from "@/components/admin/EditStudentDialog";
+import AddStudentDialog from "./AddStudentDialog";
+import { MOCK_STUDENTS } from "@/lib/mock-data";
+import { getStudents } from "@/lib/api-client";
 
 const STATUS_STYLES = {
-  ACTIVE: 'bg-green-100 text-green-700',
-  INACTIVE: 'bg-gray-100 text-gray-600',
-  SUSPENDED: 'bg-red-100 text-red-700',
-  GRADUATED: 'bg-blue-100 text-blue-700',
+  ACTIVE: "bg-green-100 text-green-700",
+  INACTIVE: "bg-gray-100 text-gray-600",
+  SUSPENDED: "bg-red-100 text-red-700",
+  GRADUATED: "bg-blue-100 text-blue-700",
 };
 
 const STREAM_COLORS = {
-  'Physical Science': 'bg-blue-50 text-blue-700',
-  'Biological Science': 'bg-green-50 text-green-700',
-  Commerce: 'bg-amber-50 text-amber-700',
-  Arts: 'bg-pink-50 text-pink-700',
-  Technology: 'bg-violet-50 text-violet-700',
-  'Combined Mathematics': 'bg-cyan-50 text-cyan-700',
-  default: 'bg-gray-100 text-gray-600',
+  "Physical Science": "bg-blue-50 text-blue-700",
+  "Biological Science": "bg-green-50 text-green-700",
+  Commerce: "bg-amber-50 text-amber-700",
+  Arts: "bg-pink-50 text-pink-700",
+  Technology: "bg-violet-50 text-violet-700",
+  "Combined Mathematics": "bg-cyan-50 text-cyan-700",
+  default: "bg-gray-100 text-gray-600",
 };
 
 function Avatar({ firstName, lastName }) {
-  const f = (firstName || '').trim();
-  const l = (lastName || '').trim();
-  const initials = f && l ? (f[0] + l[0]).toUpperCase() : (f.slice(0, 2) || '?').toUpperCase();
+  const f = (firstName || "").trim();
+  const l = (lastName || "").trim();
+  const initials =
+    f && l ? (f[0] + l[0]).toUpperCase() : (f.slice(0, 2) || "?").toUpperCase();
   return (
     <div
       className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0"
-      style={{ background: 'linear-gradient(135deg, #3940A0 0%, #34A0C5 100%)' }}
+      style={{
+        background: "linear-gradient(135deg, #3940A0 0%, #34A0C5 100%)",
+      }}
       aria-hidden="true"
     >
       {initials}
@@ -55,17 +63,22 @@ function Avatar({ firstName, lastName }) {
 let nextStudentId = MOCK_STUDENTS.length + 1;
 
 function generateStudentNumber() {
-  return `SUBMITX-2026-${String(nextStudentId).padStart(6, '0')}`;
+  return `SUBMITX-2026-${String(nextStudentId).padStart(6, "0")}`;
 }
 
 export default function CashierStudentsSection() {
-  const [students, setStudents] = useState(MOCK_STUDENTS);
-  const [search, setSearch] = useState('');
+  // const [students, setStudents] = useState(MOCK_STUDENTS);
+  const [students, setStudents] = useState([]);
+  const [search, setSearch] = useState("");
   const [viewStudent, setViewStudent] = useState(null);
   const [editStudent, setEditStudent] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
+
+  useEffect(() => {
+    loadStudents();
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -75,7 +88,7 @@ export default function CashierStudentsSection() {
       return (
         fullName.includes(q) ||
         s.student_number.toLowerCase().includes(q) ||
-        (s.email ?? '').toLowerCase().includes(q) ||
+        (s.email ?? "").toLowerCase().includes(q) ||
         s.contact_number.includes(q)
       );
     });
@@ -88,11 +101,16 @@ export default function CashierStudentsSection() {
       setStudents((prev) =>
         prev.map((s) =>
           s.id === editStudent.id
-            ? { ...s, ...data, profile_photo_url: data.profile_photo_url ?? s.profile_photo_url ?? null }
-            : s
-        )
+            ? {
+                ...s,
+                ...data,
+                profile_photo_url:
+                  data.profile_photo_url ?? s.profile_photo_url ?? null,
+              }
+            : s,
+        ),
       );
-      toast.success('Student updated successfully');
+      toast.success("Student updated successfully");
       setEditStudent(null);
     } finally {
       setEditLoading(false);
@@ -107,20 +125,20 @@ export default function CashierStudentsSection() {
         student_number: generateStudentNumber(),
         first_name: data.first_name,
         last_name: data.last_name,
-        email: data.email ?? '',
+        email: data.email ?? "",
         contact_number: data.contact_number,
-        date_of_birth: data.date_of_birth ?? '',
+        date_of_birth: data.date_of_birth ?? "",
         gender: data.gender,
-        whatsapp_number: data.whatsapp_number ?? '',
-        school_name: data.school_name ?? '',
-        grade: data.grade ?? '',
-        subject_stream: data.subject_stream ?? '',
-        guardian_name: data.guardian_name ?? '',
-        guardian_contact: data.guardian_contact ?? '',
-        address: data.address ?? '',
-        district: data.district ?? '',
+        whatsapp_number: data.whatsapp_number ?? "",
+        school_name: data.school_name ?? "",
+        grade: data.grade ?? "",
+        subject_stream: data.subject_stream ?? "",
+        guardian_name: data.guardian_name ?? "",
+        guardian_contact: data.guardian_contact ?? "",
+        address: data.address ?? "",
+        district: data.district ?? "",
         profile_photo_url: null,
-        status: 'ACTIVE',
+        status: "ACTIVE",
       };
       nextStudentId++;
       setStudents((prev) => [newStudent, ...prev]);
@@ -131,13 +149,24 @@ export default function CashierStudentsSection() {
     }
   }
 
+  async function loadStudents() {
+    try {
+      const data = await getStudents();
+      setStudents(data);
+    } catch (error) {
+      toast.error("Failed to load students");
+    }
+  }
+
   return (
     <div className="space-y-5">
       {/* Page header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2.5">
           <h2 className="text-xl font-semibold text-gray-900">Students</h2>
-          <span className="text-sm text-gray-400">•&nbsp;{students.length} total</span>
+          <span className="text-sm text-gray-400">
+            •&nbsp;{students.length} total
+          </span>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <div className="relative w-full sm:w-72">
@@ -153,7 +182,9 @@ export default function CashierStudentsSection() {
           <Button
             onClick={() => setAddOpen(true)}
             className="text-white shrink-0"
-            style={{ background: 'linear-gradient(135deg, #3940A0 0%, #5a62ff 100%)' }}
+            style={{
+              background: "linear-gradient(135deg, #3940A0 0%, #5a62ff 100%)",
+            }}
           >
             <UserPlus className="h-4 w-4 mr-1.5" />
             Add New Student
@@ -179,14 +210,21 @@ export default function CashierStudentsSection() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow className="odd:bg-white even:bg-white hover:bg-white">
-                <TableCell colSpan={8} className="py-14 text-center text-gray-400 text-sm">
-                  {search ? `No results found for "${search}"` : 'No students yet.'}
+                <TableCell
+                  colSpan={8}
+                  className="py-14 text-center text-gray-400 text-sm"
+                >
+                  {search
+                    ? `No results found for "${search}"`
+                    : "No students yet."}
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((s) => {
-                const statusClass = STATUS_STYLES[s.status] ?? STATUS_STYLES.INACTIVE;
-                const streamColor = STREAM_COLORS[s.subject_stream] ?? STREAM_COLORS.default;
+                const statusClass =
+                  STATUS_STYLES[s.status] ?? STATUS_STYLES.INACTIVE;
+                const streamColor =
+                  STREAM_COLORS[s.subject_stream] ?? STREAM_COLORS.default;
                 return (
                   <TableRow key={s.id}>
                     <TableCell className="pl-4">
@@ -204,11 +242,13 @@ export default function CashierStudentsSection() {
                     </TableCell>
                     <TableCell>
                       <span className="text-gray-500 text-sm max-w-[160px] truncate block">
-                        {s.email ?? '—'}
+                        {s.email ?? "—"}
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-gray-700 text-sm whitespace-nowrap">{s.contact_number}</span>
+                      <span className="text-gray-700 text-sm whitespace-nowrap">
+                        {s.contact_number}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
@@ -218,14 +258,18 @@ export default function CashierStudentsSection() {
                           </span>
                         )}
                         {s.subject_stream && (
-                          <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium w-fit ${streamColor}`}>
+                          <span
+                            className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium w-fit ${streamColor}`}
+                          >
                             {s.subject_stream}
                           </span>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${statusClass}`}>
+                      <span
+                        className={`text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${statusClass}`}
+                      >
                         {s.status}
                       </span>
                     </TableCell>

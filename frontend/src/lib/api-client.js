@@ -321,14 +321,35 @@ export async function getAdminInstructors() {
   return request("/admin/instructors", { method: "GET" });
 }
 
+// export async function updateAdminInstructor(id, data) {
+//   return protectedRequest(`/api/instructor/update/${id}`, {
+//     method: "PUT",
+//     body: {
+//       fullName: `${data.first_name} ${data.last_name}`,
+//       email: data.email,
+      
+//       contactNumber: data.contact_number,
+//       address: data.address ?? '',
+//     },
+//   });
+// }
+
+
+
 export async function updateAdminInstructor(id, data) {
   return protectedRequest(`/api/instructor/update/${id}`, {
     method: "PUT",
     body: {
-      fullName: `${data.first_name} ${data.last_name}`,
+      firstName: data.first_name,
+      lastName: data.last_name,
+      employeeId: data.employee_id,
+      subjectArea: data.subject_area,
       email: data.email,
       contactNumber: data.contact_number,
-      address: data.address ?? '',
+      status: data.status,
+      ...(data.new_password && {
+        password: data.new_password,
+      }),
     },
   });
 }

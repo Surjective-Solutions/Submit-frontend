@@ -1,11 +1,15 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Search, Eye, Pencil } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState, useMemo, useEffect } from "react";
+import { Search, Eye, Pencil } from "lucide-react";
+import { toast } from "sonner";
 
-import { Input } from '@/components/ui/input';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Input } from "@/components/ui/input";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import {
   Table,
   TableHeader,
@@ -13,28 +17,33 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from '@/components/ui/table';
-import ViewAdminInstructorDialog from '@/components/admin/ViewAdminInstructorDialog';
-import EditAdminInstructorDialog from '@/components/admin/EditAdminInstructorDialog';
-import { MOCK_ADMIN_INSTRUCTORS } from '@/lib/mock-data';
+} from "@/components/ui/table";
+import ViewAdminInstructorDialog from "@/components/admin/ViewAdminInstructorDialog";
+import EditAdminInstructorDialog from "@/components/admin/EditAdminInstructorDialog";
+import { MOCK_ADMIN_INSTRUCTORS } from "@/lib/mock-data";
+import { getInstructors } from "@/lib/api-client";
 
 const SUBJECT_COLORS = {
-  Mathematics: 'bg-blue-50 text-blue-700',
-  Physics: 'bg-orange-50 text-orange-700',
-  Chemistry: 'bg-purple-50 text-purple-700',
-  Biology: 'bg-green-50 text-green-700',
-  'English Literature': 'bg-pink-50 text-pink-700',
-  default: 'bg-gray-100 text-gray-600',
+  Mathematics: "bg-blue-50 text-blue-700",
+  Physics: "bg-orange-50 text-orange-700",
+  Chemistry: "bg-purple-50 text-purple-700",
+  Biology: "bg-green-50 text-green-700",
+  "English Literature": "bg-pink-50 text-pink-700",
+  default: "bg-gray-100 text-gray-600",
 };
 
 function Avatar({ firstName, lastName }) {
-  const f = (firstName || '').trim();
-  const l = (lastName || '').trim();
-  const initials = f && l ? (f[0] + l[0]).toUpperCase() : (f.slice(0, 2) || '?').toUpperCase();
+  const f = (firstName || "").trim();
+  const l = (lastName || "").trim();
+  const initials =
+    f && l ? (f[0] + l[0]).toUpperCase() : (f.slice(0, 2) || "?").toUpperCase();
   return (
     <div
       className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
-      style={{ background: 'linear-gradient(135deg, #E9D848 0%, #d4c030 100%)', color: '#1a1a00' }}
+      style={{
+        background: "linear-gradient(135deg, #E9D848 0%, #d4c030 100%)",
+        color: "#1a1a00",
+      }}
       aria-hidden="true"
     >
       {initials}
@@ -43,11 +52,16 @@ function Avatar({ firstName, lastName }) {
 }
 
 export default function CashierInstructorsSection() {
-  const [instructors, setInstructors] = useState(MOCK_ADMIN_INSTRUCTORS);
-  const [search, setSearch] = useState('');
+  // const [instructors, setInstructors] = useState(MOCK_ADMIN_INSTRUCTORS);
+  const [instructors, setInstructors] = useState([]);
+  const [search, setSearch] = useState("");
   const [viewInstructor, setViewInstructor] = useState(null);
   const [editInstructor, setEditInstructor] = useState(null);
   const [editLoading, setEditLoading] = useState(false);
+
+  useEffect(() => {
+    loadInstructors();
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -57,7 +71,7 @@ export default function CashierInstructorsSection() {
       return (
         fullName.includes(q) ||
         i.employee_id.toLowerCase().includes(q) ||
-        (i.email ?? '').toLowerCase().includes(q) ||
+        (i.email ?? "").toLowerCase().includes(q) ||
         i.contact_number.includes(q)
       );
     });
@@ -68,12 +82,21 @@ export default function CashierInstructorsSection() {
     setEditLoading(true);
     try {
       setInstructors((prev) =>
-        prev.map((i) => (i.id === editInstructor.id ? { ...i, ...data } : i))
+        prev.map((i) => (i.id === editInstructor.id ? { ...i, ...data } : i)),
       );
-      toast.success('Instructor updated successfully');
+      toast.success("Instructor updated successfully");
       setEditInstructor(null);
     } finally {
       setEditLoading(false);
+    }
+  }
+
+  async function loadInstructors() {
+    try {
+      const data = await getInstructors();
+      setInstructors(data);
+    } catch (error) {
+      toast.error("Failed to load Instructors");
     }
   }
 
@@ -83,7 +106,9 @@ export default function CashierInstructorsSection() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2.5">
           <h2 className="text-xl font-semibold text-gray-900">Instructors</h2>
-          <span className="text-sm text-gray-400">•&nbsp;{instructors.length} total</span>
+          <span className="text-sm text-gray-400">
+            •&nbsp;{instructors.length} total
+          </span>
         </div>
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -115,14 +140,20 @@ export default function CashierInstructorsSection() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow className="odd:bg-white even:bg-white hover:bg-white">
-                <TableCell colSpan={8} className="py-14 text-center text-gray-400 text-sm">
-                  {search ? `No results found for "${search}"` : 'No instructors yet.'}
+                <TableCell
+                  colSpan={8}
+                  className="py-14 text-center text-gray-400 text-sm"
+                >
+                  {search
+                    ? `No results found for "${search}"`
+                    : "No instructors yet."}
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((i) => {
-                const subjectColor = SUBJECT_COLORS[i.subject_area] ?? SUBJECT_COLORS.default;
-                const isActive = i.status === 'ACTIVE';
+                const subjectColor =
+                  SUBJECT_COLORS[i.subject_area] ?? SUBJECT_COLORS.default;
+                const isActive = i.status === "ACTIVE";
                 return (
                   <TableRow key={i.id}>
                     <TableCell className="pl-4">
@@ -140,15 +171,19 @@ export default function CashierInstructorsSection() {
                     </TableCell>
                     <TableCell>
                       <span className="text-gray-500 text-sm max-w-[160px] truncate block">
-                        {i.email ?? '—'}
+                        {i.email ?? "—"}
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-gray-700 text-sm whitespace-nowrap">{i.contact_number}</span>
+                      <span className="text-gray-700 text-sm whitespace-nowrap">
+                        {i.contact_number}
+                      </span>
                     </TableCell>
                     <TableCell>
                       {i.subject_area && (
-                        <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${subjectColor}`}>
+                        <span
+                          className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${subjectColor}`}
+                        >
                           {i.subject_area}
                         </span>
                       )}
@@ -156,7 +191,9 @@ export default function CashierInstructorsSection() {
                     <TableCell>
                       <span
                         className={`text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${
-                          isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                          isActive
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-600"
                         }`}
                       >
                         {i.status}
