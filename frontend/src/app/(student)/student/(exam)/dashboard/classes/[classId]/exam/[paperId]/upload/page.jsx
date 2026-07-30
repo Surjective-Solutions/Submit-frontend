@@ -17,6 +17,8 @@ import { useEnrolledClasses } from '@/context/EnrolledClassesContext';
 import { useExamLock } from '@/context/ExamLockContext';
 import { useCountdownTimer } from '@/hooks/use-countdown-timer';
 import { UPLOAD_DURATION_SECONDS, findPaperInClass } from '@/lib/exam-utils';
+import { markPaperSubmitted } from '@/lib/submitted-papers';
+import { saveSubmissionPdf } from '@/lib/submission-pdf-storage';
 
 export default function AnswerUploadPage() {
   const { classId, paperId } = useParams();
@@ -36,7 +38,15 @@ export default function AnswerUploadPage() {
     timer.pause();
 
     // Mock submission — no backend yet.
-    setTimeout(() => {
+    setTimeout(async () => {
+      // TEMPORARY FRONTEND-ONLY WORKAROUND: persist the actual uploaded PDF in
+      // IndexedDB (keyed by paperId) and record the submission in
+      // sessionStorage, so the class detail page's "View Submission" button
+      // can open it until a real backend endpoint exists for storing and
+      // retrieving submitted exam PDFs. See lib/submission-pdf-storage.js and
+      // lib/submitted-papers.js.
+      await saveSubmissionPdf(paperId, file);
+      markPaperSubmitted(paperId);
       toast.success('Answer sheet submitted successfully!');
       unlockExam();
       router.replace(`/student/dashboard/classes/${classId}`);
