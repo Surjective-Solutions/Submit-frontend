@@ -119,32 +119,14 @@ export default function ClassDetailPage() {
     );
   }
 
-  function handleUpload(data) {
-    const file = data.pdf_file?.[0];
-    const month = Number(data.month);
-    const year = Number(data.year);
-    const paperId = `paper-new-${nextPaperId++}`;
-    const questions = (data.questions ?? []).map((q) => ({
-      id: `${paperId}-${q.question_label.toLowerCase().replace(/[()]/g, "")}`,
-      ...q,
-    }));
-    const newPaper = {
-      id: paperId,
-      paper_name: data.paper_name,
-      month,
-      year,
-      month_label: `${MONTHS[month - 1]} ${year}`,
-      number_of_questions: data.number_of_questions,
-      pdf_url: file ? `mock://${file.name}` : null,
-      uploaded_at: new Date().toISOString(),
-      status: data.status,
-      questions,
-      submissions: [],
-    };
-    foundClass.papers.unshift(newPaper);
-    setPapers((prev) => [newPaper, ...prev]);
-    toast.success("Paper uploaded successfully");
-    setUploadOpen(false);
+  function handleUpload(result) {
+    if (result?.isSuccess) {
+      toast.success('Paper uploaded successfully');
+      setUploadOpen(false);
+      loadClasses();
+    } else {
+      toast.error(result?.message ?? 'Failed to upload paper.');
+    }
   }
 
   async function loadClasses() {

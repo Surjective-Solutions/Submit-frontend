@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import PayNowDialog from '@/components/student/PayNowDialog';
 import ViewPaymentSubmissionDialog from '@/components/student/ViewPaymentSubmissionDialog';
+import StartExamConfirmDialog from '@/components/student/StartExamConfirmDialog';
 import { useEnrolledClasses } from '@/context/EnrolledClassesContext';
 import { MOCK_PAYMENTS } from '@/lib/mock-data';
 import {
@@ -187,7 +188,7 @@ function ViewPaperDialog({ open, onOpenChange, paper }) {
 
 // ── Current Papers — Paid ─────────────────────────────────────────────────────
 
-function PaidCurrentPapersSection({ monthLabel, papers }) {
+function PaidCurrentPapersSection({ monthLabel, papers, onStartExam }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-4">
@@ -229,7 +230,7 @@ function PaidCurrentPapersSection({ monthLabel, papers }) {
                         <Button
                           size="sm"
                           className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-7 px-3"
-                          onClick={() => toast.info('Exam flow coming soon')}
+                          onClick={() => onStartExam(paper)}
                         >
                           Start Exam
                         </Button>
@@ -429,6 +430,8 @@ export default function ClassDetailPage() {
   // const { classId } = useParams();
   const { classes } = useEnrolledClasses();
   const { classId } = useParams();
+  const router = useRouter();
+  const [pendingExamPaper, setPendingExamPaper] = useState(null);
 
   const cls = classes.find((c) => c.id === Number(classId));
 
@@ -484,6 +487,7 @@ export default function ClassDetailPage() {
         <PaidCurrentPapersSection
           monthLabel={currentMonthLabel}
           papers={currentPapers}
+          onStartExam={setPendingExamPaper}
         />
       ) : (
         <UnpaidCurrentSection
@@ -500,6 +504,16 @@ export default function ClassDetailPage() {
 
       {/* Previous Papers — monthly navigation */}
       <PreviousPapersSection cls={cls} />
+
+      <StartExamConfirmDialog
+        open={!!pendingExamPaper}
+        onOpenChange={(open) => !open && setPendingExamPaper(null)}
+        onConfirm={() => {
+          const paper = pendingExamPaper;
+          setPendingExamPaper(null);
+          router.push(`/student/dashboard/classes/${cls.id}/exam/${paper.id}`);
+        }}
+      />
     </div>
   );
 }
