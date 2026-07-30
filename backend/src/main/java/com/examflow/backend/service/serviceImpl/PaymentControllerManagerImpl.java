@@ -22,7 +22,6 @@ import com.examflow.backend.entity.Student;
 import com.examflow.backend.entity.StudentClassPaymentRecord;
 import com.examflow.backend.enums.paymentStatus;
 import com.examflow.backend.repository.BankAccountRepository;
-import com.examflow.backend.repository.ClassPaymentRecordRepository;
 import com.examflow.backend.repository.ClassesRepository;
 import com.examflow.backend.repository.StudentClassPaymentRecordsRepository;
 import com.examflow.backend.repository.StudentRepository;
@@ -47,22 +46,22 @@ public class PaymentControllerManagerImpl implements PaymentControllerManager {
 
     private HttpServletRequest request;
 
-    private final ClassPaymentRecordRepository classPaymentRecordRepository;
+    private final MonthlyPaymentService monthlyPaymentService;
 
     public PaymentControllerManagerImpl(BankAccountRepository bankAccountRepository,
-            ClassPaymentRecordRepository classPaymentRecordRepository,
             HttpServletRequest request,
             FileStorageService fileStorageService,
             StudentClassPaymentRecordsRepository studentClassPaymentRecordsRepository,
             StudentRepository studentRepository,
-            ClassesRepository classesRepository) {
+            ClassesRepository classesRepository,
+            MonthlyPaymentService monthlyPaymentService) {
         this.bankAccountRepository = bankAccountRepository;
         this.studentClassPaymentRecordsRepository = studentClassPaymentRecordsRepository;
         this.studentRepository = studentRepository;
         this.fileStorageService = fileStorageService;
-        this.classPaymentRecordRepository = classPaymentRecordRepository;
         this.classesRepository = classesRepository;
         this.request = request;
+        this.monthlyPaymentService = monthlyPaymentService;
     }
 
     @Override
@@ -97,9 +96,14 @@ public class PaymentControllerManagerImpl implements PaymentControllerManager {
         Integer currentYear = LocalDateTime.now().getYear();
         Integer currentMonth = LocalDateTime.now().getMonthValue();
         Classes classes = classesRepository.findByClassSeqAndStatus(classId, 2);
+        if (classes == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Class not found");
+            return response;
+        }
 
-        ClassPaymentRecord classPaymentRecord = classPaymentRecordRepository
-                .findByClassesAndMonthAndYearAndStatus(classes, currentMonth, currentYear, 2);
+        ClassPaymentRecord classPaymentRecord = monthlyPaymentService.getOrCreateClassPaymentRecord(classes,
+                currentMonth, currentYear, username);
 
         StudentClassPaymentRecord studentClassPaymentRecord = studentClassPaymentRecordsRepository
                 .findByStudentAndStatusAndClassPaymentRecord(student, 2, classPaymentRecord);

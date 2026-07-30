@@ -1,6 +1,7 @@
 package com.examflow.backend.controller;
 
 import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -48,12 +49,10 @@ public class PaymentController {
     @PostMapping(value = "/makeBakTransfer", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public GeneralResponse makeBankTransfer(
             @RequestParam("bank_account_id") Integer bankAccountId,
-            @RequestParam("class_id") Integer classId,
-            @RequestParam("receipt_file") MultipartFile receiptFile) {
+            @RequestParam("receipt_file") MultipartFile receiptFile,
+            @RequestParam("class_id") Integer classId) {
 
-        GeneralResponse generalResponse = new GeneralResponse();
-        generalResponse = paymentControllerManager.recordClassPayNow(bankAccountId, classId, receiptFile);
-        return generalResponse;
+        return paymentControllerManager.recordClassPayNow(bankAccountId, classId, receiptFile);
     }
 
     @GetMapping("/get-all-payments")

@@ -53,6 +53,7 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
     private final ClassPaymentRecordRepository classPaymentRecordRepository;
     private final UploadPaperQuestionRepository uploadPaperQuestionRepository;
     private final UploadPaperQuestionSubQuestionRepository uploadPaperQuestionSubQuestionRepository;
+    private final MonthlyPaymentService monthlyPaymentService;
 
     @Autowired
     public ClassControllerManagerImpl(HttpServletRequest request,
@@ -62,7 +63,8 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
             FileStorageService fileStorageService,
             ClassPaymentRecordRepository classPaymentRecordRepository,
             ClassesRepository classesRepository,
-            UploadPaperRepository uploadPaperRepository) {
+            UploadPaperRepository uploadPaperRepository,
+            MonthlyPaymentService monthlyPaymentService) {
         this.request = request;
         this.tutorRepository = tutorRepository;
         this.fileStorageService = fileStorageService;
@@ -71,6 +73,7 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         this.uploadPaperQuestionRepository = uploadPaperQuestionRepository;
         this.uploadPaperQuestionSubQuestionRepository = uploadPaperQuestionSubQuestionRepository;
         this.uploadPaperRepository = uploadPaperRepository;
+        this.monthlyPaymentService = monthlyPaymentService;
     }
 
     @Override
@@ -189,8 +192,6 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         GeneralResponse response = new GeneralResponse();
         Classes classes = classesRepository.findByClassSeqAndStatus(classId, 2);
         System.out.println(classId);
-        ClassPaymentRecord classPaymentRecord = classPaymentRecordRepository.findByClassesAndStatusAndMonth(classes, 2,
-                paperUploadRequest.getMonth());
         if (classes == null) {
             response.setMessage("Class not found");
             response.setIsSuccess(false);
@@ -198,12 +199,8 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
             return response;
         }
 
-        if (classPaymentRecord == null) {
-
-            response.setIsSuccess(false);
-            response.setMessage("make payment record to respective month and class");
-            return response;
-        }
+        ClassPaymentRecord classPaymentRecord = monthlyPaymentService.getOrCreateClassPaymentRecord(classes,
+                paperUploadRequest.getMonth(), paperUploadRequest.getYear(), username);
 
         // save to local storage.
         String fileName = fileStorageService.savePaperFile(pdf_file);
