@@ -392,6 +392,21 @@ export async function rejectPayment(id, rejectionReason) {
   });
 }
 
+// create bank account
+export async function createBankAccount(data) {
+  return protectedRequest("/api/payments/bank-account/create", { body: data });
+}
+
+// update bank account
+export async function updateBankAccount(id, data) {
+  return protectedRequestPath(`/api/payments/bank-account/update/${id}`, { method: "PUT", body: data });
+}
+
+// delete bank account
+export async function deleteBankAccount(id) {
+  return protectedRequestPath(`/api/payments/bank-account/delete/${id}`, { method: "DELETE" });
+}
+
 // TODO: replace with actual microservice endpoint
 export async function createStudent(data) {
   return request("/cashier/students", { body: data });
