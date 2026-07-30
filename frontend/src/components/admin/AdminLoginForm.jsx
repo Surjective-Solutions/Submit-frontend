@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import PasswordField from './PasswordField';
 import { adminLoginSchema } from '@/lib/validations/admin';
 import { adminLogin } from '@/lib/api-client';
+import { consumeSessionExpiredFlag } from '@/lib/auth';
 
 export default function AdminLoginForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -28,13 +29,19 @@ export default function AdminLoginForm() {
     defaultValues: { username: '', password: '' },
   });
 
+  useEffect(() => {
+    if (consumeSessionExpiredFlag()) {
+      toast.error('Session expired. Please log in again.');
+    }
+  }, []);
+
   async function onSubmit(data) {
     setIsLoading(true);
     try {
       const result = await adminLogin(data.username, data.password);
       if (result.isSuccess) {
-        localStorage.setItem('token', result.token);
-        localStorage.setItem('role', result.role);
+        sessionStorage.setItem('token', result.token);
+        sessionStorage.setItem('role', result.role);
         toast.success(result.message ?? 'Logged in successfully');
         router.push('/admin/dashboard');
       } else {

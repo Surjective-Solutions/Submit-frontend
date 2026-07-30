@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import PasswordField from '@/components/admin/PasswordField';
 import { cashierLoginSchema } from '@/lib/validations/admin';
 import { cashierLogin } from '@/lib/api-client';
+import { consumeSessionExpiredFlag } from '@/lib/auth';
 
 export default function CashierLoginForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -28,13 +29,19 @@ export default function CashierLoginForm() {
     defaultValues: { username: '', password: '' },
   });
 
+  useEffect(() => {
+    if (consumeSessionExpiredFlag()) {
+      toast.error('Session expired. Please log in again.');
+    }
+  }, []);
+
   async function onSubmit(data) {
     setIsLoading(true);
     try {
       const result = await cashierLogin(data.username, data.password);
       if (result.isSuccess) {
-        localStorage.setItem('token', result.token);
-        localStorage.setItem('role', result.role);
+        sessionStorage.setItem('token', result.token);
+        sessionStorage.setItem('role', result.role);
         toast.success(result.message ?? 'Logged in successfully');
         router.push('/cashier/dashboard');
       } else {

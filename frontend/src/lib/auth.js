@@ -1,6 +1,6 @@
 export function getTokenPayload() {
   try {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) return null;
     const payload = JSON.parse(atob(token.split('.')[1]));
     return payload;
@@ -22,4 +22,25 @@ export function getUserSeq() {
 export function getUserIdentifier() {
   const payload = getTokenPayload();
   return payload?.sub ?? null;
+}
+
+export function isTokenExpired() {
+  const payload = getTokenPayload();
+  if (!payload?.exp) return true;
+  const now = Math.floor(Date.now() / 1000);
+  return payload.exp < now;
+}
+
+const SESSION_EXPIRED_KEY = 'sessionExpired';
+
+export function markSessionExpired() {
+  sessionStorage.setItem(SESSION_EXPIRED_KEY, 'true');
+}
+
+export function consumeSessionExpiredFlag() {
+  const wasExpired = sessionStorage.getItem(SESSION_EXPIRED_KEY) === 'true';
+  if (wasExpired) {
+    sessionStorage.removeItem(SESSION_EXPIRED_KEY);
+  }
+  return wasExpired;
 }

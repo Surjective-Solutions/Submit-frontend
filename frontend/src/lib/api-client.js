@@ -31,7 +31,7 @@ async function actualRequest(path, options = {}) {
 //this is api endpoint calling  with method
 
 export async function protectedRequestPath(path, options = {}) {
-  const token = localStorage.getItem("token");
+  const token = sessionStorage.getItem("token");
 
   const { method = "GET", body = null } = options;
 
@@ -54,7 +54,7 @@ export async function protectedRequestPath(path, options = {}) {
 
 //this is for protected apis
 async function protectedRequest(path, options = {}) {
-  const token = localStorage.getItem("token");
+  const token = sessionStorage.getItem("token");
 
   const { method = "POST", body } = options;
 
@@ -76,7 +76,7 @@ async function protectedRequest(path, options = {}) {
 
 //protected request with file handling for FormData
 async function protectedRequestWithFileHandling(path, options = {}) {
-  const token = localStorage.getItem("token");
+  const token = sessionStorage.getItem("token");
 
   const { method = "POST", body } = options;
 
