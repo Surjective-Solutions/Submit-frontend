@@ -13,6 +13,8 @@ import org.springframework.security.core.Authentication;
 import com.examflow.backend.dto.BankAccountResponse;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.PaymentsListResponse;
+import com.examflow.backend.dto.BankAccountRequest;
+import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.entity.BankAccount;
 import com.examflow.backend.entity.ClassPaymentRecord;
 import com.examflow.backend.entity.Classes;
@@ -236,6 +238,58 @@ public class PaymentControllerManagerImpl implements PaymentControllerManager {
         generalResponse.setMessage("Payment record does not found.");
 
         return generalResponse;
+    }
+
+    @Override
+    public GeneralResponse createBankAccount(BankAccountRequest request) {
+        GeneralResponse response = new GeneralResponse();
+        BankAccount bankAccount = new BankAccount();
+        bankAccount.setDisplayName(request.getDisplayName());
+        bankAccount.setAccountName(request.getAccountName());
+        bankAccount.setAccountNumber(request.getAccountNumber());
+        bankAccount.setAdditionalDetails(request.getAdditionalDetails());
+        bankAccount.setStatus(2);
+
+        bankAccountRepository.save(bankAccount);
+        response.setIsSuccess(true);
+        response.setMessage("Bank account created successfully");
+        return response;
+    }
+
+    @Override
+    public GeneralResponse updateBankAccount(Integer id, BankAccountRequest request) {
+        GeneralResponse response = new GeneralResponse();
+        BankAccount bankAccount = bankAccountRepository.findByBankAccountSeq(id);
+        if (bankAccount == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Bank account not found");
+            return response;
+        }
+        bankAccount.setDisplayName(request.getDisplayName());
+        bankAccount.setAccountName(request.getAccountName());
+        bankAccount.setAccountNumber(request.getAccountNumber());
+        bankAccount.setAdditionalDetails(request.getAdditionalDetails());
+
+        bankAccountRepository.save(bankAccount);
+        response.setIsSuccess(true);
+        response.setMessage("Bank account updated successfully");
+        return response;
+    }
+
+    @Override
+    public GeneralResponse deleteBankAccount(Integer id) {
+        GeneralResponse response = new GeneralResponse();
+        BankAccount bankAccount = bankAccountRepository.findByBankAccountSeq(id);
+        if (bankAccount == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Bank account not found");
+            return response;
+        }
+        bankAccount.setStatus(1);
+        bankAccountRepository.save(bankAccount);
+        response.setIsSuccess(true);
+        response.setMessage("Bank account deleted successfully");
+        return response;
     }
 
 }

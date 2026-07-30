@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 import com.examflow.backend.dto.BankAccountResponse;
 import com.examflow.backend.dto.GeneralResponse;
@@ -21,6 +23,7 @@ import com.examflow.backend.dto.PaymentRequest;
 import com.examflow.backend.dto.PaymentsListResponse;
 import com.examflow.backend.repository.BankAccountRepository;
 import com.examflow.backend.service.PaymentControllerManager;
+import com.examflow.backend.dto.BankAccountRequest;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -74,6 +77,21 @@ public class PaymentController {
         System.out.println(paymentRequest.getRejection_reason());
         return paymentControllerManager.rejectPayment(paymentId, paymentRequest.getRejection_reason());
 
+    }
+
+    @PostMapping("/bank-account/create")
+    public GeneralResponse createBankAccount(@RequestBody BankAccountRequest request) {
+        return paymentControllerManager.createBankAccount(request);
+    }
+
+    @PutMapping("/bank-account/update/{id}")
+    public GeneralResponse updateBankAccount(@PathVariable Integer id, @RequestBody BankAccountRequest request) {
+        return paymentControllerManager.updateBankAccount(id, request);
+    }
+
+    @DeleteMapping("/bank-account/delete/{id}")
+    public GeneralResponse deleteBankAccount(@PathVariable Integer id) {
+        return paymentControllerManager.deleteBankAccount(id);
     }
 
 }
