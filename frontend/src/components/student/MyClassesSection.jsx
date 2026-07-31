@@ -117,11 +117,15 @@ export default function MyClassesSection() {
     );
   });
 
-  function handleConfirmRemove() {
+  async function handleConfirmRemove() {
     if (!classToRemove) return;
-    removeClass(classToRemove.id);
-    toast.success('Class removed from My Classes');
-    setClassToRemove(null);
+    try {
+      await removeClass(classToRemove.id);
+      toast.success('Class removed from My Classes');
+      setClassToRemove(null);
+    } catch {
+      toast.error('Failed to remove class');
+    }
   }
 
   return (

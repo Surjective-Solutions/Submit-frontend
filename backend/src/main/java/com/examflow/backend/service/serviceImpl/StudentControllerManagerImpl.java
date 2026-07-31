@@ -282,4 +282,42 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
         response.setMessage("Student updated successfully");
         return response;
     }
+
+    @Override
+    public GeneralResponse removeClassFromStudent(Integer classId) {
+        GeneralResponse response = new GeneralResponse();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Integer studentSeq = (Integer) request.getAttribute("userId");
+
+        Student student = studentRepository.findByStudentSeq(studentSeq);
+        if (student == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Student not found");
+            return response;
+        }
+
+        Classes classes = classesRepository.findByClassSeqAndStatus(classId, 2);
+        if (classes == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Class not found");
+            return response;
+        }
+
+        StudentClass studentClass = studentClassesRepository.findByStudentAndClassesAndStatusSeq(student, classes, 2);
+        if (studentClass == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Enrollment not found");
+            return response;
+        }
+
+        studentClass.setStatusSeq(1);
+        studentClass.setLastModifiedBy(username);
+        studentClass.setLastModifiedDateTime(LocalDateTime.now());
+        studentClassesRepository.save(studentClass);
+
+        response.setIsSuccess(true);
+        response.setMessage("Class removed successfully");
+        return response;
+    }
 }

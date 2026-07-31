@@ -202,11 +202,15 @@ export default function TeacherClassesPage() {
     toast.success("Added to My Classes! Complete your payment to get access.");
   }
 
-  function handleConfirmRemove() {
+  async function handleConfirmRemove() {
     if (!classToRemove) return;
-    removeClass(classToRemove.id);
-    toast.success("Class removed");
-    setClassToRemove(null);
+    try {
+      await removeClass(classToRemove.id);
+      toast.success('Class removed from My Classes');
+      setClassToRemove(null);
+    } catch {
+      toast.error('Failed to remove class');
+    }
   }
 
   const classCount = teacher.classes.length;

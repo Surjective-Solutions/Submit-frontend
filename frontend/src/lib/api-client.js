@@ -371,6 +371,13 @@ export async function updateStudentProfile(data) {
   return request("/student/profile", { method: "PUT", body: data });
 }
 
+// remove/unenroll student from a class
+export async function removeClassFromStudent(classId) {
+  return protectedRequest("/api/student/remove-class-student", {
+    body: { classSeq: classId },
+  });
+}
+
 // ── Payments ──────────────────────────────────────────────────────────────────
 
 // TODO: replace with actual microservice endpoint

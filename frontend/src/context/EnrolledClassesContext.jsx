@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 import { MOCK_STUDENT_ENROLLED_CLASSES } from "@/lib/mock-data";
-import { getEnrolledClass } from "@/lib/api-client";
+import { getEnrolledClass, removeClassFromStudent } from "@/lib/api-client";
 
 const EnrolledClassesContext = createContext(null);
 
@@ -28,12 +28,13 @@ export function EnrolledClassesProvider({ children }) {
     setClasses((prev) => [...prev, entry]);
   }
 
-  function removeClass(classId) {
-    const idx = MOCK_STUDENT_ENROLLED_CLASSES.findIndex(
-      (c) => c.id === classId,
-    );
-    if (idx !== -1) MOCK_STUDENT_ENROLLED_CLASSES.splice(idx, 1);
-    setClasses((prev) => prev.filter((c) => c.id !== classId));
+  async function removeClass(classId) {
+    try {
+      await removeClassFromStudent(classId);
+      setClasses((prev) => prev.filter((c) => c.id !== classId));
+    } catch {
+      console.error('Failed to remove class');
+    }
   }
 
   function setMonthlyPaymentStatus(classId, month, year, patch) {

@@ -57,4 +57,9 @@ public class StudentController {
     public GeneralResponse updateStudent(@PathVariable Integer id, @RequestBody UserSignUpRequest studentRequest) {
         return studentControllerManager.updateStudent(id, studentRequest);
     }
+    
+    @PostMapping("/remove-class-student")
+    public GeneralResponse removeClassFromStudent(@RequestBody ClassRequest classRequest) {
+        return studentControllerManager.removeClassFromStudent(classRequest.getClassSeq());
+    }
 }

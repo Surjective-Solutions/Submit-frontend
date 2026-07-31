@@ -22,4 +22,6 @@ public interface StudentControllerManager {
     StudentResponse getStudentById(Integer id);
 
     GeneralResponse updateStudent(Integer id, UserSignUpRequest studentRequest);
+
+    GeneralResponse removeClassFromStudent(Integer classId);
 }
