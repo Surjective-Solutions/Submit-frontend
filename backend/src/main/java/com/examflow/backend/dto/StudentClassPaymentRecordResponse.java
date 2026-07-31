@@ -9,6 +9,7 @@ public class StudentClassPaymentRecordResponse {
     private String status;
     private String reference_number;
     private LocalDateTime paid_at;
+    private String rejection_reason;
 
     public String getId() {
         return id;
@@ -56,6 +57,14 @@ public class StudentClassPaymentRecordResponse {
 
     public void setPaid_at(LocalDateTime paid_at) {
         this.paid_at = paid_at;
+    }
+
+    public String getRejection_reason() {
+        return rejection_reason;
+    }
+
+    public void setRejection_reason(String rejection_reason) {
+        this.rejection_reason = rejection_reason;
     }
 
 }

@@ -169,13 +169,18 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
                     clasrep.setId(studentClassPaymentRecord.getClassPaymentRecord().getClassPaymentRecordSearial());
                     clasrep.setMonth(studentClassPaymentRecord.getClassPaymentRecord().getMonth());
                     clasrep.setYear(studentClassPaymentRecord.getClassPaymentRecord().getYear());
-                    if (studentClassPaymentRecord.getIsPayed() == true) {
+                    if (!Boolean.TRUE.equals(studentClassPaymentRecord.getIsForPayments())) {
+                        clasrep.setStatus("NOT_PAID");
+                    } else if (studentClassPaymentRecord.getIsApproved() == null) {
+                        clasrep.setStatus("PENDING");
+                    } else if (studentClassPaymentRecord.getIsApproved() == true) {
                         clasrep.setStatus("PAID");
                     } else {
-                        clasrep.setStatus("NOT_PAID");
+                        clasrep.setStatus("REJECTED");
                     }
                     clasrep.setReference_number(studentClassPaymentRecord.getReffrenceNo());
                     clasrep.setPaid_at(studentClassPaymentRecord.getPayedTime());
+                    clasrep.setRejection_reason(studentClassPaymentRecord.getReson());
                     studentClassPaymentRecordResponses.add(clasrep);
                 }
 
