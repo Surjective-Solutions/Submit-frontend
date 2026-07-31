@@ -24,6 +24,7 @@ import com.examflow.backend.entity.Student;
 import com.examflow.backend.entity.StudentClass;
 import com.examflow.backend.entity.StudentClassPaymentRecord;
 import com.examflow.backend.entity.UplaodPaper;
+import com.examflow.backend.enums.paymentStatus;
 import com.examflow.backend.repository.ClassPaymentRecordRepository;
 import com.examflow.backend.repository.ClassesRepository;
 import com.examflow.backend.repository.StudentClassPaymentRecordsRepository;
@@ -170,17 +171,30 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
                     clasrep.setMonth(studentClassPaymentRecord.getClassPaymentRecord().getMonth());
                     clasrep.setYear(studentClassPaymentRecord.getClassPaymentRecord().getYear());
                     if (!Boolean.TRUE.equals(studentClassPaymentRecord.getIsForPayments())) {
-                        clasrep.setStatus("NOT_PAID");
+                        // No submission on the current active record yet. It may still be a genuinely
+                        // untouched month (NOT_PAID), or it may be the fresh placeholder that rejectPayment()
+                        // creates after rejecting a prior submission - check for that prior rejection so the
+                        // student still sees why they were rejected until they resubmit.
+                        StudentClassPaymentRecord lastRejected = studentClassPaymentRecordsRepository
+                                .findTopByStudentAndClassPaymentRecordAndStatusOrderByApprovedTimeDesc(
+                                        student, classPaymentRecord,
+                                        paymentStatus.fromStatusName("REJECTED").getSequence());
+                        if (lastRejected != null) {
+                            clasrep.setStatus("REJECTED");
+                            clasrep.setRejection_reason(lastRejected.getReson());
+                        } else {
+                            clasrep.setStatus("NOT_PAID");
+                        }
                     } else if (studentClassPaymentRecord.getIsApproved() == null) {
                         clasrep.setStatus("PENDING");
                     } else if (studentClassPaymentRecord.getIsApproved() == true) {
                         clasrep.setStatus("PAID");
                     } else {
                         clasrep.setStatus("REJECTED");
+                        clasrep.setRejection_reason(studentClassPaymentRecord.getReson());
                     }
                     clasrep.setReference_number(studentClassPaymentRecord.getReffrenceNo());
                     clasrep.setPaid_at(studentClassPaymentRecord.getPayedTime());
-                    clasrep.setRejection_reason(studentClassPaymentRecord.getReson());
                     studentClassPaymentRecordResponses.add(clasrep);
                 }
 
