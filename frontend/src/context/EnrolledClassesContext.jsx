@@ -1,8 +1,9 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect } from "react";
+import { toast } from 'sonner';
 import { MOCK_STUDENT_ENROLLED_CLASSES } from "@/lib/mock-data";
-import { getEnrolledClass, removeClassFromStudent } from "@/lib/api-client";
+import { getEnrolledClass, removeClassFromStudent, addClasstostudent } from "@/lib/api-client";
 
 const EnrolledClassesContext = createContext(null);
 
@@ -23,8 +24,8 @@ export function EnrolledClassesProvider({ children }) {
     }
   }
 
-  function addClass(entry) {
-    MOCK_STUDENT_ENROLLED_CLASSES.push(entry);
+  async function addClass(entry) {
+    await addClasstostudent({ classSeq: entry.id });
     setClasses((prev) => [...prev, entry]);
   }
 

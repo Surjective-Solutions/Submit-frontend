@@ -20,11 +20,6 @@ import {
   cardPaymentSchema,
   bankTransferPaymentSchema,
 } from "@/lib/validations/student";
-import {
-  MOCK_BANK_ACCOUNTS,
-  MOCK_PAYMENTS,
-  MOCK_LOGGED_IN_STUDENT,
-} from "@/lib/mock-data";
 import { getBankAccounts, makeBankTransfer } from "@/lib/api-client";
 
 function formatLKR(amount) {
@@ -152,7 +147,7 @@ function CardPaymentForm({ amount, onSuccess }) {
   );
 }
 
-function BankTransferForm({ amount, onSubmitTransfer, classId }) {
+function BankTransferForm({ amount, classId, onSubmitted }) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState(null);
   const [bank, setBank] = useState([]);
@@ -170,16 +165,6 @@ function BankTransferForm({ amount, onSubmitTransfer, classId }) {
     defaultValues: { bank_account_id: bank[0]?.id ?? "" },
   });
 
-  // async function onSubmit(data) {
-  //   setIsLoading(true);
-  //   try {
-  //     // onSubmitTransfer(data);
-  //     const response = await makeBankTransfer();
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // }
-
   async function onSubmit(data) {
     setIsLoading(true);
 
@@ -190,9 +175,10 @@ function BankTransferForm({ amount, onSubmitTransfer, classId }) {
       formData.append("receipt_file", data.receipt_file[0]);
       formData.append("class_id", classId);
 
-      const response = await makeBankTransfer(formData);
+      await makeBankTransfer(formData);
 
       toast.success("Transfer submitted successfully");
+      onSubmitted();
     } catch (err) {
       toast.error("Failed to submit transfer");
     } finally {
@@ -302,35 +288,8 @@ export default function PayNowDialog({ open, onOpenChange, cls, month, year, mon
     onOpenChange(false);
   }
 
-  function handleBankSubmit(data) {
-    const file = data.receipt_file?.[0];
-    const receiptUrl = file ? URL.createObjectURL(file) : null;
-    const bankAccount = MOCK_BANK_ACCOUNTS.find((a) => a.id === data.bank_account_id);
-
-    const newPayment = {
-      id: `pay-new-${Date.now()}`,
-      student_id: MOCK_LOGGED_IN_STUDENT.id,
-      student_name: `${MOCK_LOGGED_IN_STUDENT.first_name} ${MOCK_LOGGED_IN_STUDENT.last_name}`,
-      student_number: MOCK_LOGGED_IN_STUDENT.student_number,
-      teacher_name: cls.teacher_name,
-      class_name: cls.class_name,
-      class_id: cls.id,
-      month,
-      year,
-      amount: cls.monthly_fee,
-      receipt_url: receiptUrl,
-      bank_account: bankAccount ? `${bankAccount.bankName} — ${bankAccount.accountNumber}` : null,
-      status: 'PENDING',
-      reference_number: null,
-      rejection_reason: null,
-      submitted_at: new Date().toISOString(),
-      reviewed_at: null,
-      reviewed_by: null,
-    };
-    MOCK_PAYMENTS.unshift(newPayment);
-
+  function handleBankSubmitted() {
     onSubmittedForReview();
-    toast.success('Payment submitted for review');
     onOpenChange(false);
   }
 
@@ -372,7 +331,7 @@ export default function PayNowDialog({ open, onOpenChange, cls, month, year, mon
               <CardPaymentForm amount={cls.monthly_fee} onSuccess={handleCardSuccess} />
             </TabsContent>
             <TabsContent value="bank">
-              <BankTransferForm amount={cls.monthly_fee} onSubmitTransfer={handleBankSubmit} classId={cls.id}/>
+              <BankTransferForm amount={cls.monthly_fee} classId={cls.id} onSubmitted={handleBankSubmitted} />
             </TabsContent>
           </Tabs>
         </div>

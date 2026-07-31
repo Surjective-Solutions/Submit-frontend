@@ -11,6 +11,7 @@ import {
   FileText,
   CheckCircle,
   ChevronRight,
+  XCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -310,11 +311,25 @@ const BANNER_CONFIG = {
   },
 };
 
+const STATUS_BADGE_CONFIG = {
+  PENDING: {
+    label: 'Payment in Review',
+    icon: Clock,
+    className: 'bg-amber-100 text-amber-700',
+  },
+  REJECTED: {
+    label: 'Payment Rejected',
+    icon: XCircle,
+    className: 'bg-red-100 text-red-700',
+  },
+};
+
 function UnpaidCurrentSection({ status, monthLabel, cls, month, year }) {
   const { setMonthlyPaymentStatus } = useEnrolledClasses();
   const [payOpen, setPayOpen] = useState(false);
   const [viewSubmissionOpen, setViewSubmissionOpen] = useState(false);
   const cfg = BANNER_CONFIG[status] ?? BANNER_CONFIG.NOT_PAID;
+  const badge = STATUS_BADGE_CONFIG[status];
 
   const bannerBody = {
     PENDING:  `Your ${monthLabel} payment is under review. You will get access once approved.`,
@@ -322,6 +337,7 @@ function UnpaidCurrentSection({ status, monthLabel, cls, month, year }) {
     NOT_PAID: `You have not paid for ${monthLabel}. Pay now to access this month's papers.`,
   }[status] ?? `You have not paid for ${monthLabel}.`;
 
+  const currentEntry = (cls.monthly_payments ?? []).find((p) => p.month === month && p.year === year);
   const latestSubmission = findLatestPaymentSubmission(cls.id, month, year);
 
   function handlePaidByCard() {
@@ -337,6 +353,7 @@ function UnpaidCurrentSection({ status, monthLabel, cls, month, year }) {
       status: 'PENDING',
       reference_number: null,
       paid_at: null,
+      rejection_reason: null,
     });
   }
 
@@ -348,7 +365,18 @@ function UnpaidCurrentSection({ status, monthLabel, cls, month, year }) {
       </div>
 
       <div className={`rounded-xl border px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${cfg.containerClass}`}>
-        <p className={`text-sm font-semibold ${cfg.titleClass}`}>{bannerBody}</p>
+        <div className="space-y-1.5">
+          {badge && (
+            <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${badge.className}`}>
+              <badge.icon className="h-3 w-3" />
+              {badge.label}
+            </span>
+          )}
+          <p className={`text-sm font-semibold ${cfg.titleClass}`}>{bannerBody}</p>
+          {status === 'REJECTED' && currentEntry?.rejection_reason && (
+            <p className={`text-xs ${cfg.bodyClass}`}>Reason: {currentEntry.rejection_reason}</p>
+          )}
+        </div>
         <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
           {(status === 'PENDING' || status === 'REJECTED') && latestSubmission && (
             <Button

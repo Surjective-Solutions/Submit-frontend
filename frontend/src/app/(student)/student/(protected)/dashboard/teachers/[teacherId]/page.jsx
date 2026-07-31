@@ -10,7 +10,6 @@ import DeleteConfirmDialog from "@/components/admin/DeleteConfirmDialog";
 import { useEnrolledClasses } from "@/context/EnrolledClassesContext";
 import { MOCK_TUTORS } from "@/lib/mock-data";
 import { getStudentsTeachers } from "@/lib/api-client";
-import { addClasstostudent } from "@/lib/api-client";
 import { getLastPaidMonth } from "@/lib/billing-utils";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -181,25 +180,24 @@ export default function TeacherClassesPage() {
 
   async function handleAdd(cls) {
     if (getEnrolledEntry(cls.id)) return;
-    addClass({
-      id: cls.id,
-      class_name: cls.class_name,
-      class_year: cls.class_year,
-      teacher_name: teacher.teacher_name,
-      subject: cls.subject,
-      image_url: cls.image_url,
-      enrolled_at: new Date().toISOString(),
-      monthly_fee: cls.monthly_fee,
-      description: cls.description ?? "",
-      monthly_payments: [],
-      papers_by_month: [],
-    });
-
-    const requestdata = { classSeq: cls.id };
-
-    const response = await addClasstostudent(requestdata);
-
-    toast.success("Added to My Classes! Complete your payment to get access.");
+    try {
+      await addClass({
+        id: cls.id,
+        class_name: cls.class_name,
+        class_year: cls.class_year,
+        teacher_name: teacher.teacher_name,
+        subject: cls.subject,
+        image_url: cls.image_url,
+        enrolled_at: new Date().toISOString(),
+        monthly_fee: cls.monthly_fee,
+        description: cls.description ?? "",
+        monthly_payments: [],
+        papers_by_month: [],
+      });
+      toast.success("Added to My Classes! Complete your payment to get access.");
+    } catch {
+      toast.error("Failed to add class");
+    }
   }
 
   async function handleConfirmRemove() {
