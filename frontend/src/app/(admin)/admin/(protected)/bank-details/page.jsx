@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Landmark } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -21,50 +21,68 @@ import {
 import DeleteConfirmDialog from '@/components/admin/DeleteConfirmDialog';
 import AddBankAccountDialog from '@/components/admin/AddBankAccountDialog';
 import EditBankAccountDialog from '@/components/admin/EditBankAccountDialog';
-import { MOCK_BANK_ACCOUNTS } from '@/lib/mock-data';
-
-let nextAccountId = 9000;
+import { getBankAccounts, createBankAccount, updateBankAccount, deleteBankAccount } from '@/lib/api-client';
 
 export default function BankDetailsPage() {
-  const [accounts, setAccounts] = useState(() => [...MOCK_BANK_ACCOUNTS]);
+  const [accounts, setAccounts] = useState([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editAccount, setEditAccount] = useState(null);
   const [deleteAccount, setDeleteAccount] = useState(null);
 
-  function handleAdd(data) {
-    const newAccount = {
-      id: `bank-new-${nextAccountId++}`,
-      accountName: data.accountName,
-      accountNumber: data.accountNumber,
-      bankName: data.bankName,
-      additionalDetails: data.additionalDetails || null,
-    };
-    MOCK_BANK_ACCOUNTS.unshift(newAccount);
-    setAccounts((prev) => [newAccount, ...prev]);
-    toast.success('Bank account added successfully');
-    setAddDialogOpen(false);
+  useEffect(() => {
+    loadAccounts();
+  }, []);
+
+  async function loadAccounts() {
+    try {
+      const data = await getBankAccounts();
+      setAccounts(data);
+    } catch {
+      toast.error('Failed to load bank accounts');
+    }
   }
 
-  function handleEditSave(data) {
-    const patch = {
-      accountName: data.accountName,
-      accountNumber: data.accountNumber,
-      bankName: data.bankName,
-      additionalDetails: data.additionalDetails || null,
-    };
-    const targetAccount = MOCK_BANK_ACCOUNTS.find((a) => a.id === editAccount.id);
-    if (targetAccount) Object.assign(targetAccount, patch);
-    setAccounts((prev) => prev.map((a) => (a.id === editAccount.id ? { ...a, ...patch } : a)));
-    toast.success('Bank account updated successfully');
-    setEditAccount(null);
+  async function handleAdd(data) {
+    try {
+      await createBankAccount({
+        displayName: data.bankName,
+        accountName: data.accountName,
+        accountNumber: data.accountNumber,
+        additionalDetails: data.additionalDetails || '',
+      });
+      toast.success('Bank account added successfully');
+      setAddDialogOpen(false);
+      loadAccounts();
+    } catch {
+      toast.error('Failed to add bank account');
+    }
   }
 
-  function handleDelete() {
-    const index = MOCK_BANK_ACCOUNTS.findIndex((a) => a.id === deleteAccount.id);
-    if (index !== -1) MOCK_BANK_ACCOUNTS.splice(index, 1);
-    setAccounts((prev) => prev.filter((a) => a.id !== deleteAccount.id));
-    toast.success('Bank account deleted');
-    setDeleteAccount(null);
+  async function handleEditSave(data) {
+    try {
+      await updateBankAccount(editAccount.id, {
+        displayName: data.bankName,
+        accountName: data.accountName,
+        accountNumber: data.accountNumber,
+        additionalDetails: data.additionalDetails || '',
+      });
+      toast.success('Bank account updated successfully');
+      setEditAccount(null);
+      loadAccounts();
+    } catch {
+      toast.error('Failed to update bank account');
+    }
+  }
+
+  async function handleDelete() {
+    try {
+      await deleteBankAccount(deleteAccount.id);
+      toast.success('Bank account deleted');
+      setDeleteAccount(null);
+      loadAccounts();
+    } catch {
+      toast.error('Failed to delete bank account');
+    }
   }
 
   return (

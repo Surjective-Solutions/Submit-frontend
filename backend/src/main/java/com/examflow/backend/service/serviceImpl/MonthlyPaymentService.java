@@ -84,6 +84,30 @@ public class MonthlyPaymentService {
     }
 
     @Transactional
+    public ClassPaymentRecord getOrCreateClassPaymentRecord(Classes classes, Integer month, Integer year,
+            String username) {
+
+        ClassPaymentRecord classPaymentRecord = classPaymentRecordRepository
+                .findByClassesAndStatusAndMonth(classes, 2, month);
+        if (classPaymentRecord != null) {
+            return classPaymentRecord;
+        }
+
+        ClassPaymentRecord newPaymentRecord = new ClassPaymentRecord();
+        newPaymentRecord.setClasses(classes);
+        newPaymentRecord.setMonth(month);
+        newPaymentRecord.setYear(year);
+        newPaymentRecord.setStatus(2);
+        newPaymentRecord.setCreatedBy(username);
+        newPaymentRecord.setLastModifiedBy(username);
+        newPaymentRecord.setCreatedDateTime(LocalDateTime.now());
+        newPaymentRecord.setLastModifiedDateTime(LocalDateTime.now());
+        newPaymentRecord.setClassPaymentRecordSearial(month + "-" + year + "-payment");
+
+        return classPaymentRecordRepository.save(newPaymentRecord);
+    }
+
+    @Transactional
     public void generateStudentClassPaymentRecord() {
         System.out.println(
                 "-------------------------------------------Generating Student payment Reacords---------------------------------------");

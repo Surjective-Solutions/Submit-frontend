@@ -8,6 +8,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.examflow.backend.dto.BankAccountResponse;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.PaymentsListResponse;
+import com.examflow.backend.dto.BankAccountRequest;
+import com.examflow.backend.dto.GeneralResponse;
 
 @Service
 public interface PaymentControllerManager {
@@ -21,5 +23,11 @@ public interface PaymentControllerManager {
     GeneralResponse approvePayment(Integer paymentSeq, String refferenceNumber);
 
     GeneralResponse rejectPayment(Integer paymentSeq, String reason);
+
+    GeneralResponse createBankAccount(BankAccountRequest request);
+
+    GeneralResponse updateBankAccount(Integer id, BankAccountRequest request);
+
+    GeneralResponse deleteBankAccount(Integer id);
 
 }

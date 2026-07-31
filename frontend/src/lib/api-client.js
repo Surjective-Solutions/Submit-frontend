@@ -31,7 +31,7 @@ async function actualRequest(path, options = {}) {
 //this is api endpoint calling  with method
 
 export async function protectedRequestPath(path, options = {}) {
-  const token = localStorage.getItem("token");
+  const token = sessionStorage.getItem("token");
 
   const { method = "GET", body = null } = options;
 
@@ -54,7 +54,7 @@ export async function protectedRequestPath(path, options = {}) {
 
 //this is for protected apis
 async function protectedRequest(path, options = {}) {
-  const token = localStorage.getItem("token");
+  const token = sessionStorage.getItem("token");
 
   const { method = "POST", body } = options;
 
@@ -76,7 +76,7 @@ async function protectedRequest(path, options = {}) {
 
 //protected request with file handling for FormData
 async function protectedRequestWithFileHandling(path, options = {}) {
-  const token = localStorage.getItem("token");
+  const token = sessionStorage.getItem("token");
 
   const { method = "POST", body } = options;
 
@@ -390,6 +390,21 @@ export async function rejectPayment(id, rejectionReason) {
   return protectedRequest(`/api/payments/${id}/reject`, {
     body: { rejection_reason: rejectionReason },
   });
+}
+
+// create bank account
+export async function createBankAccount(data) {
+  return protectedRequest("/api/payments/bank-account/create", { body: data });
+}
+
+// update bank account
+export async function updateBankAccount(id, data) {
+  return protectedRequestPath(`/api/payments/bank-account/update/${id}`, { method: "PUT", body: data });
+}
+
+// delete bank account
+export async function deleteBankAccount(id) {
+  return protectedRequestPath(`/api/payments/bank-account/delete/${id}`, { method: "DELETE" });
 }
 
 // TODO: replace with actual microservice endpoint

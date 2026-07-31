@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator';
 import GoogleIcon from './GoogleIcon';
 import { studentLoginSchema } from '@/lib/validations/student';
 import { studentLogin } from '@/lib/api-client';
+import { consumeSessionExpiredFlag } from '@/lib/auth';
 
 export default function StudentLoginForm() {
   const router = useRouter();
@@ -30,13 +31,19 @@ export default function StudentLoginForm() {
     defaultValues: { identifier: '', password: '' },
   });
 
+  useEffect(() => {
+    if (consumeSessionExpiredFlag()) {
+      toast.error('Session expired. Please log in again.');
+    }
+  }, []);
+
   async function onSubmit(data) {
     setIsLoading(true);
     try {
       const result = await studentLogin(data.identifier, data.password);
       if (result.isSuccess) {
-        localStorage.setItem('token', result.token);
-        localStorage.setItem('role', result.role);
+        sessionStorage.setItem('token', result.token);
+        sessionStorage.setItem('role', result.role);
         toast.success(result.message ?? 'Logged in successfully');
         router.push('/student/dashboard');
       } else {

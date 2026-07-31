@@ -200,7 +200,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
                 for (UplaodPaper monthUploadPaper : monthUploadPapers) {
 
                     PaperResponse paperResponse = new PaperResponse();
-                    paperResponse.setId(monthUploadPaper.getUploadPaperSeq() + " - " + "PAPER");
+                    paperResponse.setId(String.valueOf(monthUploadPaper.getUploadPaperSeq()));
                     paperResponse.setPaper_name(monthUploadPaper.getPaperName());
                     paperResponse.setDue_date(LocalDateTime.now());
                     paperResponse.setSubmission_status("NOT_SUBMITTED");

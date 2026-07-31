@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -28,8 +28,11 @@ import {
 } from '@/components/ui/dialog';
 import PayNowDialog from '@/components/student/PayNowDialog';
 import ViewPaymentSubmissionDialog from '@/components/student/ViewPaymentSubmissionDialog';
+import StartExamConfirmDialog from '@/components/student/StartExamConfirmDialog';
 import { useEnrolledClasses } from '@/context/EnrolledClassesContext';
 import { MOCK_PAYMENTS } from '@/lib/mock-data';
+import { getSubmittedPaperIds, isPaperSubmitted } from '@/lib/submitted-papers';
+import { getSubmissionPdf } from '@/lib/submission-pdf-storage';
 import {
   getCurrentMonthStatus,
   getMonthStatus,
@@ -187,7 +190,27 @@ function ViewPaperDialog({ open, onOpenChange, paper }) {
 
 // ── Current Papers — Paid ─────────────────────────────────────────────────────
 
-function PaidCurrentPapersSection({ monthLabel, papers }) {
+// TEMPORARY FRONTEND-ONLY WORKAROUND: there is no backend endpoint yet to
+// retrieve a submitted exam PDF, so we look it up from the IndexedDB Blob
+// store the upload page writes to (see lib/submission-pdf-storage.js) and
+// open it as an object URL in a new tab, matching how exam/graded PDFs are
+// opened elsewhere via window.open(url, '_blank'). If nothing is found
+// locally (cleared storage, different browser/device), we tell the student
+// this is a temporary local-only limitation. Remove once a real backend
+// endpoint exists.
+async function handleViewSubmission(paper) {
+  const blob = await getSubmissionPdf(paper.id);
+  if (!blob) {
+    toast.error(
+      "Submission preview isn't available on this device. This is a temporary local-only feature until backend storage is implemented.",
+    );
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+}
+
+function PaidCurrentPapersSection({ monthLabel, papers, onStartExam, submittedPaperIds }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-4">
@@ -212,40 +235,52 @@ function PaidCurrentPapersSection({ monthLabel, papers }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {papers.map((paper) => (
-                  <TableRow key={paper.id}>
-                    <TableCell className="font-medium text-gray-900">{paper.paper_name}</TableCell>
-                    <TableCell>
-                      <span className={`flex items-center gap-1.5 text-sm ${isPast(paper.due_date) ? 'text-red-500' : 'text-gray-600'}`}>
-                        <Clock className="h-3.5 w-3.5 shrink-0" />
-                        {formatDate(paper.due_date)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <SubmissionStatusBadge status={paper.submission_status} />
-                    </TableCell>
-                    <TableCell>
-                      {paper.submission_status === 'NOT_SUBMITTED' ? (
-                        <Button
-                          size="sm"
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-7 px-3"
-                          onClick={() => toast.info('Exam flow coming soon')}
-                        >
-                          Start Exam
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-xs h-7 px-3 border-gray-300 text-gray-600 hover:bg-gray-50"
-                          onClick={() => toast.info('Submission view coming soon')}
-                        >
-                          View Submission
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {papers.map((paper) => {
+                  // TEMPORARY FRONTEND-ONLY WORKAROUND: no backend endpoint exists
+                  // yet to mark a paper as submitted, so we override the backend
+                  // status with the sessionStorage record set by the upload page.
+                  // Remove this override once a real submission-tracking endpoint
+                  // exists. See lib/submitted-papers.js.
+                  const effectiveStatus =
+                    paper.submission_status === 'NOT_SUBMITTED' && isPaperSubmitted(paper.id, submittedPaperIds)
+                      ? 'SUBMITTED'
+                      : paper.submission_status;
+
+                  return (
+                    <TableRow key={paper.id}>
+                      <TableCell className="font-medium text-gray-900">{paper.paper_name}</TableCell>
+                      <TableCell>
+                        <span className={`flex items-center gap-1.5 text-sm ${isPast(paper.due_date) ? 'text-red-500' : 'text-gray-600'}`}>
+                          <Clock className="h-3.5 w-3.5 shrink-0" />
+                          {formatDate(paper.due_date)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <SubmissionStatusBadge status={effectiveStatus} />
+                      </TableCell>
+                      <TableCell>
+                        {effectiveStatus === 'NOT_SUBMITTED' ? (
+                          <Button
+                            size="sm"
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-7 px-3"
+                            onClick={() => onStartExam(paper)}
+                          >
+                            Start Exam
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs h-7 px-3 border-gray-300 text-gray-600 hover:bg-gray-50"
+                            onClick={() => handleViewSubmission(paper)}
+                          >
+                            View Submission
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -429,6 +464,16 @@ export default function ClassDetailPage() {
   // const { classId } = useParams();
   const { classes } = useEnrolledClasses();
   const { classId } = useParams();
+  const router = useRouter();
+  const [pendingExamPaper, setPendingExamPaper] = useState(null);
+
+  // TEMPORARY FRONTEND-ONLY WORKAROUND: load the sessionStorage record of
+  // submitted paper IDs on mount so submission status persists across
+  // navigation until a real backend submission-tracking endpoint exists.
+  const [submittedPaperIds, setSubmittedPaperIds] = useState([]);
+  useEffect(() => {
+    setSubmittedPaperIds(getSubmittedPaperIds());
+  }, []);
 
   const cls = classes.find((c) => c.id === Number(classId));
 
@@ -484,6 +529,8 @@ export default function ClassDetailPage() {
         <PaidCurrentPapersSection
           monthLabel={currentMonthLabel}
           papers={currentPapers}
+          onStartExam={setPendingExamPaper}
+          submittedPaperIds={submittedPaperIds}
         />
       ) : (
         <UnpaidCurrentSection
@@ -500,6 +547,16 @@ export default function ClassDetailPage() {
 
       {/* Previous Papers — monthly navigation */}
       <PreviousPapersSection cls={cls} />
+
+      <StartExamConfirmDialog
+        open={!!pendingExamPaper}
+        onOpenChange={(open) => !open && setPendingExamPaper(null)}
+        onConfirm={() => {
+          const paper = pendingExamPaper;
+          setPendingExamPaper(null);
+          router.push(`/student/dashboard/classes/${cls.id}/exam/${paper.id}`);
+        }}
+      />
     </div>
   );
 }

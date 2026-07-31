@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { instructorLoginSchema } from '@/lib/validations/instructor';
 import { instructorLogin } from '@/lib/api-client';
+import { consumeSessionExpiredFlag } from '@/lib/auth';
 
 export default function InstructorLoginForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -28,13 +29,19 @@ export default function InstructorLoginForm() {
     defaultValues: { email: '', password: '' },
   });
 
+  useEffect(() => {
+    if (consumeSessionExpiredFlag()) {
+      toast.error('Session expired. Please log in again.');
+    }
+  }, []);
+
   async function onSubmit(data) {
     setIsLoading(true);
     try {
       const result = await instructorLogin(data.email, data.password);
       if (result.isSuccess) {
-        localStorage.setItem('token', result.token);
-        localStorage.setItem('role', result.role);
+        sessionStorage.setItem('token', result.token);
+        sessionStorage.setItem('role', result.role);
         toast.success(result.message ?? 'Logged in successfully');
         router.push('/instructor/dashboard');
       } else {

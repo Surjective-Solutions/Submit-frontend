@@ -258,7 +258,7 @@ export default function AdminSidebar() {
               className="h-8 rounded-lg text-[13px] mt-0.5 transition-colors"
               style={{ color: 'rgba(255,255,255,0.38)' }}
               onClick={() => {
-                localStorage.clear();
+                sessionStorage.clear();
                 window.location.href = '/admin/login';                
               }}
             >

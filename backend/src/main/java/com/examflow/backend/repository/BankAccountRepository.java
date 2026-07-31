@@ -11,4 +11,6 @@ import com.examflow.backend.entity.BankAccount;
 public interface BankAccountRepository extends JpaRepository<BankAccount, Integer> {
 
     List<BankAccount> findByStatus(Integer status);
+
+    BankAccount findByBankAccountSeq(Integer bankAccountSeq);
 }

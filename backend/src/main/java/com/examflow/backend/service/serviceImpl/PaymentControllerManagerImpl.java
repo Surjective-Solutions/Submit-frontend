@@ -13,6 +13,8 @@ import org.springframework.security.core.Authentication;
 import com.examflow.backend.dto.BankAccountResponse;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.PaymentsListResponse;
+import com.examflow.backend.dto.BankAccountRequest;
+import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.entity.BankAccount;
 import com.examflow.backend.entity.ClassPaymentRecord;
 import com.examflow.backend.entity.Classes;
@@ -20,7 +22,6 @@ import com.examflow.backend.entity.Student;
 import com.examflow.backend.entity.StudentClassPaymentRecord;
 import com.examflow.backend.enums.paymentStatus;
 import com.examflow.backend.repository.BankAccountRepository;
-import com.examflow.backend.repository.ClassPaymentRecordRepository;
 import com.examflow.backend.repository.ClassesRepository;
 import com.examflow.backend.repository.StudentClassPaymentRecordsRepository;
 import com.examflow.backend.repository.StudentRepository;
@@ -45,22 +46,22 @@ public class PaymentControllerManagerImpl implements PaymentControllerManager {
 
     private HttpServletRequest request;
 
-    private final ClassPaymentRecordRepository classPaymentRecordRepository;
+    private final MonthlyPaymentService monthlyPaymentService;
 
     public PaymentControllerManagerImpl(BankAccountRepository bankAccountRepository,
-            ClassPaymentRecordRepository classPaymentRecordRepository,
             HttpServletRequest request,
             FileStorageService fileStorageService,
             StudentClassPaymentRecordsRepository studentClassPaymentRecordsRepository,
             StudentRepository studentRepository,
-            ClassesRepository classesRepository) {
+            ClassesRepository classesRepository,
+            MonthlyPaymentService monthlyPaymentService) {
         this.bankAccountRepository = bankAccountRepository;
         this.studentClassPaymentRecordsRepository = studentClassPaymentRecordsRepository;
         this.studentRepository = studentRepository;
         this.fileStorageService = fileStorageService;
-        this.classPaymentRecordRepository = classPaymentRecordRepository;
         this.classesRepository = classesRepository;
         this.request = request;
+        this.monthlyPaymentService = monthlyPaymentService;
     }
 
     @Override
@@ -95,9 +96,14 @@ public class PaymentControllerManagerImpl implements PaymentControllerManager {
         Integer currentYear = LocalDateTime.now().getYear();
         Integer currentMonth = LocalDateTime.now().getMonthValue();
         Classes classes = classesRepository.findByClassSeqAndStatus(classId, 2);
+        if (classes == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Class not found");
+            return response;
+        }
 
-        ClassPaymentRecord classPaymentRecord = classPaymentRecordRepository
-                .findByClassesAndMonthAndYearAndStatus(classes, currentMonth, currentYear, 2);
+        ClassPaymentRecord classPaymentRecord = monthlyPaymentService.getOrCreateClassPaymentRecord(classes,
+                currentMonth, currentYear, username);
 
         StudentClassPaymentRecord studentClassPaymentRecord = studentClassPaymentRecordsRepository
                 .findByStudentAndStatusAndClassPaymentRecord(student, 2, classPaymentRecord);
@@ -236,6 +242,58 @@ public class PaymentControllerManagerImpl implements PaymentControllerManager {
         generalResponse.setMessage("Payment record does not found.");
 
         return generalResponse;
+    }
+
+    @Override
+    public GeneralResponse createBankAccount(BankAccountRequest request) {
+        GeneralResponse response = new GeneralResponse();
+        BankAccount bankAccount = new BankAccount();
+        bankAccount.setDisplayName(request.getDisplayName());
+        bankAccount.setAccountName(request.getAccountName());
+        bankAccount.setAccountNumber(request.getAccountNumber());
+        bankAccount.setAdditionalDetails(request.getAdditionalDetails());
+        bankAccount.setStatus(2);
+
+        bankAccountRepository.save(bankAccount);
+        response.setIsSuccess(true);
+        response.setMessage("Bank account created successfully");
+        return response;
+    }
+
+    @Override
+    public GeneralResponse updateBankAccount(Integer id, BankAccountRequest request) {
+        GeneralResponse response = new GeneralResponse();
+        BankAccount bankAccount = bankAccountRepository.findByBankAccountSeq(id);
+        if (bankAccount == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Bank account not found");
+            return response;
+        }
+        bankAccount.setDisplayName(request.getDisplayName());
+        bankAccount.setAccountName(request.getAccountName());
+        bankAccount.setAccountNumber(request.getAccountNumber());
+        bankAccount.setAdditionalDetails(request.getAdditionalDetails());
+
+        bankAccountRepository.save(bankAccount);
+        response.setIsSuccess(true);
+        response.setMessage("Bank account updated successfully");
+        return response;
+    }
+
+    @Override
+    public GeneralResponse deleteBankAccount(Integer id) {
+        GeneralResponse response = new GeneralResponse();
+        BankAccount bankAccount = bankAccountRepository.findByBankAccountSeq(id);
+        if (bankAccount == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Bank account not found");
+            return response;
+        }
+        bankAccount.setStatus(1);
+        bankAccountRepository.save(bankAccount);
+        response.setIsSuccess(true);
+        response.setMessage("Bank account deleted successfully");
+        return response;
     }
 
 }
