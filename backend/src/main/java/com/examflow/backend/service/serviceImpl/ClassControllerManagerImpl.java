@@ -255,7 +255,7 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
                 UploadPaperQuestionSubQuestion uploadPaperQuestionSubQuestion = new UploadPaperQuestionSubQuestion();
 
                 uploadPaperQuestionSubQuestion.setMark(subpart.getMarks());
-                totalSubQuestionMarks = +subpart.getMarks();
+                totalSubQuestionMarks = totalSubQuestionMarks + subpart.getMarks();
                 uploadPaperQuestionSubQuestion.setQuestionKey(subpart.getKey());
                 uploadPaperQuestionSubQuestion.setUploadPaperQuestion(uploadPaperQuestion);
                 uploadPaperQuestionSubQuestion.setStatus(2);

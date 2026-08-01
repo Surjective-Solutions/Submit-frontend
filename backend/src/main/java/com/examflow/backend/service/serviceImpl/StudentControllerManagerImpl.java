@@ -25,13 +25,21 @@ import com.examflow.backend.entity.PaperSubmission;
 import com.examflow.backend.entity.Student;
 import com.examflow.backend.entity.StudentClass;
 import com.examflow.backend.entity.StudentClassPaymentRecord;
+import com.examflow.backend.entity.StudentSubmissionPaperQuestion;
+import com.examflow.backend.entity.StudentSubmissionPaperSubQuestion;
 import com.examflow.backend.entity.UplaodPaper;
+import com.examflow.backend.entity.UploadPaperQuestion;
+import com.examflow.backend.entity.UploadPaperQuestionSubQuestion;
 import com.examflow.backend.enums.paymentStatus;
 import com.examflow.backend.repository.ClassPaymentRecordRepository;
 import com.examflow.backend.repository.ClassesRepository;
 import com.examflow.backend.repository.PaperSubmissionRepository;
 import com.examflow.backend.repository.StudentClassPaymentRecordsRepository;
 import com.examflow.backend.repository.StudentRepository;
+import com.examflow.backend.repository.StudentSubmissionPaperQuestionRepository;
+import com.examflow.backend.repository.StudentSubmissionPaperQuestionSubQuestionRepository;
+import com.examflow.backend.repository.UploadPaperQuestionRepository;
+import com.examflow.backend.repository.UploadPaperQuestionSubQuestionRepository;
 import com.examflow.backend.repository.UploadPaperRepository;
 import com.examflow.backend.service.FileStorageService;
 import com.examflow.backend.service.StudentControllerManager;
@@ -43,10 +51,14 @@ import jakarta.servlet.http.HttpServletRequest;
 public class StudentControllerManagerImpl implements StudentControllerManager {
 
     private final StudentClassesRepository studentClassesRepository;
+    private final StudentSubmissionPaperQuestionSubQuestionRepository studentSubmissionPaperQuestionSubQuestionRepository;
+    private final UploadPaperQuestionRepository uploadPaperQuestionRepository;
     private final FileStorageService fileStorageService;
     private final PaperSubmissionRepository paperSubmissionRepository;
+    private final StudentSubmissionPaperQuestionRepository studentSubmissionPaperQuestionRepository;
     private final StudentRepository studentRepository;
     private final UploadPaperRepository uploadPaperRepository;
+    private final UploadPaperQuestionSubQuestionRepository uploadPaperQuestionSubQuestionRepository;
     private final ClassesRepository classesRepository;
     private final ClassPaymentRecordRepository classPaymentRecordRepository;
     private final StudentClassPaymentRecordsRepository studentClassPaymentRecordsRepository;
@@ -55,7 +67,11 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
     @Autowired
     public StudentControllerManagerImpl(StudentRepository studentRepository,
             ClassesRepository classesRepository,
+            StudentSubmissionPaperQuestionSubQuestionRepository studentSubmissionPaperQuestionSubQuestionRepository,
+            UploadPaperQuestionRepository uploadPaperQuestionRepository,
+            StudentSubmissionPaperQuestionRepository studentSubmissionPaperQuestionRepository,
             PaperSubmissionRepository paperSubmissionRepository,
+            UploadPaperQuestionSubQuestionRepository uploadPaperQuestionSubQuestionRepository,
             FileStorageService fileStorageService,
             UploadPaperRepository uploadPaperRepository,
             StudentClassPaymentRecordsRepository studentClassPaymentRecordsRepository,
@@ -64,7 +80,11 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
             StudentClassesRepository studentClassesRepository) {
         this.studentRepository = studentRepository;
         this.classesRepository = classesRepository;
+        this.studentSubmissionPaperQuestionRepository = studentSubmissionPaperQuestionRepository;
+        this.studentSubmissionPaperQuestionSubQuestionRepository = studentSubmissionPaperQuestionSubQuestionRepository;
+        this.uploadPaperQuestionRepository = uploadPaperQuestionRepository;
         this.paperSubmissionRepository = paperSubmissionRepository;
+        this.uploadPaperQuestionSubQuestionRepository = uploadPaperQuestionSubQuestionRepository;
         this.fileStorageService = fileStorageService;
         this.uploadPaperRepository = uploadPaperRepository;
         this.classPaymentRecordRepository = classPaymentRecordRepository;
@@ -353,6 +373,30 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
 
         response.setIsSuccess(true);
         response.setMessage("Answer sheet uploaded successfully");
+
+        List<UploadPaperQuestion> paperQuestions = uploadPaperQuestionRepository.findByUplaodPaperAndStatus(uploadPaper, 2);
+        
+        for(UploadPaperQuestion question : paperQuestions){
+            StudentSubmissionPaperQuestion studentSubmissionPaperQuestion = new StudentSubmissionPaperQuestion();
+            UploadPaperQuestion uploadPaperQuestion = uploadPaperQuestionRepository.findByUploadPaperQuestionSeq(question.getUploadPaperQuestionSeq());
+            studentSubmissionPaperQuestion.setStudent(student);
+            studentSubmissionPaperQuestion.setUploadPaperQuestion(uploadPaperQuestion);
+            studentSubmissionPaperQuestion.setStatusSeq(2);
+            studentSubmissionPaperQuestionRepository.save(studentSubmissionPaperQuestion);  
+            
+            List<UploadPaperQuestionSubQuestion> paperSubQuestions = uploadPaperQuestionSubQuestionRepository.findByUploadPaperQuestionAndStatus(question,2);
+            if (paperSubQuestions.size()>0) {
+                for (UploadPaperQuestionSubQuestion papersubQuestions : paperSubQuestions) {
+                StudentSubmissionPaperSubQuestion studentSubQuestion = new StudentSubmissionPaperSubQuestion();
+                studentSubQuestion.setStudentSubmissionPaperQuestion(studentSubmissionPaperQuestion);
+                studentSubQuestion.setStatusSeq(2);
+                studentSubQuestion.setUploadPaperQuestionSubQuestion(papersubQuestions);
+                studentSubmissionPaperQuestionSubQuestionRepository.save(studentSubQuestion);
+                }
+            } 
+
+         }
+
 
         return response;
 
