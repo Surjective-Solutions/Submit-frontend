@@ -67,6 +67,8 @@ public class StudentController {
     public GeneralResponse removeClassFromStudent(@RequestBody ClassRequest classRequest) {
         return studentControllerManager.removeClassFromStudent(classRequest.getClassSeq());
 
+    }
+
     @PostMapping("/answer-sheet/upload")
     public GeneralResponse uploadAnswerSheet(@ModelAttribute AnswerSheetUploadRequest answerSheetUploadRequest,
             @RequestParam MultipartFile answerSheet) {
