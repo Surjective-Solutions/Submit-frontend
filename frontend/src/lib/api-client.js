@@ -235,6 +235,23 @@ export async function updatePaper(paperId, paperData) {
   });
 }
 
+
+//this is the actual ,ethod to used for send data to backend
+export async function uploadAnswerSheet(classId, paperId, answerSheet) {
+  const formData = new FormData();
+
+  formData.append("classId", classId);
+  formData.append("paperId", paperId);
+  formData.append("answerSheet", answerSheet);
+
+  return protectedRequestWithFileHandling(
+    "/api/student/answer-sheet/upload",
+    {
+      body: formData,
+    }
+  );
+}
+
 // TODO: replace with actual microservice endpoint
 export async function deletePaper(paperId) {
   return request(`/teacher/papers/${paperId}`, {

@@ -17,12 +17,17 @@ import { useEnrolledClasses } from '@/context/EnrolledClassesContext';
 import { useCountdownTimer } from '@/hooks/use-countdown-timer';
 import { EXAM_DURATION_SECONDS, EXAM_MOCK_PAGE_COUNT, findPaperInClass } from '@/lib/exam-utils';
 
+import { Document, Page, pdfjs } from "react-pdf";
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
 export default function ExamViewingPage() {
   const { classId, paperId } = useParams();
   const router = useRouter();
   const { classes } = useEnrolledClasses();
   const [currentPage, setCurrentPage] = useState(1);
   const [endExamOpen, setEndExamOpen] = useState(false);
+  const [totalPages, setTotalPages] = useState(0);
 
   const cls = classes.find((c) => c.id === Number(classId));
   const paper = findPaperInClass(cls, paperId);
@@ -30,7 +35,9 @@ export default function ExamViewingPage() {
   const timer = useCountdownTimer(EXAM_DURATION_SECONDS, {
     onExpire: () => {
       toast.warning("Time's up! Submitting you to the answer upload page.");
-      router.push(`/student/dashboard/classes/${classId}/exam/${paperId}/upload`);
+      router.push(
+        `/student/dashboard/classes/${classId}/exam/${paperId}/upload`,
+      );
     },
   });
 
@@ -79,23 +86,24 @@ export default function ExamViewingPage() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm font-semibold text-gray-700 tabular-nums min-w-[4.5rem] text-center">
-              {currentPage} / {EXAM_MOCK_PAGE_COUNT}
+              {currentPage} / {totalPages}
             </span>
-            <Button
-              variant="outline"
-              size="icon-sm"
-              disabled={currentPage >= EXAM_MOCK_PAGE_COUNT}
-              onClick={() => setCurrentPage((p) => Math.min(EXAM_MOCK_PAGE_COUNT, p + 1))}
+            <button
+              className="h-10 w-10 shrink-0 rounded-full border border-border bg-white flex items-center justify-center text-gray-400 hover:text-indigo-600 hover:border-indigo-300 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+              <ChevronRight className="h-5 w-5" />
+            </button>
           </div>
 
           {/* Timer + End Exam */}
           <div className="flex items-center gap-3 shrink-0">
             <span
               className={`inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-lg tabular-nums ${
-                lowTime ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                lowTime
+                  ? "bg-red-50 text-red-600 border border-red-200"
+                  : "bg-indigo-50 text-indigo-700 border border-indigo-200"
               }`}
             >
               <Clock className="h-3.5 w-3.5" />
@@ -124,19 +132,68 @@ export default function ExamViewingPage() {
           <ChevronLeft className="h-5 w-5" />
         </button>
 
-        <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden" style={{ aspectRatio: '3/4', maxHeight: '75vh' }}>
+        {/* <div
+          className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden"
+          style={{ aspectRatio: "3/4", maxHeight: "75vh" }}
+        >
           <img
             key={currentPage}
             src={`https://placehold.co/700x933?text=${encodeURIComponent(paper.paper_name)}+%E2%80%94+Page+${currentPage}`}
             alt={`${paper.paper_name} — page ${currentPage}`}
             className="h-full w-full object-contain"
           />
+
+          <iframe
+            key={currentPage}
+            src={`http://localhost:8080${paper.exam_pdf_url}#page=${currentPage}`}
+            className="h-full w-full"
+            title={`${paper.paper_name} page ${currentPage}`}
+          />
+        </div> */}
+
+        {/* <div
+          className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden"
+          style={{
+            height: "80vh",
+            width: "60vw",
+          }}
+        >
+          <iframe
+            key={currentPage}
+            src={`http://localhost:8080${encodeURI(paper.exam_pdf_url)}#page=${currentPage}`}
+            className="h-full w-full"
+            title={paper.paper_name}
+          />
+        </div> */}
+
+        <div
+          className="bg-white rounded-2xl border border-border shadow-sm overflow-auto flex items-center justify-center"
+          style={{
+            width: "75%",
+            height: "60%",
+          }}
+        >
+          <Document
+            file={`http://localhost:8080${paper.exam_pdf_url}`}
+            onLoadSuccess={({ numPages }) => {
+              setTotalPages(numPages);
+              setCurrentPage(1);
+            }}
+            loading="Loading paper..."
+          >
+            <Page
+              pageNumber={currentPage}
+              width={750}
+              renderTextLayer={false}
+              renderAnnotationLayer={false}
+            />
+          </Document>
         </div>
 
         <button
           className="h-10 w-10 shrink-0 rounded-full border border-border bg-white flex items-center justify-center text-gray-400 hover:text-indigo-600 hover:border-indigo-300 disabled:opacity-30 disabled:pointer-events-none transition-colors"
-          disabled={currentPage >= EXAM_MOCK_PAGE_COUNT}
-          onClick={() => setCurrentPage((p) => Math.min(EXAM_MOCK_PAGE_COUNT, p + 1))}
+          disabled={currentPage >= totalPages}
+          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
         >
           <ChevronRight className="h-5 w-5" />
         </button>
