@@ -5,12 +5,17 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.examflow.backend.dto.AnswerSheetUploadRequest;
 import com.examflow.backend.dto.ClassRequest;
 import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
+import com.examflow.backend.dto.PaperUploadRequest;
 import com.examflow.backend.dto.StudentResponse;
 import com.examflow.backend.service.StudentControllerManager;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -56,5 +61,16 @@ public class StudentController {
     @PutMapping("/update/{id}")
     public GeneralResponse updateStudent(@PathVariable Integer id, @RequestBody UserSignUpRequest studentRequest) {
         return studentControllerManager.updateStudent(id, studentRequest);
+    }
+
+    @PostMapping("/answer-sheet/upload")
+    public GeneralResponse uploadAnswerSheet(@ModelAttribute AnswerSheetUploadRequest answerSheetUploadRequest,
+            @RequestParam MultipartFile answerSheet) {
+        System.out.println("reached to controller");
+        GeneralResponse response = new GeneralResponse();
+        System.out.println(answerSheet.getOriginalFilename());
+        response = studentControllerManager.uploadAnswerSheet(answerSheetUploadRequest, answerSheet);
+        return response;
+
     }
 }

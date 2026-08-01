@@ -10,8 +10,10 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.Authentication;
 
+import com.examflow.backend.dto.AnswerSheetUploadRequest;
 import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.MonthPapersResponse;
@@ -20,15 +22,18 @@ import com.examflow.backend.dto.StudentClassPaymentRecordResponse;
 import com.examflow.backend.dto.StudentResponse;
 import com.examflow.backend.entity.ClassPaymentRecord;
 import com.examflow.backend.entity.Classes;
+import com.examflow.backend.entity.PaperSubmission;
 import com.examflow.backend.entity.Student;
 import com.examflow.backend.entity.StudentClass;
 import com.examflow.backend.entity.StudentClassPaymentRecord;
 import com.examflow.backend.entity.UplaodPaper;
 import com.examflow.backend.repository.ClassPaymentRecordRepository;
 import com.examflow.backend.repository.ClassesRepository;
+import com.examflow.backend.repository.PaperSubmissionRepository;
 import com.examflow.backend.repository.StudentClassPaymentRecordsRepository;
 import com.examflow.backend.repository.StudentRepository;
 import com.examflow.backend.repository.UploadPaperRepository;
+import com.examflow.backend.service.FileStorageService;
 import com.examflow.backend.service.StudentControllerManager;
 import com.examflow.backend.dto.UserSignUpRequest;
 
@@ -38,6 +43,8 @@ import jakarta.servlet.http.HttpServletRequest;
 public class StudentControllerManagerImpl implements StudentControllerManager {
 
     private final StudentClassesRepository studentClassesRepository;
+    private final FileStorageService fileStorageService;
+    private final PaperSubmissionRepository paperSubmissionRepository;
     private final StudentRepository studentRepository;
     private final UploadPaperRepository uploadPaperRepository;
     private final ClassesRepository classesRepository;
@@ -48,6 +55,8 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
     @Autowired
     public StudentControllerManagerImpl(StudentRepository studentRepository,
             ClassesRepository classesRepository,
+            PaperSubmissionRepository paperSubmissionRepository,
+            FileStorageService fileStorageService,
             UploadPaperRepository uploadPaperRepository,
             StudentClassPaymentRecordsRepository studentClassPaymentRecordsRepository,
             ClassPaymentRecordRepository classPaymentRecordRepository,
@@ -55,6 +64,8 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
             StudentClassesRepository studentClassesRepository) {
         this.studentRepository = studentRepository;
         this.classesRepository = classesRepository;
+        this.paperSubmissionRepository = paperSubmissionRepository;
+        this.fileStorageService = fileStorageService;
         this.uploadPaperRepository = uploadPaperRepository;
         this.classPaymentRecordRepository = classPaymentRecordRepository;
         this.studentClassPaymentRecordsRepository = studentClassPaymentRecordsRepository;
@@ -203,9 +214,21 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
                     paperResponse.setId(String.valueOf(monthUploadPaper.getUploadPaperSeq()));
                     paperResponse.setPaper_name(monthUploadPaper.getPaperName());
                     paperResponse.setDue_date(LocalDateTime.now());
-                    paperResponse.setSubmission_status("NOT_SUBMITTED");
+
+                    PaperSubmission paperSubmission = paperSubmissionRepository
+                            .findByStudentAndUplaodpaperAndStatusSeq(student, monthUploadPaper, 2);
+
+                    if (paperSubmission != null) {
+                        paperResponse.setSubmission_status("SUBMITTED");
+                        String pdfUrl = "/uploads/" + paperSubmission.getSubmissionFilePath();
+                        paperResponse.setSubmission_url(pdfUrl);
+                    } else {
+                                paperResponse.setSubmission_status("NOT_SUBMITTED");
+                                paperResponse.setSubmission_url(null);
+                            }
                     paperResponse.setGrade("need to implement");
-                    paperResponse.setExam_pdf_url(monthUploadPaper.getPaperName());
+                    String pdfUrl = "/uploads/" + monthUploadPaper.getFilePath();
+                    paperResponse.setExam_pdf_url(pdfUrl);
                     paperResponse.setSubmission_url(monthUploadPaper.getPaperName());
                     paperResponse.setGraded_pdf_url(monthUploadPaper.getPaperName());
                     paperResponse.setIs_current(null);
@@ -281,5 +304,36 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
         response.setIsSuccess(true);
         response.setMessage("Student updated successfully");
         return response;
+    }
+
+    @Override
+    public GeneralResponse uploadAnswerSheet(AnswerSheetUploadRequest answerSheetUploadRequest,
+            MultipartFile answerSheet) {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Integer studentSeq = (Integer) request.getAttribute("userId");
+        GeneralResponse response = new GeneralResponse();
+
+        Student student = studentRepository.findByStudentSeq(studentSeq);
+        UplaodPaper uploadPaper = uploadPaperRepository.findByUploadPaperSeq(answerSheetUploadRequest.getPaperId());
+
+        PaperSubmission paperSubmission = new PaperSubmission();
+        paperSubmission.setStudent(student);
+        paperSubmission.setUplaodpaper(uploadPaper);
+        paperSubmission.setSubmissionBy(username);
+        paperSubmission.setSubmissionDate(LocalDateTime.now());
+
+        String filePath = fileStorageService.saveAnswerSheet(answerSheet);
+        paperSubmission.setSubmissionFilePath(filePath);
+        paperSubmission.setStatusSeq(2);
+
+        paperSubmissionRepository.save(paperSubmission);
+
+        response.setIsSuccess(true);
+        response.setMessage("Answer sheet uploaded successfully");
+
+        return response;
+
     }
 }

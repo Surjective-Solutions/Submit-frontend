@@ -88,7 +88,7 @@ public class MonthlyPaymentService {
             String username) {
 
         ClassPaymentRecord classPaymentRecord = classPaymentRecordRepository
-                .findByClassesAndStatusAndMonth(classes, 2, month);
+                .findByClassesAndMonthAndYearAndStatus(classes, month, year, 2);
         if (classPaymentRecord != null) {
             return classPaymentRecord;
         }

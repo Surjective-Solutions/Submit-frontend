@@ -213,8 +213,7 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         uploadPaper.setCreatedBy(username);
         uploadPaper.setLastModifiedBy(username);
         uploadPaper.setFileName(fileName);
-        uploadPaper.setFilePath(System.getProperty("user.home")
-                + "/lms/uploads/papers/" + fileName);
+        uploadPaper.setFilePath("papers/" + fileName);
         uploadPaper.setCreatedDateTime(LocalDateTime.now());
 
         uploadPaper.setLastModifiedDateTime(LocalDateTime.now());
