@@ -35,6 +35,9 @@ public class SecurityConfig {
                 .cors(cors -> {
                 })
 
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.disable()))
+
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
