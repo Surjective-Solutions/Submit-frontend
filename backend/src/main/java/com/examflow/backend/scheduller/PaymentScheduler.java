@@ -15,7 +15,7 @@ public class PaymentScheduler {
 
     private final MonthlyPaymentService monthlyPaymentService;
 
-    @Scheduled(cron = "30 35 00 * * *")
+    @Scheduled(cron = "0 53 17 * * *")
     public void generateMonthlyPayments() {
 
         System.out.println("Running scheduler : " + LocalDateTime.now());
@@ -24,7 +24,7 @@ public class PaymentScheduler {
 
     }
 
-    @Scheduled(cron = "0 36 00 * * *")
+    @Scheduled(cron = "0 54 17 * * *")
     public void generateMonthlyPaymentsForStudentPaymentRecords() {
 
         System.out.println("Running scheduler : " + LocalDateTime.now());

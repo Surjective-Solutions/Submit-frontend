@@ -1,5 +1,6 @@
 package com.examflow.backend.controller;
 
+import com.examflow.backend.scheduller.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -22,11 +23,13 @@ import com.examflow.backend.service.UserSignUpControllermanager;
 @CrossOrigin(origins = "http://localhost:3000")
 public class TestController {
 
+    private final EmailService emailService;
     private final UserSignUpControllermanager userSignUpControllerManager;
 
     @Autowired
-    public TestController(UserSignUpControllermanager userSignUpControllerManager) {
+    public TestController(UserSignUpControllermanager userSignUpControllerManager, EmailService emailService) {
         this.userSignUpControllerManager = userSignUpControllerManager;
+        this.emailService = emailService;
     }
 
     @PostMapping("/hello")
@@ -46,6 +49,12 @@ public class TestController {
     @PostMapping("/otp/verify")
     public OtpRespond verifyOtp(@RequestBody OtpRequest otpRequest) {
         return userSignUpControllerManager.verifyOtp(otpRequest.getIdentifier(), otpRequest.getOtp());
+    }
+
+    @GetMapping("/email")
+    public String test() {
+        emailService.sendEmail("ashennayanajith06@gmail.com", "hyy", "test email");
+        return "testing email";
     }
 
 }

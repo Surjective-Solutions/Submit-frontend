@@ -19,6 +19,7 @@ import { useCountdownTimer } from '@/hooks/use-countdown-timer';
 import { UPLOAD_DURATION_SECONDS, findPaperInClass } from '@/lib/exam-utils';
 import { markPaperSubmitted } from '@/lib/submitted-papers';
 import { saveSubmissionPdf } from '@/lib/submission-pdf-storage';
+import { uploadAnswerSheet } from "@/lib/api-client";
 
 export default function AnswerUploadPage() {
   const { classId, paperId } = useParams();
@@ -32,25 +33,24 @@ export default function AnswerUploadPage() {
   const cls = classes.find((c) => c.id === Number(classId));
   const paper = findPaperInClass(cls, paperId);
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!file || isSubmitting) return;
     setIsSubmitting(true);
     timer.pause();
 
-    // Mock submission — no backend yet.
-    setTimeout(async () => {
-      // TEMPORARY FRONTEND-ONLY WORKAROUND: persist the actual uploaded PDF in
-      // IndexedDB (keyed by paperId) and record the submission in
-      // sessionStorage, so the class detail page's "View Submission" button
-      // can open it until a real backend endpoint exists for storing and
-      // retrieving submitted exam PDFs. See lib/submission-pdf-storage.js and
-      // lib/submitted-papers.js.
-      await saveSubmissionPdf(paperId, file);
-      markPaperSubmitted(paperId);
-      toast.success('Answer sheet submitted successfully!');
+    try {
+      await uploadAnswerSheet(classId, paperId, file);
+
+      toast.success("Answer sheet submitted successfully!");
+
       unlockExam();
       router.replace(`/student/dashboard/classes/${classId}`);
-    }, 900);
+    } catch (error) {
+      console.error(error);
+      toast.error("Upload failed.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   const timer = useCountdownTimer(UPLOAD_DURATION_SECONDS, {
@@ -91,15 +91,17 @@ export default function AnswerUploadPage() {
           <h1 className="text-sm font-bold text-gray-900 leading-tight truncate">
             Upload Answer Sheet
           </h1>
-          <p className="text-xs text-gray-400 mt-0.5 truncate">{paper.paper_name}</p>
+          <p className="text-xs text-gray-400 mt-0.5 truncate">
+            {paper.paper_name}
+          </p>
         </div>
         <span
           className={`inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-lg tabular-nums shrink-0 ${
             timeUp
-              ? 'bg-red-50 text-red-600 border border-red-200'
+              ? "bg-red-50 text-red-600 border border-red-200"
               : timer.secondsLeft <= 120
-              ? 'bg-amber-50 text-amber-700 border border-amber-200'
-              : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                ? "bg-amber-50 text-amber-700 border border-amber-200"
+                : "bg-indigo-50 text-indigo-700 border border-indigo-200"
           }`}
         >
           <Clock className="h-3.5 w-3.5" />
@@ -120,15 +122,20 @@ export default function AnswerUploadPage() {
       <div className="bg-white rounded-2xl border border-border shadow-sm p-6 space-y-5">
         <div
           className="w-11 h-11 rounded-xl flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg, #3940A0 0%, #5a62ff 100%)' }}
+          style={{
+            background: "linear-gradient(135deg, #3940A0 0%, #5a62ff 100%)",
+          }}
         >
           <UploadCloud className="h-5 w-5 text-white" />
         </div>
 
         <div>
-          <h2 className="text-sm font-semibold text-gray-900">Scan and upload your answer sheet</h2>
+          <h2 className="text-sm font-semibold text-gray-900">
+            Scan and upload your answer sheet
+          </h2>
           <p className="text-xs text-gray-500 mt-1">
-            You have {UPLOAD_DURATION_SECONDS / 60} minutes to scan or photograph your answers and upload them as a single PDF file.
+            You have {UPLOAD_DURATION_SECONDS / 60} minutes to scan or
+            photograph your answers and upload them as a single PDF file.
           </p>
         </div>
 
@@ -136,7 +143,7 @@ export default function AnswerUploadPage() {
           <div className="flex items-center gap-3 rounded-lg border border-input px-3 py-2">
             <FileText className="h-4 w-4 text-gray-400 shrink-0" />
             <span className="text-sm text-gray-500 flex-1 truncate min-w-0">
-              {file?.name ?? 'No file selected'}
+              {file?.name ?? "No file selected"}
             </span>
             <label
               htmlFor="answer_pdf_input"
@@ -157,7 +164,9 @@ export default function AnswerUploadPage() {
 
         <Button
           className="w-full text-white"
-          style={{ background: 'linear-gradient(135deg, #3940A0 0%, #5a62ff 100%)' }}
+          style={{
+            background: "linear-gradient(135deg, #3940A0 0%, #5a62ff 100%)",
+          }}
           disabled={!file || isSubmitting}
           onClick={handleSubmit}
         >

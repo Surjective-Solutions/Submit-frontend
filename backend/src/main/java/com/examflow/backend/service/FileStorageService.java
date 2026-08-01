@@ -11,6 +11,9 @@ public class FileStorageService {
     private final String UPLOAD_DIR = System.getProperty("user.home")
             + "/lms/uploads/papers/";
 
+    private final String UPLOAD_DIR_ANSWER_SHEET = System.getProperty("user.home")
+            + "/lms/uploads/answer_sheets/";
+
     private final String UPLOAD_PAYEMNT_RECEIPT_DIR = System.getProperty("user.home")
             + "/lms/uploads/payment_recipts/";
 
@@ -30,6 +33,29 @@ public class FileStorageService {
             file.transferTo(new File(filePath));
 
             return uniqueName;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to store file", e);
+        }
+
+    }
+
+    public String saveAnswerSheet(MultipartFile file) {
+        try {
+
+            File directory = new File(UPLOAD_DIR_ANSWER_SHEET);
+            if (!directory.exists()) {
+                directory.mkdirs();
+            }
+
+            String originalName = file.getOriginalFilename();
+            String uniqueName = System.currentTimeMillis() + "_" + originalName;
+
+            String filePath = UPLOAD_DIR_ANSWER_SHEET + uniqueName;
+
+            file.transferTo(new File(filePath));
+
+            return filePath;
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to store file", e);
