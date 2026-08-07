@@ -9,6 +9,7 @@ import AddClassDialog from "./AddClassDialog";
 import EditClassDialog from "./EditClassDialog";
 import { MOCK_TEACHER_CLASSES } from "@/lib/mock-data";
 import { getClasses } from "@/lib/api-client";
+import { toggleClassStatus } from '@/lib/api-client';
 
 let nextId = MOCK_TEACHER_CLASSES.length + 1;
 
@@ -43,14 +44,19 @@ export default function ClassesSection() {
     );
   }
 
-  function handleToggleStatus(classItem) {
-    const next = classItem.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
-    setClasses((prev) =>
-      prev.map((c) => (c.id === classItem.id ? { ...c, status: next } : c)),
-    );
-    toast.success(
-      `${classItem.display_name} marked as ${next === "ACTIVE" ? "Active" : "Inactive"}`,
-    );
+  async function handleToggleStatus(classItem) {
+    try {
+      await toggleClassStatus(classItem.id);
+      const next = classItem.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+      setClasses((prev) =>
+        prev.map((c) => (c.id === classItem.id ? { ...c, status: next } : c)),
+      );
+      toast.success(
+        `${classItem.display_name} marked as ${next === "ACTIVE" ? "Active" : "Inactive"}`,
+      );
+    } catch {
+      toast.error("Failed to update class status");
+    }
   }
 
   async function loadClasses() {
