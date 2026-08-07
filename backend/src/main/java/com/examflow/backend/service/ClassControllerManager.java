@@ -20,5 +20,7 @@ public interface ClassControllerManager {
     List<ClassResponse> getAllClasses();
 
     GeneralResponse updateClass(Integer classId, ClassRequest classRequest);
+
+    GeneralResponse toggleClassStatus(Integer classId);
 }
     

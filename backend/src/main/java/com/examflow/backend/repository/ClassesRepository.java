@@ -14,4 +14,6 @@ public interface ClassesRepository extends JpaRepository<Classes, Integer> {
     List<Classes> findByStatus(Integer status);
 
     Classes findByClassSeqAndStatus(Integer classSeq, Integer status);
+
+    List<Classes> findByTutor (Tutor tutor);
 }
