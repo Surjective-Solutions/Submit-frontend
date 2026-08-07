@@ -106,32 +106,38 @@ public class PaymentControllerManagerImpl implements PaymentControllerManager {
                 currentMonth, currentYear, username);
 
         StudentClassPaymentRecord studentClassPaymentRecord = studentClassPaymentRecordsRepository
-                .findByStudentAndStatusAndClassPaymentRecord(student, 2, classPaymentRecord);
-        if (studentClassPaymentRecord != null) {
+            .findByStudentAndStatusAndClassPaymentRecord(student, 2, classPaymentRecord);
 
-            studentClassPaymentRecord.setPayedAmount(classPaymentRecord.getClasses().getMonthlyFee());
-            studentClassPaymentRecord.setPayedBy(username);
-            studentClassPaymentRecord.setPayedTime(LocalDateTime.now());
-            studentClassPaymentRecord.setIsApproved(null);
-            studentClassPaymentRecord.setIsForPayments(true);
-
+        if (studentClassPaymentRecord == null) {
+            studentClassPaymentRecord = new StudentClassPaymentRecord();
+            studentClassPaymentRecord.setClassPaymentRecord(classPaymentRecord);
+            studentClassPaymentRecord.setStudent(student);
+            studentClassPaymentRecord.setIsPayed(false);
+            studentClassPaymentRecord.setStatus(2);
+            studentClassPaymentRecord.setCreatedBy(username);
+            studentClassPaymentRecord.setLastModifiedBy(username);
+            studentClassPaymentRecord.setCreatedDateTime(LocalDateTime.now());
+            studentClassPaymentRecord.setLastModifiedDateTime(LocalDateTime.now());
             studentClassPaymentRecordsRepository.save(studentClassPaymentRecord);
-
-            String fileName = fileStorageService.savePaymentReceipt(receiptFile);
-            studentClassPaymentRecord.setReciptPath("/uploads/payment_recipts/" + fileName);
-
-            studentClassPaymentRecordsRepository.save(studentClassPaymentRecord);
-
-            response.setIsSuccess(true);
-            response.setMessage("student class payment recorded  successsfully for "
-                    + studentClassPaymentRecord.getClassPaymentRecord().getMonth()
-                    + +studentClassPaymentRecord.getClassPaymentRecord().getYear() + "file Uplaoded Succesfully");
-
-            return response;
         }
 
-        response.setIsSuccess(false);
-        response.setMessage("student class payment record not found");
+        studentClassPaymentRecord.setPayedAmount(classPaymentRecord.getClasses().getMonthlyFee());
+        studentClassPaymentRecord.setPayedBy(username);
+        studentClassPaymentRecord.setPayedTime(LocalDateTime.now());
+        studentClassPaymentRecord.setIsApproved(null);
+        studentClassPaymentRecord.setIsForPayments(true);
+
+        studentClassPaymentRecordsRepository.save(studentClassPaymentRecord);
+
+        String fileName = fileStorageService.savePaymentReceipt(receiptFile);
+        studentClassPaymentRecord.setReciptPath("/uploads/payment_recipts/" + fileName);
+
+        studentClassPaymentRecordsRepository.save(studentClassPaymentRecord);
+
+        response.setIsSuccess(true);
+        response.setMessage("student class payment recorded  successsfully for "
+                + studentClassPaymentRecord.getClassPaymentRecord().getMonth()
+                + +studentClassPaymentRecord.getClassPaymentRecord().getYear() + "file Uplaoded Succesfully");
 
         return response;
     }
