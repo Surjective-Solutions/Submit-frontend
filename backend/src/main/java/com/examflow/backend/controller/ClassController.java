@@ -67,4 +67,9 @@ public class ClassController {
         return response;
 
     }
+
+    @PutMapping("/toggle-status/{classId}")
+    public GeneralResponse toggleClassStatus(@PathVariable Integer classId){
+        return classControllerManager.toggleClassStatus(classId);
+    }
 }

@@ -469,6 +469,11 @@ export async function deleteTutor(id) {
   });
 }
 
+// toggle a class's active/inactive status
+export async function toggleClassStatus(classId) {
+  return protectedRequestPath(`/api/class/toggle-status/${classId}`, { method: 'PUT' });
+}
+
 // ── Cashiers ──────────────────────────────────────────────────────────────────
 
 // TODO: replace with actual microservice endpoint

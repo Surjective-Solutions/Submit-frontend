@@ -165,6 +165,42 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
             studentClassesRepository.save(studentClass);
             monthlyPaymentService.generateStudentClassPaymentRecord();
 
+            // Auto-create payment record for current month so student can pay immediately
+            LocalDateTime now = LocalDateTime.now();
+            Integer currentMonth = now.getMonthValue();
+            Integer currentYear = now.getYear();
+
+            ClassPaymentRecord classPaymentRecord = classPaymentRecordRepository
+                    .findByClassesAndStatusAndMonth(classes, 2, currentMonth);
+            if (classPaymentRecord == null) {
+                classPaymentRecord = new ClassPaymentRecord();
+                classPaymentRecord.setClasses(classes);
+                classPaymentRecord.setMonth(currentMonth);
+                classPaymentRecord.setYear(currentYear);
+                classPaymentRecord.setStatus(2);
+                classPaymentRecord.setClassPaymentRecordSearial(currentMonth + "-" + currentYear + "-payment");
+                classPaymentRecord.setCreatedBy(username);
+                classPaymentRecord.setCreatedDateTime(now);
+                classPaymentRecord.setLastModifiedBy(username);
+                classPaymentRecord.setLastModifiedDateTime(now);
+                classPaymentRecordRepository.save(classPaymentRecord);
+            }
+
+            StudentClassPaymentRecord existingRecord = studentClassPaymentRecordsRepository
+                    .findByStudentAndStatusAndClassPaymentRecord(student, 2, classPaymentRecord);
+            if (existingRecord == null) {
+                StudentClassPaymentRecord newRecord = new StudentClassPaymentRecord();
+                newRecord.setClassPaymentRecord(classPaymentRecord);
+                newRecord.setStudent(student);
+                newRecord.setIsPayed(false);
+                newRecord.setStatus(2);
+                newRecord.setCreatedBy(username);
+                newRecord.setLastModifiedBy(username);
+                newRecord.setCreatedDateTime(now);
+                newRecord.setLastModifiedDateTime(now);
+                studentClassPaymentRecordsRepository.save(newRecord);
+            }
+
             generalResponse.setIsSuccess(true);
             generalResponse.setMessage("Class Addedd to your Class " + username);
 

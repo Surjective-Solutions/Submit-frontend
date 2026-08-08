@@ -135,7 +135,7 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         String username = auth.getName();
         Integer tutorSeq = (Integer) request.getAttribute("userId");
         Tutor tutor = tutorRepository.findByTutorSeq(tutorSeq);
-        List<Classes> classList = classesRepository.findByStatusAndTutor(2, tutor);
+        List<Classes> classList = classesRepository.findByTutor(tutor);
 
         List<ClassResponse> classResponseList = new ArrayList<>();
 
@@ -146,6 +146,11 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
             classResponse.setMonthly_fee(classes.getMonthlyFee());
             classResponse.setSubject_name(classes.getSubjectName());
             classResponse.setId(classes.getClassSeq());
+            if (classes.getStatus() == 2) {
+                classResponse.setStatus("ACTIVE");
+            } else {
+                classResponse.setStatus("INACTIVE");
+            }
 
             List<UplaodPaper> papers = uploadPaperRepository.findByClassesAndStatus(classes, 2);
 
@@ -308,6 +313,35 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
 
         classesRepository.save(classes);
         response.setMessage("Class updated successfully");
+        response.setIsSuccess(true);
+        return response;
+    }
+
+    @Override
+    public GeneralResponse toggleClassStatus(Integer classId) {
+        GeneralResponse response = new GeneralResponse();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
+        Classes classes = classesRepository.findById(classId).orElse(null);
+        if (classes == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Class not found");
+            return response;
+        }
+
+        if (classes.getStatus() == 2) {
+            classes.setStatus(1);
+            response.setMessage("Class marked as inactive");
+        } else {
+            classes.setStatus(2);
+            response.setMessage("Class marked as active");
+        }
+
+        classes.setLastModifiedBy(username);
+        classes.setLastModifiedDateTime(LocalDateTime.now());
+        classesRepository.save(classes);
+
         response.setIsSuccess(true);
         return response;
     }
