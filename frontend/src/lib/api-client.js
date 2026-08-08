@@ -478,6 +478,8 @@ export async function getCashiers() {
   });
 }
 
+
+
 // TODO: replace with actual microservice endpoint
 export async function createCashier(data) {
   return protectedRequest("/api/cashier/create", { body: data });
@@ -524,11 +526,11 @@ export async function getSubmissionForGrading(submissionId) {
   return {};
 }
 
-export async function submitGrades(submissionId, gradesData) {
-  // TODO: POST /teacher/submissions/:submissionId/grades
-  // body: { awarded_marks: [{ question_id, marks_awarded, comment }] }
-  return {};
-}
+// export async function submitGrades(submissionId, gradesData) {
+//   // TODO: POST /teacher/submissions/:submissionId/grades
+//   // body: { awarded_marks: [{ question_id, marks_awarded, comment }] }
+//   return {};
+// }
 
 // get bank accounts
 export async function getBankAccounts() {
@@ -557,5 +559,20 @@ export async function getPaymentRecords() {
 //get single instrctor by ID for profile display
 export async function getInstructorById(id) {
   return protectedRequest(`/api/instructor/get-instructor/${id}`, { method: 'GET' });
+}
+
+
+export async function getInstructorTeachers() {
+  return protectedRequestPath("/api/instructor/get-instructor-teachers", {
+    method: "GET",
+  });
+ }
+
+//this make api call to backend for submit grades
+export async function submitGrades(payload) {
+  return protectedRequest("/api/instructor/submissions/grade", {
+    method: "POST",
+    body: payload,
+  });
 }
 

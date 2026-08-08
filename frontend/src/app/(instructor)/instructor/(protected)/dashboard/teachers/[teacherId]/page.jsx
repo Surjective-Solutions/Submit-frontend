@@ -1,5 +1,6 @@
 'use client';
 
+import { useState ,useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ChevronLeft, FileText } from 'lucide-react';
@@ -16,6 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { MOCK_INSTRUCTOR_TEACHERS } from '@/lib/mock-data';
+import { getInstructorTeachers } from '@/lib/api-client';
 
 function initials(name) {
   const parts = (name ?? '').trim().split(/\s+/);
@@ -94,7 +96,26 @@ function PapersTable({ papers, teacherId }) {
 
 export default function InstructorTeacherPapersPage() {
   const { teacherId } = useParams();
-  const teacher = MOCK_INSTRUCTOR_TEACHERS.find((item) => item.id === teacherId);
+   const [instructorTeachers, setInstructorTeachers] = useState([]);
+  const teacher = instructorTeachers.find((item) => item.id === teacherId);
+  
+   
+  
+    useEffect(() => {
+      loadInstructorTeachers();
+    }, []);
+  
+  
+      async function loadInstructorTeachers() {
+      try {
+        const data = await getInstructorTeachers();
+        setInstructorTeachers(data);
+      } catch (error) {
+        toast.error("Failed to load instructor teachers");
+      }
+    }
+
+
 
   if (!teacher) {
     return (

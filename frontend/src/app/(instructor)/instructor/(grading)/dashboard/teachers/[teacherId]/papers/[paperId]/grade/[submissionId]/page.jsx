@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState,useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, FileText, PenLine } from 'lucide-react';
@@ -13,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { MOCK_INSTRUCTOR_TEACHERS, MOCK_LOGGED_IN_INSTRUCTOR } from '@/lib/mock-data';
+import {getInstructorTeachers,submitGrades} from '@/lib/api-client';
 
 const GRADE_TEXT_COLOR = {
   green: 'text-green-600',
@@ -107,11 +108,30 @@ function QuestionRow({
 export default function InstructorGradeSubmissionPage() {
   const { teacherId, paperId, submissionId } = useParams();
   const router = useRouter();
+   const [instructorTeachers, setInstructorTeachers] = useState([]);
 
-  const teacher = MOCK_INSTRUCTOR_TEACHERS.find((t) => t.id === teacherId);
+  const teacher = instructorTeachers.find((t) => t.id === teacherId);
   const paper = teacher?.papers?.find((p) => p.id === paperId);
   const submission = paper?.submissions?.find((s) => s.id === submissionId);
 
+
+
+    useEffect(() => {
+      loadInstructorTeachers();
+    }, []);
+
+
+
+        async function loadInstructorTeachers() {
+        try {
+          const data = await getInstructorTeachers();
+          setInstructorTeachers(data);
+        } catch (error) {
+          toast.error("Failed to load instructor teachers");
+        }
+      }
+
+      
   const questions = useMemo(
     () => (paper?.questions ? [...paper.questions].sort((a, b) => a.display_order - b.display_order) : []),
     [paper]
@@ -184,13 +204,46 @@ export default function InstructorGradeSubmissionPage() {
     setCommentOpen((prev) => ({ ...prev, [q.id]: !prev[q.id] }));
   }
 
-  function handleSubmit() {
+  async  function handleSubmit() {
+
+
+          const gradeRequest = {
+     submissionId: Number(submission.id),
+    teacherId: Number(teacherId),
+    paperId: Number(paperId),
+    totalMarks: totalAwarded,
+    maxMarks: totalMax,
+    grade: gradeInfo.grade,
+    gradedAt: new Date().toISOString(),
+    questions: questions.map((q) => ({
+      questionId: q.id,
+      marksAwarded: Number(marks[q.id]),
+      subquestionSeq: Number(q.subQuestionSeq),
+      mainQuestionSeq: Number(q.mainQuestionSeq),
+      isSubQuestion: q.parent_label ? true : false,
+      comment: comments[q.id] || ""
+      }))
+      };
+
     const hasExceeded = questions.some((q) => isExceeded(q));
     const hasEmpty = questions.some((q) => isEmpty(q));
     if (hasExceeded || hasEmpty) {
       setAttemptedSubmit(true);
       toast.error('Please fix the errors before submitting');
       return;
+    }
+
+      try {
+     const response =  await submitGrades(gradeRequest);
+
+      toast.success("Grades submitted successfully");
+
+      router.push(
+        `/instructor/dashboard/teachers/${teacherId}/papers/${paperId}`
+      );
+
+    } catch (error) {
+        toast.error("Failed to submit grades");
     }
 
     const instructorName = MOCK_LOGGED_IN_INSTRUCTOR
@@ -209,8 +262,12 @@ export default function InstructorGradeSubmissionPage() {
       })),
     });
 
-    toast.success('Grades submitted successfully');
-    router.push(`/instructor/dashboard/teachers/${teacherId}/papers/${paperId}`);
+
+
+  //   toast.success('Grades submitted successfully');
+  //   router.push(`/instructor/dashboard/teachers/${teacherId}/papers/${paperId}`);
+  // }
+
   }
 
   if (!teacher || !paper || !submission) {
@@ -271,7 +328,7 @@ export default function InstructorGradeSubmissionPage() {
         {/* PDF viewer */}
         <div className="h-[45vh] shrink-0 overflow-hidden border-b border-border bg-gray-100 md:h-[calc(100vh-3rem)] md:flex-1 md:border-b-0">
           {submission.file_url ? (
-            <iframe src={submission.file_url} title="Student submission" className="h-full w-full border-0" />
+            <iframe src={`http://localhost:8080${submission.file_url}`} title="Student submission" className="h-full w-full border-0" />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
               <FileText className="h-16 w-16 text-gray-300" />

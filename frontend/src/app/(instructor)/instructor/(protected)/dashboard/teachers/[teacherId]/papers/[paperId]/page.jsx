@@ -1,5 +1,6 @@
 'use client';
 
+import { useState ,useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, UserCheck } from 'lucide-react';
@@ -16,6 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { MOCK_INSTRUCTOR_TEACHERS } from '@/lib/mock-data';
+import {getInstructorTeachers} from '@/lib/api-client';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MOCK_NOW = new Date('2026-06-19T18:30:00.000Z');
@@ -71,8 +73,26 @@ function StudentCell({ submission }) {
 export default function InstructorPaperSubmissionsPage() {
   const { teacherId, paperId } = useParams();
   const router = useRouter();
-  const teacher = MOCK_INSTRUCTOR_TEACHERS.find((item) => item.id === teacherId);
+   const [instructorTeachers, setInstructorTeachers] = useState([]);
+  const teacher = instructorTeachers.find((item) => item.id === teacherId);
   const paper = teacher?.papers?.find((item) => item.id === paperId);
+
+
+    useEffect(() => {
+      loadInstructorTeachers();
+    }, []);
+
+
+
+  async function loadInstructorTeachers() {
+    try {
+      const data = await getInstructorTeachers();
+      setInstructorTeachers(data);
+    } catch (error) {
+      toast.error("Failed to load instructor teachers");
+    }
+  }
+
 
   if (!teacher || !paper) {
     return (

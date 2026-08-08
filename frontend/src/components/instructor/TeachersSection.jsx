@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState ,useEffect } from 'react';
 import Link from 'next/link';
 import { Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import {getInstructorTeachers} from '@/lib/api-client';
 import { MOCK_LOGGED_IN_INSTRUCTOR, MOCK_INSTRUCTOR_TEACHERS } from '@/lib/mock-data';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -19,9 +20,17 @@ const SUBJECT_COLORS = {
   default:                'bg-gray-100 text-gray-600',
 };
 
+
+
 function subjectColor(subject) {
   return SUBJECT_COLORS[subject] ?? SUBJECT_COLORS.default;
 }
+
+
+
+
+
+
 
 function TeacherInitials({ name, size = 80 }) {
   const parts = (name ?? '').trim().split(' ');
@@ -109,13 +118,31 @@ function CopyButton({ value }) {
 export default function TeachersSection() {
   const instructor = MOCK_LOGGED_IN_INSTRUCTOR;
 
+  const [instructorTeachers, setInstructorTeachers] = useState([]);
+
+  useEffect(() => {
+    loadInstructorTeachers();
+  }, []);
+
+
+    async function loadInstructorTeachers() {
+    try {
+      const data = await getInstructorTeachers();
+      setInstructorTeachers(data);
+    } catch (error) {
+      toast.error("Failed to load instructor teachers");
+    }
+  }
+
+
+
   return (
     <div className="space-y-5">
       {/* Top bar */}
       <div className="flex flex-col sm:flex-row sm:items-start gap-4">
         <div className="flex-1 flex items-center gap-2.5 shrink-0">
           <h2 className="text-xl font-semibold text-gray-900">My Teachers</h2>
-          <span className="text-sm text-gray-400">•&nbsp;{MOCK_INSTRUCTOR_TEACHERS.length} teachers</span>
+          <span className="text-sm text-gray-400">•&nbsp;{instructorTeachers.length} teachers</span>
         </div>
 
         {/* Instructor ID callout */}
@@ -142,13 +169,13 @@ export default function TeachersSection() {
       </div>
 
       {/* Card grid */}
-      {MOCK_INSTRUCTOR_TEACHERS.length === 0 ? (
+      {instructorTeachers.length === 0 ? (
         <div className="py-16 text-center text-sm text-gray-400">
           No teachers have added you yet. Share your Instructor ID with a teacher to get started.
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {MOCK_INSTRUCTOR_TEACHERS.map((teacher) => (
+          {instructorTeachers.map((teacher) => (
             <TeacherCard key={teacher.id} teacher={teacher} />
           ))}
         </div>
