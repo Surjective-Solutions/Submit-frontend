@@ -8,15 +8,17 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import com.examflow.backend.dto.CashierResponse;
+
 import com.examflow.backend.dto.InstructorResponse;
 import com.examflow.backend.service.InstructorControllerManager;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.InstructorSignUpRequest;
 import com.examflow.backend.dto.InstructorTeacherResponse;
+import com.examflow.backend.dto.SubmitGradeResponse;
 
 @RestController
 @RequestMapping("/api/instructor")
@@ -43,6 +45,14 @@ public class InstructorController {
     @PutMapping("/update/{id}")
     public GeneralResponse updateInstructor(@PathVariable Integer id, @RequestBody InstructorSignUpRequest instructorRequest) {
         return instructorControllerManager.updateInstructor(id, instructorRequest);
+    }
+
+
+        @PostMapping("/submissions/grade")
+    public GeneralResponse submitGrade( @RequestBody SubmitGradeResponse submitGradeResponse ) {
+        System.out.println("submitGradeResponse: " + submitGradeResponse);
+        System.out.println("reched to controller");
+        return instructorControllerManager.GradeSubmission(submitGradeResponse);
     }
 
     @GetMapping("/get-instructor-teachers")

@@ -1,5 +1,7 @@
 package com.examflow.backend.dto;
 
+import java.util.List;
+
 public class InstructorTeacherResponse {
 
     private String id;
@@ -11,6 +13,10 @@ public class InstructorTeacherResponse {
     private String employee_id;
 
     private String bio;
+
+    private List<InstructorTeacherClassesResponse> classes;
+
+    private List<PaperInstructorTutorResponse> papers;
 
     public String getId() {
         return id;
@@ -51,5 +57,26 @@ public class InstructorTeacherResponse {
     public void setBio(String bio) {
         this.bio = bio;
     }
+
+    public List<InstructorTeacherClassesResponse> getClasses() {
+        return classes;
+    }
+
+    public void setClasses(List<InstructorTeacherClassesResponse> classes) {
+        this.classes = classes;
+    }
+
+    public List<PaperInstructorTutorResponse> getPapers() {
+        return papers;
+    }
+
+    public void setPapers(List<PaperInstructorTutorResponse> papers) {
+        this.papers = papers;
+    }
+
+
+    
+
+    
 
 }

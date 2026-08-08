@@ -27,6 +27,10 @@ public class PaperSubmission {
 
 	private LocalDateTime submissionDate;
 
+	private boolean isGraded;
+
+	private LocalDateTime gradedDate;
+
 	private String submissionBy;
 
 	@Id
@@ -95,5 +99,29 @@ public class PaperSubmission {
 	public void setSubmissionBy(String submissionBy) {
 		this.submissionBy = submissionBy;
 	}
+
+
+
+@Column(name = "gradedDate")
+	public LocalDateTime getGradedDate() {
+		return gradedDate;
+	}
+
+	public void setGradedDate(LocalDateTime gradedDate) {
+		this.gradedDate = gradedDate;
+	}
+
+
+	@Column(name = "isGraded")
+	public boolean isGraded() {
+		return isGraded;
+	}
+
+	public void setGraded(boolean isGraded) {
+		this.isGraded = isGraded;
+	}
+
+	
+	
 
 }
