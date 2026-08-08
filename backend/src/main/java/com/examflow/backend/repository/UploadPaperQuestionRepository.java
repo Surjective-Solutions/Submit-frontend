@@ -11,5 +11,7 @@ public interface UploadPaperQuestionRepository extends JpaRepository<UploadPaper
 
     List<UploadPaperQuestion> findByUplaodPaperAndStatus(UplaodPaper uplaodPaper,Integer statusSeq);
 
+    List<UploadPaperQuestion> findByUplaodPaperAndStatusOrderByQuestionKeyAsc(UplaodPaper uplaodPaper,Integer statusSeq);
+
     UploadPaperQuestion findByUploadPaperQuestionSeq(Integer uplaodPaperQuestionSeq);
 }

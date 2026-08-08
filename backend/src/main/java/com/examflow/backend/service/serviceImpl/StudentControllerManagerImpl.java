@@ -55,6 +55,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
     private final UploadPaperQuestionRepository uploadPaperQuestionRepository;
     private final FileStorageService fileStorageService;
     private final PaperSubmissionRepository paperSubmissionRepository;
+    private final MonthlyPaymentService monthlyPaymentService;
     private final StudentSubmissionPaperQuestionRepository studentSubmissionPaperQuestionRepository;
     private final StudentRepository studentRepository;
     private final UploadPaperRepository uploadPaperRepository;
@@ -76,6 +77,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
             UploadPaperRepository uploadPaperRepository,
             StudentClassPaymentRecordsRepository studentClassPaymentRecordsRepository,
             ClassPaymentRecordRepository classPaymentRecordRepository,
+            MonthlyPaymentService monthlyPaymentService,
             HttpServletRequest request,
             StudentClassesRepository studentClassesRepository) {
         this.studentRepository = studentRepository;
@@ -86,6 +88,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
         this.paperSubmissionRepository = paperSubmissionRepository;
         this.uploadPaperQuestionSubQuestionRepository = uploadPaperQuestionSubQuestionRepository;
         this.fileStorageService = fileStorageService;
+        this.monthlyPaymentService = monthlyPaymentService;
         this.uploadPaperRepository = uploadPaperRepository;
         this.classPaymentRecordRepository = classPaymentRecordRepository;
         this.studentClassPaymentRecordsRepository = studentClassPaymentRecordsRepository;
@@ -160,6 +163,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
             studentClass.setMonthlyFee(classes.getMonthlyFee());
 
             studentClassesRepository.save(studentClass);
+            monthlyPaymentService.generateStudentClassPaymentRecord();
 
             generalResponse.setIsSuccess(true);
             generalResponse.setMessage("Class Addedd to your Class " + username);
@@ -364,6 +368,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
         paperSubmission.setUplaodpaper(uploadPaper);
         paperSubmission.setSubmissionBy(username);
         paperSubmission.setSubmissionDate(LocalDateTime.now());
+        paperSubmission.setGraded(false);
 
         String filePath = fileStorageService.saveAnswerSheet(answerSheet);
         paperSubmission.setSubmissionFilePath(filePath);

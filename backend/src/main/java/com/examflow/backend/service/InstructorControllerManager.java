@@ -9,6 +9,7 @@ import com.examflow.backend.entity.Instructor;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.InstructorSignUpRequest;
 import com.examflow.backend.dto.InstructorTeacherResponse;
+import com.examflow.backend.dto.SubmitGradeResponse;
 
 @Service
 public interface InstructorControllerManager {
@@ -18,4 +19,6 @@ public interface InstructorControllerManager {
     GeneralResponse updateInstructor(Integer id, InstructorSignUpRequest instructorRequest);
 
     List<InstructorTeacherResponse> getIntructorTeachers();
+
+    GeneralResponse GradeSubmission(SubmitGradeResponse submitGradeResponse);
 }

@@ -52,10 +52,11 @@ public class FileStorageService {
             String uniqueName = System.currentTimeMillis() + "_" + originalName;
 
             String filePath = UPLOAD_DIR_ANSWER_SHEET + uniqueName;
+            String fileUrl = "/uploads/answer_sheets/" + uniqueName;
 
             file.transferTo(new File(filePath));
 
-            return filePath;
+            return fileUrl;
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to store file", e);

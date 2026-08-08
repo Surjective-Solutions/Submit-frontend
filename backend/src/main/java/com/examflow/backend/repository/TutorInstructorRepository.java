@@ -13,4 +13,6 @@ public interface TutorInstructorRepository extends JpaRepository<TutorInstructor
     List<TutorInstructor> findByTutorAndInstructorAndIsEngaged(Tutor tutor, Instructor instructor, Boolean isEngaged);
 
     List<TutorInstructor> findByTutorAndIsEngaged(Tutor tutor, Boolean isEngaged);
+
+    List<TutorInstructor> findByInstructorAndIsEngaged(Instructor instructor, Boolean isEngaged);
 }

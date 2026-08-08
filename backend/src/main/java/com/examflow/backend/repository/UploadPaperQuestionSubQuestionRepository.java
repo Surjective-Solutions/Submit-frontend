@@ -12,4 +12,8 @@ public interface UploadPaperQuestionSubQuestionRepository
 
 
                  List<UploadPaperQuestionSubQuestion> findByUploadPaperQuestionAndStatus(UploadPaperQuestion uploadPaperQuestion,Integer statuSeq);
+
+                 UploadPaperQuestionSubQuestion findByUploadPaperQuestionSubQuestionSeq(Integer uploadPaperQuestionSubQuestionSeq);
+
+                 List<UploadPaperQuestionSubQuestion> findByUploadPaperQuestionAndStatusOrderByQuestionKeyAsc(UploadPaperQuestion uploadPaperQuestion,Integer statuSeq);
 }

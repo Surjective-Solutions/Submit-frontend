@@ -6,4 +6,5 @@ import com.examflow.backend.entity.StudentSubmissionPaperQuestion;
 
 public interface StudentSubmissionPaperQuestionRepository extends JpaRepository<StudentSubmissionPaperQuestion,Integer> {
     
+    
 }
