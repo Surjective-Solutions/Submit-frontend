@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, FileText, PenLine } from 'lucide-react';
@@ -12,7 +12,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { MOCK_TEACHER_CLASSES, MOCK_LOGGED_IN_TEACHER } from '@/lib/mock-data';
+import { MOCK_TEACHER_CLASSES } from '@/lib/mock-data';
+import {
+  getClasses,
+  submitTutorGrades,
+  editTutorSubmissionGrade,
+} from '@/lib/api-client';
 
 const GRADE_TEXT_COLOR = {
   green: 'text-green-600',
@@ -30,8 +35,18 @@ const GRADE_BADGE_COLOR = {
   red: 'bg-red-100 text-red-700',
 };
 
-function applySubmissionGrade(submission, patch) {
-  Object.assign(submission, patch);
+function buildInitialGradeState(submission) {
+  const marks = {};
+  const comments = {};
+  const commentOpen = {};
+  (submission?.awarded_marks ?? []).forEach((a) => {
+    marks[a.question_id] = a.marks_awarded != null ? String(a.marks_awarded) : '';
+    if (a.comment) {
+      comments[a.question_id] = a.comment;
+      commentOpen[a.question_id] = true;
+    }
+  });
+  return { marks, comments, commentOpen };
 }
 
 function getGrade(score, totalMarks) {
@@ -108,9 +123,62 @@ export default function GradeSubmissionPage() {
   const { classId, paperId, submissionId } = useParams();
   const router = useRouter();
 
-  const foundClass = MOCK_TEACHER_CLASSES.find((c) => c.id === classId);
-  const paper = foundClass?.papers?.find((p) => p.id === paperId);
-  const submission = paper?.submissions?.find((s) => s.id === submissionId);
+
+const [classes, setClasses] = useState([]);
+const [loading, setLoading] = useState(true);
+const [submission, setSubmission] = useState(null);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  async function loadData() {
+    try {
+      setLoading(true);
+
+      const data = await getClasses();
+
+      console.log("Backend classes:", data);
+
+      setClasses(data);
+
+      const foundClass = data.find(
+        (c) => String(c.id) === String(classId)
+      );
+
+      const paper = foundClass?.papers?.find(
+        (p) => String(p.id) === String(paperId)
+      );
+
+      const foundSubmission = paper?.submissions?.find(
+        (s) => String(s.id) === String(submissionId)
+      );
+
+      console.log("Found class:", foundClass);
+      console.log("Found paper:", paper);
+      console.log("Found submission:", foundSubmission);
+
+      setSubmission(foundSubmission ?? null);
+
+    } catch (error) {
+      console.error("Failed to load submission:", error);
+      toast.error("Failed to load submission");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const foundClass = classes.find(
+    (c) => String(c.id) === String(classId)
+  );
+
+  const paper = foundClass?.papers?.find(
+    (p) => String(p.id) === String(paperId)
+  );
+
+  // const foundClass = MOCK_TEACHER_CLASSES.find((c) => c.id === classId);
+  // const paper = foundClass?.papers?.find((p) => p.id === paperId);
+  // const submission = paper?.submissions?.find((s) => s.id === submissionId);
 
   const questions = useMemo(
     () => (paper?.questions ? [...paper.questions].sort((a, b) => a.display_order - b.display_order) : []),
@@ -132,28 +200,23 @@ export default function GradeSubmissionPage() {
     return list;
   }, [questions]);
 
-  const [marks, setMarks] = useState(() => {
-    const initial = {};
-    (submission?.awarded_marks ?? []).forEach((a) => {
-      initial[a.question_id] = a.marks_awarded != null ? String(a.marks_awarded) : '';
-    });
-    return initial;
-  });
-  const [comments, setComments] = useState(() => {
-    const initial = {};
-    (submission?.awarded_marks ?? []).forEach((a) => {
-      if (a.comment) initial[a.question_id] = a.comment;
-    });
-    return initial;
-  });
-  const [commentOpen, setCommentOpen] = useState(() => {
-    const initial = {};
-    (submission?.awarded_marks ?? []).forEach((a) => {
-      if (a.comment) initial[a.question_id] = true;
-    });
-    return initial;
-  });
+  const [marks, setMarks] = useState({});
+  const [comments, setComments] = useState({});
+  const [commentOpen, setCommentOpen] = useState({});
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const [loadedSubmissionId, setLoadedSubmissionId] = useState(null);
+
+  // Once the real submission data arrives, seed the mark-entry state from it.
+  // Done here (during render, gated on the id changing) rather than in a
+  // useEffect, since `submission` starts null and only resolves after an
+  // async fetch — a useState initializer would have already run against null.
+  if (submission && submission.id !== loadedSubmissionId) {
+    const initial = buildInitialGradeState(submission);
+    setLoadedSubmissionId(submission.id);
+    setMarks(initial.marks);
+    setComments(initial.comments);
+    setCommentOpen(initial.commentOpen);
+  }
 
   const totalMax = questions.reduce((sum, q) => sum + q.max_marks, 0);
   const totalAwarded = questions.reduce((sum, q) => {
@@ -184,7 +247,7 @@ export default function GradeSubmissionPage() {
     setCommentOpen((prev) => ({ ...prev, [q.id]: !prev[q.id] }));
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const hasExceeded = questions.some((q) => isExceeded(q));
     const hasEmpty = questions.some((q) => isEmpty(q));
     if (hasExceeded || hasEmpty) {
@@ -193,24 +256,38 @@ export default function GradeSubmissionPage() {
       return;
     }
 
-    const teacherName = MOCK_LOGGED_IN_TEACHER
-      ? `Ms. ${MOCK_LOGGED_IN_TEACHER.first_name} ${MOCK_LOGGED_IN_TEACHER.last_name}`
-      : 'Mr. John Perera';
-
-    applySubmissionGrade(submission, {
-      graded: true,
-      graded_by: teacherName,
-      graded_at: new Date().toISOString(),
-      grade: `${totalAwarded}/${totalMax}`,
-      awarded_marks: questions.map((q) => ({
-        question_id: q.id,
-        marks_awarded: Number(marks[q.id]),
-        comment: comments[q.id] || null,
+    const gradeRequest = {
+      submissionId: Number(submission.id),
+      paperId: Number(paperId),
+      totalMarks: totalAwarded,
+      maxMarks: totalMax,
+      grade: gradeInfo.grade,
+      gradedAt: new Date().toISOString(),
+      questions: questions.map((q) => ({
+        questionId: q.id,
+        marksAwarded: Number(marks[q.id]),
+        subquestionSeq: Number(q.subQuestionSeq),
+        mainQuestionSeq: Number(q.mainQuestionSeq),
+        isSubQuestion: q.parent_label ? true : false,
+        comment: comments[q.id] || '',
       })),
-    });
+    };
 
-    toast.success('Grades submitted successfully');
-    router.push(`/teacher/dashboard/classes/${classId}/papers/${paperId}`);
+    const isEditingGradedSubmission = submission.graded;
+
+    try {
+      if (isEditingGradedSubmission) {
+        await editTutorSubmissionGrade(gradeRequest);
+        toast.success('Grades updated successfully');
+      } else {
+        await submitTutorGrades(gradeRequest);
+        toast.success('Grades submitted successfully');
+      }
+      router.push(`/teacher/dashboard/classes/${classId}/papers/${paperId}`);
+    } catch (error) {
+      console.error('Failed to save grades:', error);
+      toast.error(isEditingGradedSubmission ? 'Failed to update grades' : 'Failed to submit grades');
+    }
   }
 
   if (!foundClass || !paper || !submission) {
@@ -261,7 +338,7 @@ export default function GradeSubmissionPage() {
             Total: {totalAwarded} / {totalMax} ({gradeInfo.grade})
           </span>
           <Button size="sm" className="bg-indigo-600 text-white hover:bg-indigo-700" onClick={handleSubmit}>
-            Submit Grades
+            {submission.graded ? 'Update Grades' : 'Submit Grades'}
           </Button>
         </div>
       </div>
@@ -352,7 +429,7 @@ export default function GradeSubmissionPage() {
               </span>
             </div>
             <Button className="w-full bg-indigo-600 text-white hover:bg-indigo-700" onClick={handleSubmit}>
-              Submit Grades
+              {submission.graded ? 'Update Grades' : 'Submit Grades'}
             </Button>
           </div>
         </div>

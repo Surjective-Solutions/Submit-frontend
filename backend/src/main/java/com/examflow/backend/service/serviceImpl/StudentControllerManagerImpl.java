@@ -291,7 +291,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
                 newMonthPapersResponse.setMonth_label(monthLable);
 
                 List<UplaodPaper> monthUploadPapers = uploadPaperRepository
-                        .findByClassesAndStatusAndClassPaymentRecord(studentClass.getClasses(), 2, classPaymentRecord);
+                        .findByClassesAndStatusAndClassPaymentRecordAndIsPublished(studentClass.getClasses(), 2, classPaymentRecord,true);
                 System.out.println(monthUploadPapers);
                 List<PaperResponse> monthpaperResponses = new ArrayList<>();
                 for (UplaodPaper monthUploadPaper : monthUploadPapers) {

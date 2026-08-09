@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.examflow.backend.dto.CashierResponse;
@@ -18,18 +19,29 @@ import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.MonthPapersResponse;
 import com.examflow.backend.dto.PaperResponse;
 import com.examflow.backend.dto.PaperUploadRequest;
+import com.examflow.backend.dto.QuestionGradeResponse;
+import com.examflow.backend.dto.QuestionPaperInstructorTutorResponse;
 import com.examflow.backend.dto.QuestionRequestDTO;
 import com.examflow.backend.dto.SubQuestionRequestDTO;
+import com.examflow.backend.dto.SubmissionPaperInstructorTutorResponse;
+import com.examflow.backend.dto.SubmitGradeQuestionsResponse;
+import com.examflow.backend.dto.SubmitGradeResponse;
 import com.examflow.backend.dto.UploadPaperResponse;
 import com.examflow.backend.entity.Cashier;
 import com.examflow.backend.entity.ClassPaymentRecord;
 import com.examflow.backend.entity.Classes;
+import com.examflow.backend.entity.GradeSubmission;
+import com.examflow.backend.entity.GradeSubmissionQuestion;
+import com.examflow.backend.entity.PaperSubmission;
 import com.examflow.backend.entity.Tutor;
 import com.examflow.backend.entity.UplaodPaper;
 import com.examflow.backend.entity.UploadPaperQuestion;
 import com.examflow.backend.entity.UploadPaperQuestionSubQuestion;
 import com.examflow.backend.repository.ClassPaymentRecordRepository;
 import com.examflow.backend.repository.ClassesRepository;
+import com.examflow.backend.repository.GradeSubmissionQuestionRepository;
+import com.examflow.backend.repository.GradeSubmissionRepository;
+import com.examflow.backend.repository.PaperSubmissionRepository;
 import com.examflow.backend.repository.TutorRepository;
 import com.examflow.backend.repository.UploadPaperQuestionRepository;
 import com.examflow.backend.repository.UploadPaperQuestionSubQuestionRepository;
@@ -47,7 +59,10 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
 
     private HttpServletRequest request;
     private final TutorRepository tutorRepository;
+    private final GradeSubmissionRepository gradeSubmissionRepository;
     private final FileStorageService fileStorageService;
+    private final GradeSubmissionQuestionRepository gradeSubmissionQuestionRepository;
+    private final PaperSubmissionRepository paperSubmissionRepository;
     private final ClassesRepository classesRepository;
     private final UploadPaperRepository uploadPaperRepository;
     private final ClassPaymentRecordRepository classPaymentRecordRepository;
@@ -58,7 +73,10 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
     @Autowired
     public ClassControllerManagerImpl(HttpServletRequest request,
             TutorRepository tutorRepository,
+            GradeSubmissionQuestionRepository gradeSubmissionQuestionRepository,
+            PaperSubmissionRepository paperSubmissionRepository,
             UploadPaperQuestionRepository uploadPaperQuestionRepository,
+            GradeSubmissionRepository gradeSubmissionRepository,
             UploadPaperQuestionSubQuestionRepository uploadPaperQuestionSubQuestionRepository,
             FileStorageService fileStorageService,
             ClassPaymentRecordRepository classPaymentRecordRepository,
@@ -66,7 +84,10 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
             UploadPaperRepository uploadPaperRepository,
             MonthlyPaymentService monthlyPaymentService) {
         this.request = request;
+        this.paperSubmissionRepository = paperSubmissionRepository;
+        this.gradeSubmissionRepository = gradeSubmissionRepository;
         this.tutorRepository = tutorRepository;
+        this.gradeSubmissionQuestionRepository = gradeSubmissionQuestionRepository;
         this.fileStorageService = fileStorageService;
         this.classPaymentRecordRepository = classPaymentRecordRepository;
         this.classesRepository = classesRepository;
@@ -74,6 +95,21 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         this.uploadPaperQuestionSubQuestionRepository = uploadPaperQuestionSubQuestionRepository;
         this.uploadPaperRepository = uploadPaperRepository;
         this.monthlyPaymentService = monthlyPaymentService;
+    }
+
+    // The file_url / pdf_url fields returned to the frontend need to be absolute,
+    // since these pages are served from the Next.js app (port 3000) while uploaded
+    // files are only served by this backend at /uploads/** (port 8080). A root-relative
+    // path like "/uploads/..." would resolve against the wrong origin in an <iframe src>.
+    private static final String FILE_SERVER_BASE_URL = "http://localhost:8080";
+
+    private String buildMonthLabel(String month, String year) {
+        try {
+            java.time.Month monthValue = java.time.Month.of(Integer.parseInt(month));
+            return monthValue.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ENGLISH) + " " + year;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @Override
@@ -161,9 +197,10 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
                 paperResponse.setId(paper.getUploadPaperSeq());
                 paperResponse.setMonth(Integer.valueOf(paper.getMonth()));
                 paperResponse.setYear(Integer.valueOf(paper.getYear()));
+                paperResponse.setMonth_label(buildMonthLabel(paper.getMonth(), paper.getYear()));
                 paperResponse.setNumber_of_questions(paper.getNoOfQuestions());
                 paperResponse.setUploaded_at(paper.getCreatedDateTime());
-                paperResponse.setPdf_url(paper.getFileName());
+                paperResponse.setPdf_url(paper.getFilePath() != null ? FILE_SERVER_BASE_URL + "/uploads/" + paper.getFilePath() : null);
 
                 if (paper.getIsPublished() == true) {
                     paperResponse.setStatus("PUBLISHED");
@@ -173,6 +210,97 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
                 }
 
                 paperResponses.add(paperResponse);
+
+                List<UploadPaperQuestion> paperQuestions = uploadPaperQuestionRepository.findByUplaodPaperAndStatusOrderByQuestionKeyAsc(paper, 2);
+                List<QuestionPaperInstructorTutorResponse> questionResponses = new ArrayList<>();
+                Integer questionCount = 0;
+                for(UploadPaperQuestion paperQuestion : paperQuestions){
+                    QuestionPaperInstructorTutorResponse questionResponse = new QuestionPaperInstructorTutorResponse();
+                    List<UploadPaperQuestionSubQuestion> subQuestions = uploadPaperQuestionSubQuestionRepository.findByUploadPaperQuestionAndStatusOrderByQuestionKeyAsc(paperQuestion, 2);
+                    questionCount++;
+                    if (subQuestions.size()==0) {
+                        
+                        questionResponse.setId(paperQuestion.getUploadPaperQuestionSeq().toString());
+                        questionResponse.setMainQuestionSeq(paperQuestion.getUploadPaperQuestionSeq());
+                        questionResponse.setQuestion_label("Q" + questionCount.toString());
+                        questionResponse.setParent_label(null);
+                        questionResponse.setMax_marks(paperQuestion.getMarks());
+                        questionResponse.setDisplay_order(paperQuestion.getQuestionKey());
+                        questionResponses.add(questionResponse);
+                    }else{
+                        Integer subQuestionCount = 0;
+                        for(UploadPaperQuestionSubQuestion subQuestion : subQuestions){
+                            QuestionPaperInstructorTutorResponse subQuestionResponse = new QuestionPaperInstructorTutorResponse();
+                            subQuestionCount++;
+                            subQuestionResponse.setId(paperQuestion.getUploadPaperQuestionSeq().toString() + "-" + subQuestion.getUploadPaperQuestionSubQuestionSeq().toString());
+                            subQuestionResponse.setSubQuestionSeq(subQuestion.getUploadPaperQuestionSubQuestionSeq());
+                            subQuestionResponse.setMainQuestionSeq(paperQuestion.getUploadPaperQuestionSeq());
+                            subQuestionResponse.setQuestion_label("Q" + questionCount.toString()+"(" + subQuestionCount.toString() + ")");
+                            subQuestionResponse.setParent_label("Q" + questionCount.toString());
+                            subQuestionResponse.setMax_marks(subQuestion.getMark());
+                            subQuestionResponse.setDisplay_order(subQuestion.getQuestionKey());
+                            questionResponses.add(subQuestionResponse);
+                        }
+                    }
+
+
+                    
+                }
+                paperResponse.setQuestions(questionResponses);
+
+                List<PaperSubmission> paperSubmissions = paperSubmissionRepository.findByUplaodpaperAndStatusSeq(paper, 2);
+                List<SubmissionPaperInstructorTutorResponse> submissionResponses = new ArrayList<>();
+                for(PaperSubmission submission : paperSubmissions){
+                    SubmissionPaperInstructorTutorResponse submissionResponse = new SubmissionPaperInstructorTutorResponse();
+                    submissionResponse.setId(submission.getPaperSubmissionSeq().toString());
+                    submissionResponse.setStudent_name(submission.getStudent().getFirstName() + " " + submission.getStudent().getLastName());
+                    submissionResponse.setStudent_number(submission.getStudent().getStudentNo().toString());
+                    submissionResponse.setSubmitted_at(submission.getSubmissionDate());
+                    submissionResponse.setGraded(submission.isGraded());
+                    submissionResponse.setGraded_at(submission.getGradedDate());
+                    // submissionFilePath is already stored as a root-relative path
+                    // (e.g. "/uploads/answer_sheets/xxx.pdf") by FileStorageService.saveAnswerSheet,
+                    // so it only needs the backend origin, not another "/uploads/" prefix.
+                    submissionResponse.setFile_url(submission.getSubmissionFilePath() != null
+                            ? FILE_SERVER_BASE_URL + submission.getSubmissionFilePath()
+                            : null);
+                    
+                    submissionResponses.add(submissionResponse);
+
+                    List<QuestionGradeResponse> questionGradeResponses = new ArrayList<>();
+                    GradeSubmission gradeSubmission = gradeSubmissionRepository.findByPaperSubmissionAndStatus(submission, 2);
+                    if (gradeSubmission != null) {
+                        submissionResponse.setGrade(gradeSubmission.getGrade());
+                        submissionResponse.setGraded_by(gradeSubmission.getGrardedBy());
+
+                        List<GradeSubmissionQuestion> gradeSubmissionQuestions = gradeSubmissionQuestionRepository.findByGradeSubmissionAndStatus(gradeSubmission, 2);
+                        for(GradeSubmissionQuestion gradedQuestion:gradeSubmissionQuestions){
+                            QuestionGradeResponse questionResponse = new QuestionGradeResponse();
+
+                            questionResponse.setMarks_awarded(gradedQuestion.getMarksAwarded());
+                            questionResponse.setComment(gradedQuestion.getComment());
+
+                            boolean isSubQuestion = Boolean.TRUE.equals(gradedQuestion.getIsSubQuestion())
+                                    && gradedQuestion.getUploadPaperQuestionSubQuestion() != null;
+                            if (isSubQuestion) {
+                                questionResponse.setQuestion_id(gradedQuestion.getUploadPaperQuestion().getUploadPaperQuestionSeq().toString()
+                                        + "-" + gradedQuestion.getUploadPaperQuestionSubQuestion().getUploadPaperQuestionSubQuestionSeq().toString());
+                                questionResponse.setMax_marks(gradedQuestion.getUploadPaperQuestionSubQuestion().getMark());
+                            } else {
+                                questionResponse.setQuestion_id(gradedQuestion.getUploadPaperQuestion().getUploadPaperQuestionSeq().toString());
+                                questionResponse.setMax_marks(gradedQuestion.getUploadPaperQuestion().getMarks());
+                            }
+
+                            questionGradeResponses.add(questionResponse);
+
+                        }
+                    }
+
+                    submissionResponse.setAwarded_marks(questionGradeResponses);
+                }
+
+                paperResponse.setSubmissions(submissionResponses);
+
             }
 
             classResponse.setPapers(paperResponses);
@@ -223,7 +351,7 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
 
         uploadPaper.setLastModifiedDateTime(LocalDateTime.now());
         uploadPaper.setStatus(2);
-
+            System.out.println(paperUploadRequest.getStatus() == "DRAFT");
         if (paperUploadRequest.getStatus() == "DRAFT") {
 
             uploadPaper.setIsPublished(false);
@@ -344,5 +472,208 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
 
         response.setIsSuccess(true);
         return response;
+    }
+
+    @Override
+    public GeneralResponse togglePaperPublishStatus(Integer paperId) {
+        GeneralResponse response = new GeneralResponse();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Integer tutorSeq = (Integer) request.getAttribute("userId");
+        Tutor tutor = tutorRepository.findByTutorSeq(tutorSeq);
+
+        UplaodPaper paper = uploadPaperRepository.findByUploadPaperSeq(paperId);
+        if (paper == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Paper not found");
+            return response;
+        }
+
+        Tutor owningTutor = paper.getClasses().getTutor();
+        if (tutor == null || owningTutor == null || !owningTutor.getTutorSeq().equals(tutor.getTutorSeq())) {
+            response.setIsSuccess(false);
+            response.setMessage("You are not authorized to change this paper's status");
+            return response;
+        }
+
+        boolean nowPublished = !Boolean.TRUE.equals(paper.getIsPublished());
+        paper.setIsPublished(nowPublished);
+        paper.setLastModifiedBy(username);
+        paper.setLastModifiedDateTime(LocalDateTime.now());
+        uploadPaperRepository.save(paper);
+
+        response.setIsSuccess(true);
+        response.setMessage(nowPublished ? "Paper published" : "Paper unpublished");
+        return response;
+    }
+
+    @Override
+    public GeneralResponse gradeSubmission(SubmitGradeResponse submitGradeResponse) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Integer tutorSeq = (Integer) request.getAttribute("userId");
+        Tutor tutor = tutorRepository.findByTutorSeq(tutorSeq);
+
+        GeneralResponse response = new GeneralResponse();
+
+        PaperSubmission paperSubmission = paperSubmissionRepository
+                .findByPaperSubmissionSeq(submitGradeResponse.getSubmissionId());
+        if (paperSubmission == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Paper submission not found. Contact a system administrator");
+            return response;
+        }
+
+        Tutor owningTutor = paperSubmission.getUplaodpaper().getClasses().getTutor();
+        if (tutor == null || owningTutor == null || !owningTutor.getTutorSeq().equals(tutor.getTutorSeq())) {
+            response.setIsSuccess(false);
+            response.setMessage("You are not authorized to grade this submission");
+            return response;
+        }
+
+        GradeSubmission gradeSubmission = new GradeSubmission();
+        gradeSubmission.setCreatedBy(username);
+        gradeSubmission.setLastModifiedBy(username);
+        gradeSubmission.setGrardedBy(username);
+        gradeSubmission.setCreatedAt(LocalDateTime.now());
+        gradeSubmission.setLastModifiedAt(LocalDateTime.now());
+        gradeSubmission.setGradedAt(LocalDateTime.now());
+        gradeSubmission.setPaperSubmission(paperSubmission);
+        gradeSubmission.setMaxMarks(submitGradeResponse.getMaxMarks());
+        gradeSubmission.setGrade(submitGradeResponse.getGrade());
+        gradeSubmission.setTotalMarks(submitGradeResponse.getTotalMarks());
+        gradeSubmission.setStatus(2); // make the record Approved status
+
+        gradeSubmissionRepository.save(gradeSubmission);
+
+        for (SubmitGradeQuestionsResponse submitGradeQuestionsResponse : submitGradeResponse.getQuestions()) {
+            GradeSubmissionQuestion gradeSubmissionQuestion = buildGradeSubmissionQuestion(gradeSubmission,
+                    submitGradeQuestionsResponse);
+            if (gradeSubmissionQuestion == null) {
+                response.setIsSuccess(false);
+                response.setMessage("Question not found. Contact a system administrator");
+
+                gradeSubmission.setStatus(1); // make the record open status
+                gradeSubmissionRepository.save(gradeSubmission);
+
+                return response;
+            }
+
+            gradeSubmissionQuestionRepository.save(gradeSubmissionQuestion);
+        }
+
+        paperSubmission.setGraded(true);
+        paperSubmission.setGradedDate(LocalDateTime.now());
+        paperSubmissionRepository.save(paperSubmission);
+
+        response.setIsSuccess(true);
+        response.setMessage("Grading submitted successfully");
+        return response;
+    }
+
+    @Override
+    @Transactional
+    public GeneralResponse editSubmissionGrade(SubmitGradeResponse submitGradeResponse) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Integer tutorSeq = (Integer) request.getAttribute("userId");
+        Tutor tutor = tutorRepository.findByTutorSeq(tutorSeq);
+
+        GeneralResponse response = new GeneralResponse();
+
+        PaperSubmission paperSubmission = paperSubmissionRepository
+                .findByPaperSubmissionSeq(submitGradeResponse.getSubmissionId());
+        if (paperSubmission == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Paper submission not found. Contact a system administrator");
+            return response;
+        }
+
+        Tutor owningTutor = paperSubmission.getUplaodpaper().getClasses().getTutor();
+        if (tutor == null || owningTutor == null || !owningTutor.getTutorSeq().equals(tutor.getTutorSeq())) {
+            response.setIsSuccess(false);
+            response.setMessage("You are not authorized to edit this submission's grade");
+            return response;
+        }
+
+        GradeSubmission gradeSubmission = gradeSubmissionRepository.findByPaperSubmissionAndStatus(paperSubmission, 2);
+        if (gradeSubmission == null) {
+            response.setIsSuccess(false);
+            response.setMessage("This submission has not been graded yet");
+            return response;
+        }
+
+        List<GradeSubmissionQuestion> newQuestions = new ArrayList<>();
+        for (SubmitGradeQuestionsResponse submitGradeQuestionsResponse : submitGradeResponse.getQuestions()) {
+            GradeSubmissionQuestion gradeSubmissionQuestion = buildGradeSubmissionQuestion(gradeSubmission,
+                    submitGradeQuestionsResponse);
+            if (gradeSubmissionQuestion == null) {
+                response.setIsSuccess(false);
+                response.setMessage("Question not found. Contact a system administrator");
+                return response;
+            }
+            newQuestions.add(gradeSubmissionQuestion);
+        }
+
+        // Supersede the previously awarded marks rather than mutating them in place,
+        // so the marking history for this submission is preserved.
+        List<GradeSubmissionQuestion> previousQuestions = gradeSubmissionQuestionRepository
+                .findByGradeSubmissionAndStatus(gradeSubmission, 2);
+        for (GradeSubmissionQuestion previous : previousQuestions) {
+            previous.setStatus(1);
+            gradeSubmissionQuestionRepository.save(previous);
+        }
+        for (GradeSubmissionQuestion gradeSubmissionQuestion : newQuestions) {
+            gradeSubmissionQuestionRepository.save(gradeSubmissionQuestion);
+        }
+
+        gradeSubmission.setLastModifiedBy(username);
+        gradeSubmission.setLastModifiedAt(LocalDateTime.now());
+        gradeSubmission.setGrardedBy(username);
+        gradeSubmission.setGradedAt(LocalDateTime.now());
+        gradeSubmission.setMaxMarks(submitGradeResponse.getMaxMarks());
+        gradeSubmission.setGrade(submitGradeResponse.getGrade());
+        gradeSubmission.setTotalMarks(submitGradeResponse.getTotalMarks());
+        gradeSubmissionRepository.save(gradeSubmission);
+
+        paperSubmission.setGradedDate(LocalDateTime.now());
+        paperSubmissionRepository.save(paperSubmission);
+
+        response.setIsSuccess(true);
+        response.setMessage("Grade updated successfully");
+        return response;
+    }
+
+
+    private GradeSubmissionQuestion buildGradeSubmissionQuestion(GradeSubmission gradeSubmission,
+            SubmitGradeQuestionsResponse submitGradeQuestionsResponse) {
+        GradeSubmissionQuestion gradeSubmissionQuestion = new GradeSubmissionQuestion();
+        gradeSubmissionQuestion.setGradeSubmission(gradeSubmission);
+        gradeSubmissionQuestion.setComment(submitGradeQuestionsResponse.getComment());
+        gradeSubmissionQuestion.setMarksAwarded(submitGradeQuestionsResponse.getMarksAwarded());
+        gradeSubmissionQuestion.setStatus(2); // make the record Approved status
+
+        if (Boolean.TRUE.equals(submitGradeQuestionsResponse.getIsSubQuestion())) {
+            UploadPaperQuestionSubQuestion subQuestion = uploadPaperQuestionSubQuestionRepository
+                    .findByUploadPaperQuestionSubQuestionSeq(submitGradeQuestionsResponse.getSubquestionSeq());
+            if (subQuestion == null) {
+                return null;
+            }
+
+            gradeSubmissionQuestion.setIsSubQuestion(true);
+            gradeSubmissionQuestion.setUploadPaperQuestionSubQuestion(subQuestion);
+            gradeSubmissionQuestion.setUploadPaperQuestion(subQuestion.getUploadPaperQuestion());
+        } else {
+            UploadPaperQuestion question = uploadPaperQuestionRepository
+                    .findByUploadPaperQuestionSeq(submitGradeQuestionsResponse.getMainQuestionSeq());
+            if (question == null) {
+                return null;
+            }
+
+            gradeSubmissionQuestion.setUploadPaperQuestion(question);
+            gradeSubmissionQuestion.setIsSubQuestion(false);
+        }
+
+        return gradeSubmissionQuestion;
     }
 }

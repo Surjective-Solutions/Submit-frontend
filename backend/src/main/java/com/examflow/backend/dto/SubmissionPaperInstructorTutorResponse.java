@@ -1,6 +1,7 @@
 package com.examflow.backend.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class SubmissionPaperInstructorTutorResponse {
     private String id;
@@ -15,7 +16,15 @@ public class SubmissionPaperInstructorTutorResponse {
 
      private boolean graded;
 
+     private String grade;
+
+     private String graded_by;
+
      private String file_url;
+
+     private List<QuestionGradeResponse> awarded_marks;
+
+    
 
      public String getId() {
          return id;
@@ -59,8 +68,27 @@ public class SubmissionPaperInstructorTutorResponse {
      public void setFile_url(String file_url) {
          this.file_url = file_url;
      }
+     public String getGrade() {
+         return grade;
+     }
+     public void setGrade(String grade) {
+         this.grade = grade;
+     }
+     public String getGraded_by() {
+         return graded_by;
+     }
+     public void setGraded_by(String graded_by) {
+         this.graded_by = graded_by;
+     }
+     public List<QuestionGradeResponse> getAwarded_marks() {
+         return awarded_marks;
+     }
+     public void setAwarded_marks(List<QuestionGradeResponse> awarded_marks) {
+         this.awarded_marks = awarded_marks;
+     }
 
 
+     
      
      
      

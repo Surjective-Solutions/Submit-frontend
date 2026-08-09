@@ -15,8 +15,8 @@ public interface UploadPaperRepository extends JpaRepository<UplaodPaper, Intege
 
     List<UplaodPaper> findByClassesTutorAndStatus(Tutor tutor, Integer status);
 
-    List<UplaodPaper> findByClassesAndStatusAndClassPaymentRecord(Classes classes, Integer status,
-            ClassPaymentRecord classPaymentRecord);
+    List<UplaodPaper> findByClassesAndStatusAndClassPaymentRecordAndIsPublished(Classes classes, Integer status,
+            ClassPaymentRecord classPaymentRecord,Boolean isPublished);
 
     UplaodPaper findByUploadPaperSeq(Integer uploadPaperSeq);
 }

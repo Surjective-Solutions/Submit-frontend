@@ -67,7 +67,7 @@ public class GradeSubmissionQuestion {
     }
 
         @ManyToOne
-    @JoinColumn(name = "uploadPaperQuestionSeq", nullable = true)
+    @JoinColumn(name = "uploadPaperQuestionSeq", nullable = false)
     public UploadPaperQuestion getUploadPaperQuestion() {
         return uploadPaperQuestion;
     }

@@ -19,12 +19,14 @@ import com.examflow.backend.entity.Student;
 import com.examflow.backend.repository.InstructorRepository;
 import com.examflow.backend.repository.OtpConfigurationRepository;
 import com.examflow.backend.repository.StudentRepository;
+import com.examflow.backend.scheduller.EmailService;
 import com.examflow.backend.service.UserSignUpControllermanager;
 
 @Service
 public class UserSignUpControllerManagerImpl implements UserSignUpControllermanager {
 
     private final StudentRepository studentRepository;
+    private final EmailService emailService;
     private final InstructorRepository instructorRepository;
     private final OtpConfigurationRepository otpConfigurationRepository;
     private final BCryptPasswordEncoder passwordEncoder;
@@ -33,10 +35,12 @@ public class UserSignUpControllerManagerImpl implements UserSignUpControllermana
     @Autowired
     public UserSignUpControllerManagerImpl(StudentRepository studentRepository,
             InstructorRepository instructorRepository,
+            EmailService emailService,
             OtpConfigurationRepository otpConfigurationRepository,
             BCryptPasswordEncoder passwordEncoder,
             NoConfig noConfig) {
         this.studentRepository = studentRepository;
+        this.emailService = emailService;
         this.passwordEncoder = passwordEncoder;
         this.instructorRepository = instructorRepository;
         this.otpConfigurationRepository = otpConfigurationRepository;
@@ -184,6 +188,7 @@ public class UserSignUpControllerManagerImpl implements UserSignUpControllermana
         otpConfiguration.setSendStatus(1); // Set send status to notSend
 
         System.out.println("Generated OTP: " + otp);
+        emailService.sendOTP(email,otp);
         otpConfigurationRepository.save(otpConfiguration);
 
         return null;

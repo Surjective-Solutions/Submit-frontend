@@ -14,7 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
-import { getClasses } from "@/lib/api-client";
+import { getClasses, toggleClassPaperPublish } from "@/lib/api-client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -76,6 +76,8 @@ let nextPaperId = 9000;
 
 export default function ClassDetailPage() {
 
+  const router = useRouter();
+  
   const [classes, setClasses] = useState([]);
 
   const { classId } = useParams();
@@ -173,14 +175,23 @@ export default function ClassDetailPage() {
     setDeletePaper(null);
   }
 
-  function handleTogglePublish(paper) {
+  async function handleTogglePublish(paper) {
     const next = paper.status === "DRAFT" ? "PUBLISHED" : "DRAFT";
-    setPapers((prev) =>
-      prev.map((p) => (p.id === paper.id ? { ...p, status: next } : p)),
-    );
-    toast.success(
-      next === "PUBLISHED" ? "Paper published" : "Paper unpublished",
-    );
+    try {
+      const response = await toggleClassPaperPublish(paper.id);
+      if (response?.isSuccess === false) {
+        toast.error(response?.message ?? "Failed to update paper status");
+        return;
+      }
+      setPapers((prev) =>
+        prev.map((p) => (p.id === paper.id ? { ...p, status: next } : p)),
+      );
+      toast.success(
+        next === "PUBLISHED" ? "Paper published" : "Paper unpublished",
+      );
+    } catch (error) {
+      toast.error("Failed to update paper status");
+    }
   }
 
   return (
