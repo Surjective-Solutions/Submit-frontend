@@ -26,7 +26,7 @@ export function EnrolledClassesProvider({ children }) {
 
   async function addClass(entry) {
     await addClasstostudent({ classSeq: entry.id });
-    setClasses((prev) => [...prev, entry]);
+    await loadEnrolledClasses();
   }
 
   async function removeClass(classId) {
