@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -36,6 +36,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { MOCK_TEACHER_CLASSES } from '@/lib/mock-data';
+import { getClasses } from '@/lib/api-client';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MOCK_NOW = new Date('2026-06-19T18:30:00.000Z');
@@ -115,12 +116,49 @@ function StudentCell({ submission }) {
 }
 
 export default function TeacherPaperSubmissionsPage() {
+
+  
   const { classId, paperId } = useParams();
   const router = useRouter();
   const [statsOpen, setStatsOpen] = useState(false);
 
-  const foundClass = MOCK_TEACHER_CLASSES.find((c) => c.id === classId);
-  const paper = foundClass?.papers?.find((p) => p.id === paperId);
+  const [classes, setClasses] = useState([]);
+const [loading, setLoading] = useState(true);
+
+
+
+useEffect(() => {
+  loadClasses();
+}, []);
+
+async function loadClasses() {
+  try {
+    setLoading(true);
+
+    const data = await getClasses();
+
+    console.log("Backend classes:", data);
+
+    setClasses(data);
+  } catch (error) {
+    console.error("Failed to load classes:", error);
+    toast.error("Failed to load classes");
+  } finally {
+    setLoading(false);
+  }
+}
+
+  // const foundClass = MOCK_TEACHER_CLASSES.find((c) => c.id === classId);
+  // const paper = foundClass?.papers?.find((p) => p.id === paperId);
+
+  const foundClass = classes.find(
+  (c) => String(c.id) === String(classId)
+);
+
+const paper = foundClass?.papers?.find(
+  (p) => String(p.id) === String(paperId)
+);
+  
 
   const stats = useMemo(() => {
     if (!paper) return null;

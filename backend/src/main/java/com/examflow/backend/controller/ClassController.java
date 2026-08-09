@@ -22,6 +22,7 @@ import com.examflow.backend.dto.ClassRequest;
 import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.PaperUploadRequest;
+import com.examflow.backend.dto.SubmitGradeResponse;
 import com.examflow.backend.entity.UplaodPaper;
 import com.examflow.backend.service.ClassControllerManager;
 
@@ -71,5 +72,20 @@ public class ClassController {
     @PutMapping("/toggle-status/{classId}")
     public GeneralResponse toggleClassStatus(@PathVariable Integer classId){
         return classControllerManager.toggleClassStatus(classId);
+    }
+
+    @PutMapping("/toggle-paper-publish/{paperId}")
+    public GeneralResponse togglePaperPublishStatus(@PathVariable Integer paperId) {
+        return classControllerManager.togglePaperPublishStatus(paperId);
+    }
+
+    @PostMapping("/submissions/grade")
+    public GeneralResponse gradeSubmission(@RequestBody SubmitGradeResponse submitGradeResponse) {
+        return classControllerManager.gradeSubmission(submitGradeResponse);
+    }
+
+    @PutMapping("/submissions/edit-grade")
+    public GeneralResponse editSubmissionGrade(@RequestBody SubmitGradeResponse submitGradeResponse) {
+        return classControllerManager.editSubmissionGrade(submitGradeResponse);
     }
 }

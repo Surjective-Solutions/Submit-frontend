@@ -186,6 +186,22 @@ export async function getClasses() {
   return protectedRequest("/api/class/get-all-classes", { method: "GET" });
 }
 
+// submit grades for a submission, as the class's tutor
+export async function submitTutorGrades(payload) {
+  return protectedRequest("/api/class/submissions/grade", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+// edit marks/comments for a submission that's already been graded, as the class's tutor
+export async function editTutorSubmissionGrade(payload) {
+  return protectedRequest("/api/class/submissions/edit-grade", {
+    method: "PUT",
+    body: payload,
+  });
+}
+
 // TODO: replace with actual microservice endpoint
 export async function createClass(data) {
   console.log("Creating class with data:", data);
@@ -260,14 +276,11 @@ export async function deletePaper(paperId) {
   });
 }
 
-// TODO: replace with actual microservice endpoint
-export async function publishPaper(paperId) {
-  return request(`/teacher/papers/${paperId}/publish`, { body: {} });
-}
-
-// TODO: replace with actual microservice endpoint
-export async function unpublishPaper(paperId) {
-  return request(`/teacher/papers/${paperId}/unpublish`, { body: {} });
+// toggles a paper between PUBLISHED and DRAFT, as the class's tutor
+export async function toggleClassPaperPublish(paperId) {
+  return protectedRequestPath(`/api/class/toggle-paper-publish/${paperId}`, {
+    method: "PUT",
+  });
 }
 
 // ── Teacher Instructors ───────────────────────────────────────────────────────

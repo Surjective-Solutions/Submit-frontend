@@ -1,6 +1,7 @@
 package com.examflow.backend.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class UploadPaperResponse {
 
@@ -12,6 +13,8 @@ public class UploadPaperResponse {
 
     private Integer year;
 
+    private String month_label;
+
     private Integer number_of_questions;
 
     private LocalDateTime uploaded_at;
@@ -19,6 +22,10 @@ public class UploadPaperResponse {
     private String pdf_url;
 
     private String status;
+
+    private List<QuestionPaperInstructorTutorResponse> questions;
+
+    private List<SubmissionPaperInstructorTutorResponse>  submissions;
 
     public Integer getId() {
         return id;
@@ -52,6 +59,14 @@ public class UploadPaperResponse {
         this.year = year;
     }
 
+    public String getMonth_label() {
+        return month_label;
+    }
+
+    public void setMonth_label(String month_label) {
+        this.month_label = month_label;
+    }
+
     public Integer getNumber_of_questions() {
         return number_of_questions;
     }
@@ -83,5 +98,24 @@ public class UploadPaperResponse {
     public void setPdf_url(String pdf_url) {
         this.pdf_url = pdf_url;
     }
+
+    public List<QuestionPaperInstructorTutorResponse> getQuestions() {
+        return questions;
+    }
+
+    public void setQuestions(List<QuestionPaperInstructorTutorResponse> questions) {
+        this.questions = questions;
+    }
+
+    public List<SubmissionPaperInstructorTutorResponse> getSubmissions() {
+        return submissions;
+    }
+
+    public void setSubmissions(List<SubmissionPaperInstructorTutorResponse> submissions) {
+        this.submissions = submissions;
+    }
+
+
+    
 
 }
