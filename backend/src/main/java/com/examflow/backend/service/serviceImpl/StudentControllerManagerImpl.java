@@ -227,6 +227,12 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
             classResponse.setEnrolled_at(studentClass.getCreatedDateTime());
             classResponse.setMonthly_fee(studentClass.getMonthlyFee());
             classResponse.setDescription(studentClass.getClasses().getDescription());
+            
+            if(studentClass.getClasses().getStatus() == 2){
+                classResponse.setStatus("ACTIVE");
+            }else{
+                classResponse.setStatus("INACTIVE");
+            }
 
             List<ClassPaymentRecord> classPaymentRecords = classPaymentRecordRepository
                     .findByClassesAndStatus(studentClass.getClasses(), 2);
