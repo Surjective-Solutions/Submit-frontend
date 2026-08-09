@@ -14,7 +14,12 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
-import { getClasses, toggleClassPaperPublish } from "@/lib/api-client";
+import {
+  getClasses,
+  toggleClassPaperPublish,
+  deleteUploadPaper,
+  updatePaper,
+} from "@/lib/api-client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -140,39 +145,48 @@ export default function ClassDetailPage() {
     }
   }
 
-  function handleEditSave(data) {
+  async function handleEditSave(data) {
     const newFile = data.pdf_file?.[0];
-    const month = Number(data.month);
-    const year = Number(data.year);
-    const questions = (data.questions ?? []).map((q) => ({
-      id: `${editPaper.id}-${q.question_label.toLowerCase().replace(/[()]/g, "")}`,
-      ...q,
-    }));
-    const patch = {
-      paper_name: data.paper_name,
-      month,
-      year,
-      month_label: `${MONTHS[month - 1]} ${year}`,
-      number_of_questions: data.number_of_questions,
-      status: data.status,
-      questions,
-      ...(newFile ? { pdf_url: `mock://${newFile.name}` } : {}),
-    };
-    const targetPaper = foundClass.papers.find((p) => p.id === editPaper.id);
-    if (targetPaper) Object.assign(targetPaper, patch);
-    setPapers((prev) =>
-      prev.map((p) => (p.id === editPaper.id ? { ...p, ...patch } : p)),
-    );
-    toast.success("Paper updated");
-    setEditPaper(null);
+
+    const formData = new FormData();
+    formData.append("paper_name", data.paper_name);
+    formData.append("month", data.month);
+    formData.append("year", data.year);
+    formData.append("status", data.status);
+    formData.append("questions", JSON.stringify(data.questions ?? []));
+    if (newFile) {
+      formData.append("pdf_file", newFile);
+    }
+
+    try {
+      const response = await updatePaper(editPaper.id, formData);
+      if (response?.isSuccess === false) {
+        toast.error(response?.message ?? "Failed to update paper");
+        return;
+      }
+      toast.success("Paper updated");
+      setEditPaper(null);
+      loadClasses();
+    } catch (error) {
+      toast.error("Failed to update paper");
+    }
   }
 
-  function handleDelete() {
-    const index = foundClass.papers.findIndex((p) => p.id === deletePaper.id);
-    if (index !== -1) foundClass.papers.splice(index, 1);
-    setPapers((prev) => prev.filter((p) => p.id !== deletePaper.id));
-    toast.success("Paper deleted");
-    setDeletePaper(null);
+  async function handleDelete() {
+    try {
+      const response = await deleteUploadPaper(deletePaper.id);
+      if (response?.isSuccess === false) {
+        toast.error(response?.message ?? "Failed to delete paper");
+        return;
+      }
+      setPapers((prev) => prev.filter((p) => p.id !== deletePaper.id));
+      toast.success("Paper deleted");
+      loadClasses();
+    } catch (error) {
+      toast.error("Failed to delete paper");
+    } finally {
+      setDeletePaper(null);
+    }
   }
 
   async function handleTogglePublish(paper) {
@@ -383,14 +397,22 @@ export default function ClassDetailPage() {
                             render={
                               <button
                                 type="button"
-                                onClick={() => setEditPaper(paper)}
-                                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+                                disabled={(paper.submissions?.length ?? 0) > 0}
+                                onClick={() => {
+                                  if ((paper.submissions?.length ?? 0) > 0) return;
+                                  setEditPaper(paper);
+                                }}
+                                className="p-1.5 rounded-md hover:bg-gray-100 transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                               />
                             }
                           >
                             <Pencil className="h-3.5 w-3.5 text-gray-500" />
                           </TooltipTrigger>
-                          <TooltipContent>Edit</TooltipContent>
+                          <TooltipContent>
+                            {(paper.submissions?.length ?? 0) > 0
+                              ? "Can't edit — this paper already has submissions"
+                              : "Edit"}
+                          </TooltipContent>
                         </Tooltip>
 
                         {/* Delete */}

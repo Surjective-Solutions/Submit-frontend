@@ -243,9 +243,9 @@ export async function uploadPaper(classId, paperData) {
   });
 }
 
-// TODO: replace with actual microservice endpoint
+// edits an existing paper's details, as the class's tutor (only allowed while it has no submissions)
 export async function updatePaper(paperId, paperData) {
-  return request(`/teacher/papers/${paperId}`, {
+  return protectedRequestWithFileHandling(`/api/class/edit-paper/${paperId}`, {
     method: "PUT",
     body: paperData,
   });
@@ -268,11 +268,10 @@ export async function uploadAnswerSheet(classId, paperId, answerSheet) {
   );
 }
 
-// TODO: replace with actual microservice endpoint
-export async function deletePaper(paperId) {
-  return request(`/teacher/papers/${paperId}`, {
+// soft-deletes a paper, as the class's tutor
+export async function deleteUploadPaper(paperId) {
+  return protectedRequestPath(`/api/class/delete-paper/${paperId}`, {
     method: "DELETE",
-    body: { id: paperId },
   });
 }
 

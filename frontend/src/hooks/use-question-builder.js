@@ -13,8 +13,10 @@ function questionsToBuilderState(questions) {
   const sorted = [...questions].sort((a, b) => a.display_order - b.display_order);
   const order = [];
   const map = new Map();
+  // Numeric, not a string like `init-${n}` — this key is sent to the backend as
+  // QuestionRequestDTO.key (an Integer) when saving edits, so it must stay numeric.
   let localKey = 0;
-  const nextLocalKey = () => `init-${localKey++}`;
+  const nextLocalKey = () => localKey++;
   for (const q of sorted) {
     const label = q.parent_label ?? q.question_label;
     if (!map.has(label)) {

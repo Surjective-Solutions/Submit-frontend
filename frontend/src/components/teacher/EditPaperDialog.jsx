@@ -77,15 +77,18 @@ export default function EditPaperDialog({ open, onOpenChange, paper, onSave }) {
   }, [paper, open, reset]);
 
   async function onSubmit(data) {
-    const { error, payload, count } = qb.submit();
+    const { error, count } = qb.submit();
     if (error) return;
 
     setIsLoading(true);
     try {
+      // The backend's paper endpoints (create + edit) expect the builder's raw
+      // {key, marks, subparts} shape, not the display-format payload qb.submit()
+      // returns — matches what UploadPaperDialog already sends on create.
       onSave({
         ...data,
         number_of_questions: count,
-        questions: payload,
+        questions: qb.questions,
       });
     } finally {
       setIsLoading(false);

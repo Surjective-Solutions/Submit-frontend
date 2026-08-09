@@ -365,6 +365,24 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
 
         uploadPaperRepository.save(uploadPaper);
         System.out.println("Paper uploaded successfully");
+
+        Integer numberOfQuetions = insertPaperQuestions(uploadPaper, questions, username);
+
+        uploadPaper.setNoOfQuestions(numberOfQuetions);
+        uploadPaperRepository.save(uploadPaper);
+
+        response.setMessage("Paper uploaded successfully");
+        response.setIsSuccess(true);
+
+
+        return response;
+    }
+
+    // Persists the given question structure against the paper, one UploadPaperQuestion
+    // (+ optional UploadPaperQuestionSubQuestion rows) per entry. Shared by the initial
+    // paper upload and the paper-edit flow (which soft-deletes the old structure first).
+    private Integer insertPaperQuestions(UplaodPaper uploadPaper, List<QuestionRequestDTO> questions,
+            String username) {
         Integer numberOfQuetions = 0;
         for (QuestionRequestDTO question : questions) {
             UploadPaperQuestion uploadPaperQuestion = new UploadPaperQuestion();
@@ -379,9 +397,6 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
             uploadPaperQuestion.setLastModifiedBy(username);
 
             uploadPaperQuestionRepository.save(uploadPaperQuestion);
-
-            System.out.println("Question key: " + question.getKey() + "created.");
-            System.out.println("Marks: " + question.getMarks());
 
             Integer totalSubQuestionMarks = 0;
             for (SubQuestionRequestDTO subpart : question.getSubparts()) {
@@ -398,24 +413,96 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
                 uploadPaperQuestionSubQuestion.setLastModifiedBy(username);
 
                 uploadPaperQuestionSubQuestionRepository.save(uploadPaperQuestionSubQuestion);
-                System.out.println(
-                        "Subpart key: " + subpart.getKey()
-                                + " Marks: " + subpart.getMarks() + "created");
             }
             if (uploadPaperQuestion.getMarks() == null) {
                 uploadPaperQuestion.setMarks(totalSubQuestionMarks);
                 uploadPaperQuestionRepository.save(uploadPaperQuestion);
             }
+        }
+        return numberOfQuetions;
+    }
 
+    @Override
+    public GeneralResponse editPaper(Integer paperId, PaperUploadRequest paperUploadRequest,
+            MultipartFile pdf_file) {
+        GeneralResponse response = new GeneralResponse();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Integer tutorSeq = (Integer) request.getAttribute("userId");
+        Tutor tutor = tutorRepository.findByTutorSeq(tutorSeq);
+
+        UplaodPaper paper = uploadPaperRepository.findByUploadPaperSeq(paperId);
+        if (paper == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Paper not found");
+            return response;
         }
 
-        uploadPaper.setNoOfQuestions(numberOfQuetions);
-        uploadPaperRepository.save(uploadPaper);
+        Tutor owningTutor = paper.getClasses().getTutor();
+        if (tutor == null || owningTutor == null || !owningTutor.getTutorSeq().equals(tutor.getTutorSeq())) {
+            response.setIsSuccess(false);
+            response.setMessage("You are not authorized to edit this paper");
+            return response;
+        }
 
-        response.setMessage("Paper uploaded successfully");
+        // A paper's question structure is load-bearing for every submission and grade
+        // already tied to it, so once a student has submitted against it, it can no
+        // longer be edited — this mirrors the same rule enforced on the Edit button
+        // in the UI, but here it's the actual guarantee, not just a UI hint.
+        List<PaperSubmission> existingSubmissions = paperSubmissionRepository.findByUplaodpaperAndStatusSeq(paper, 2);
+        if (!existingSubmissions.isEmpty()) {
+            response.setIsSuccess(false);
+            response.setMessage("This paper already has submissions and can no longer be edited");
+            return response;
+        }
+
+        List<QuestionRequestDTO> questions;
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            questions = mapper.readValue(paperUploadRequest.getQuestions(),
+                    new TypeReference<List<QuestionRequestDTO>>() {
+                    });
+        } catch (Exception e) {
+            response.setIsSuccess(false);
+            response.setMessage("Invalid question structure");
+            return response;
+        }
+
+        paper.setPaperName(paperUploadRequest.getPaper_name());
+        paper.setMonth(paperUploadRequest.getMonth().toString());
+        paper.setYear(paperUploadRequest.getYear().toString());
+        paper.setIsPublished(!"DRAFT".equals(paperUploadRequest.getStatus()));
+        paper.setLastModifiedBy(username);
+        paper.setLastModifiedDateTime(LocalDateTime.now());
+
+        if (pdf_file != null && !pdf_file.isEmpty()) {
+            String fileName = fileStorageService.savePaperFile(pdf_file);
+            paper.setFileName(fileName);
+            paper.setFilePath("papers/" + fileName);
+        }
+
+        // Safe to wholesale replace the question structure: we've already confirmed
+        // there are no submissions relying on the old one. Superseded rather than
+        // hard-deleted, consistent with how every other soft-delete works here.
+        List<UploadPaperQuestion> oldQuestions = uploadPaperQuestionRepository
+                .findByUplaodPaperAndStatusOrderByQuestionKeyAsc(paper, 2);
+        for (UploadPaperQuestion oldQuestion : oldQuestions) {
+            List<UploadPaperQuestionSubQuestion> oldSubQuestions = uploadPaperQuestionSubQuestionRepository
+                    .findByUploadPaperQuestionAndStatusOrderByQuestionKeyAsc(oldQuestion, 2);
+            for (UploadPaperQuestionSubQuestion oldSubQuestion : oldSubQuestions) {
+                oldSubQuestion.setStatus(1);
+                uploadPaperQuestionSubQuestionRepository.save(oldSubQuestion);
+            }
+            oldQuestion.setStatus(1);
+            uploadPaperQuestionRepository.save(oldQuestion);
+        }
+
+        Integer numberOfQuetions = insertPaperQuestions(paper, questions, username);
+        paper.setNoOfQuestions(numberOfQuetions);
+        uploadPaperRepository.save(paper);
+
         response.setIsSuccess(true);
-
-
+        response.setMessage("Paper updated successfully");
         return response;
     }
 
@@ -504,6 +591,38 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
 
         response.setIsSuccess(true);
         response.setMessage(nowPublished ? "Paper published" : "Paper unpublished");
+        return response;
+    }
+
+    @Override
+    public GeneralResponse deletePaper(Integer paperId) {
+        GeneralResponse response = new GeneralResponse();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Integer tutorSeq = (Integer) request.getAttribute("userId");
+        Tutor tutor = tutorRepository.findByTutorSeq(tutorSeq);
+
+        UplaodPaper paper = uploadPaperRepository.findByUploadPaperSeq(paperId);
+        if (paper == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Paper not found");
+            return response;
+        }
+
+        Tutor owningTutor = paper.getClasses().getTutor();
+        if (tutor == null || owningTutor == null || !owningTutor.getTutorSeq().equals(tutor.getTutorSeq())) {
+            response.setIsSuccess(false);
+            response.setMessage("You are not authorized to delete this paper");
+            return response;
+        }
+
+        paper.setStatus(1); // soft delete
+        paper.setLastModifiedBy(username);
+        paper.setLastModifiedDateTime(LocalDateTime.now());
+        uploadPaperRepository.save(paper);
+
+        response.setIsSuccess(true);
+        response.setMessage("Paper deleted successfully");
         return response;
     }
 

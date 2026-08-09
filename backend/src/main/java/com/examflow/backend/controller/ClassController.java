@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -69,6 +70,13 @@ public class ClassController {
 
     }
 
+    @PutMapping("/edit-paper/{paperId}")
+    public GeneralResponse editPaper(@ModelAttribute PaperUploadRequest paperUploadRequest,
+            @RequestParam(required = false) MultipartFile pdf_file,
+            @PathVariable Integer paperId) {
+        return classControllerManager.editPaper(paperId, paperUploadRequest, pdf_file);
+    }
+
     @PutMapping("/toggle-status/{classId}")
     public GeneralResponse toggleClassStatus(@PathVariable Integer classId){
         return classControllerManager.toggleClassStatus(classId);
@@ -77,6 +85,11 @@ public class ClassController {
     @PutMapping("/toggle-paper-publish/{paperId}")
     public GeneralResponse togglePaperPublishStatus(@PathVariable Integer paperId) {
         return classControllerManager.togglePaperPublishStatus(paperId);
+    }
+
+    @DeleteMapping("/delete-paper/{paperId}")
+    public GeneralResponse deletePaper(@PathVariable Integer paperId) {
+        return classControllerManager.deletePaper(paperId);
     }
 
     @PostMapping("/submissions/grade")

@@ -18,6 +18,8 @@ public interface ClassControllerManager {
 
     GeneralResponse uploadPapers(PaperUploadRequest paperUploadRequest, Integer classId, MultipartFile pdf_file);
 
+    GeneralResponse editPaper(Integer paperId, PaperUploadRequest paperUploadRequest, MultipartFile pdf_file);
+
     List<ClassResponse> getAllClasses();
 
     GeneralResponse updateClass(Integer classId, ClassRequest classRequest);
@@ -25,6 +27,8 @@ public interface ClassControllerManager {
     GeneralResponse toggleClassStatus(Integer classId);
 
     GeneralResponse togglePaperPublishStatus(Integer paperId);
+
+    GeneralResponse deletePaper(Integer paperId);
 
     GeneralResponse gradeSubmission(SubmitGradeResponse submitGradeResponse);
 
