@@ -42,6 +42,7 @@ function ClassCard({ cls, onRemove }) {
   const subjectColor = SUBJECT_COLORS[cls.subject] ?? SUBJECT_COLORS.default;
   const badge = getPaymentBadge(cls.monthly_payments);
   const canRemove = getLastPaidMonth(cls.monthly_payments) === null;
+  const isInactive = cls.status === "INACTIVE";
 
   return (
     <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
@@ -56,6 +57,11 @@ function ClassCard({ cls, onRemove }) {
         <span className={`absolute top-2.5 right-2.5 text-[10px] font-semibold px-2 py-1 rounded-full ${badge.className}`}>
           {badge.label}
         </span>
+        {isInactive && (
+          <span className="absolute top-2.5 left-2.5 text-[10px] font-semibold px-2 py-1 rounded-full bg-gray-600 text-white">
+            Class Inactive
+          </span>
+        )}
       </div>
 
       {/* Card body */}

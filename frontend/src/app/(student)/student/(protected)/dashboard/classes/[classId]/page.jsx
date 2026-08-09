@@ -12,6 +12,7 @@ import {
   CheckCircle,
   ChevronRight,
   XCircle,
+  PauseCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,6 +40,7 @@ import {
   getMonthStatus,
   formatMonthYear,
   toMonthYearSlug,
+  getLastPaidMonth
 } from '@/lib/billing-utils';
 
 function findLatestPaymentSubmission(classId, month, year) {
@@ -388,7 +390,7 @@ function UnpaidCurrentSection({ status, monthLabel, cls, month, year }) {
               View Submission
             </Button>
           )}
-          {status !== 'PENDING' && (
+          {status !== 'PENDING' && cls.status !== 'INACTIVE' && (
             <Button
               size="sm"
               className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-8"
@@ -525,6 +527,37 @@ export default function ClassDetailPage() {
   const currentMonthLabel = formatMonthYear(currentMonth, currentYear);
   const currentStatus = getCurrentMonthStatus(cls.monthly_payments);
 
+  const hasEverPaid = getLastPaidMonth(cls.monthly_payments) !== null;
+  const isInactiveAndNeverPaid = cls.status === 'INACTIVE' && !hasEverPaid;
+
+  if (isInactiveAndNeverPaid) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl border border-border px-5 py-4 flex items-center gap-4">
+          <Link
+            href="/student/dashboard"
+            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-indigo-600 transition-colors shrink-0"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Link>
+          <div className="w-px h-5 bg-gray-200 shrink-0" />
+          <div className="min-w-0">
+            <h1 className="text-base font-bold text-gray-900 leading-tight truncate">
+              {cls.class_name}
+            </h1>
+          </div>
+        </div>
+        <div className="rounded-xl border border-red-300 bg-red-100 px-5 py-8 flex flex-col items-center gap-2.5 text-center">
+          <PauseCircle className="h-8 w-8 text-red-700" />
+          <p className="text-sm font-semibold text-red-800">
+            This class is not available at the moment.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const currentMonthEntry = (cls.papers_by_month ?? []).find(
     (e) => e.month === currentMonth && e.year === currentYear,
   );
@@ -551,6 +584,16 @@ export default function ClassDetailPage() {
           </p>
         </div>
       </div>
+
+      {/* Inactive class notice */}
+      {cls.status === "INACTIVE" && (
+        <div className= "rounded-xl border border-red-200 bg-red-50 px-5 py-3 flex items-center gap-2.5">
+          <PauseCircle className="h-4 w-4 text-red-600 shrink-0" />
+          <p className="text-sm font-medium text-red-700">
+            This class is currently unavailable.
+          </p>
+        </div>
+      )}
 
       {/* Current Papers */}
       {currentStatus === "PAID" ? (
