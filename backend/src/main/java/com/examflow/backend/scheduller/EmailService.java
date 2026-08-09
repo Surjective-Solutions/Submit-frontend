@@ -70,6 +70,53 @@ public class EmailService {
 
 
 
-        
+
+    }
+
+    public void sendPaymentUnderReview(String to) {
+        sendTemplatedEmail(to, "PAYMENT_UNDER_REVIEW", "");
+    }
+
+    public void sendPaymentApproved(String to) {
+        sendTemplatedEmail(to, "PAYMENT_APPROVED", "");
+    }
+
+    public void sendPaymentRejected(String to, String reason) {
+        sendTemplatedEmail(to, "PAYMENT_REJECTED", reason != null ? reason : "");
+    }
+
+    private void sendTemplatedEmail(String to, String emailName, String bodySuffix) {
+        EmailStructure emailStructure = emailStructureRepository.findByEmailNameAndStatusSeq(emailName, 2);
+        SendEmail sendEmail = new SendEmail();
+        sendEmail.setSendTo(to);
+        sendEmail.setSendTime(LocalDateTime.now());
+        sendEmail.setEmailName(emailName);
+
+        if (emailStructure == null) {
+            sendEmail.setStatusSeq(1);
+            sendEmail.setErrorMsg("No active email template found for '" + emailName + "'");
+            sendEmailRepository.save(sendEmail);
+            return;
+        }
+
+        String body = emailStructure.getEmialBody() + bodySuffix;
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject(emailStructure.getSubject());
+        message.setText(body);
+
+        sendEmail.setEmailBody(body);
+        sendEmail.setEmailSubject(emailStructure.getSubject());
+
+        try {
+            mailSender.send(message);
+            sendEmail.setStatusSeq(2);
+        } catch (MailException e) {
+            sendEmail.setStatusSeq(1);
+            sendEmail.setErrorMsg(e.getMessage());
+        }
+
+        sendEmailRepository.save(sendEmail);
     }
 }

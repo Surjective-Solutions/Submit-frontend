@@ -25,6 +25,7 @@ import com.examflow.backend.repository.BankAccountRepository;
 import com.examflow.backend.repository.ClassesRepository;
 import com.examflow.backend.repository.StudentClassPaymentRecordsRepository;
 import com.examflow.backend.repository.StudentRepository;
+import com.examflow.backend.scheduller.EmailService;
 import com.examflow.backend.service.FileStorageService;
 import com.examflow.backend.service.PaymentControllerManager;
 
@@ -48,13 +49,16 @@ public class PaymentControllerManagerImpl implements PaymentControllerManager {
 
     private final MonthlyPaymentService monthlyPaymentService;
 
+    private final EmailService emailService;
+
     public PaymentControllerManagerImpl(BankAccountRepository bankAccountRepository,
             HttpServletRequest request,
             FileStorageService fileStorageService,
             StudentClassPaymentRecordsRepository studentClassPaymentRecordsRepository,
             StudentRepository studentRepository,
             ClassesRepository classesRepository,
-            MonthlyPaymentService monthlyPaymentService) {
+            MonthlyPaymentService monthlyPaymentService,
+            EmailService emailService) {
         this.bankAccountRepository = bankAccountRepository;
         this.studentClassPaymentRecordsRepository = studentClassPaymentRecordsRepository;
         this.studentRepository = studentRepository;
@@ -62,6 +66,7 @@ public class PaymentControllerManagerImpl implements PaymentControllerManager {
         this.classesRepository = classesRepository;
         this.request = request;
         this.monthlyPaymentService = monthlyPaymentService;
+        this.emailService = emailService;
     }
 
     @Override
@@ -134,6 +139,12 @@ public class PaymentControllerManagerImpl implements PaymentControllerManager {
 
         studentClassPaymentRecordsRepository.save(studentClassPaymentRecord);
 
+        try {
+            emailService.sendPaymentUnderReview(student.getEmail());
+        } catch (Exception e) {
+            // Email delivery is best-effort and must never block the payment upload itself.
+        }
+
         response.setIsSuccess(true);
         response.setMessage("student class payment recorded  successsfully for "
                 + studentClassPaymentRecord.getClassPaymentRecord().getMonth()
@@ -197,6 +208,13 @@ public class PaymentControllerManagerImpl implements PaymentControllerManager {
             studentClassPaymentRecord.setReffrenceNo(refferenceNumber);
 
             studentClassPaymentRecordsRepository.save(studentClassPaymentRecord);
+
+            try {
+                emailService.sendPaymentApproved(studentClassPaymentRecord.getStudent().getEmail());
+            } catch (Exception e) {
+                // Email delivery is best-effort and must never block payment approval.
+            }
+
             generalResponse.setIsSuccess(true);
             generalResponse.setMessage("Payment Approved Successfully.");
             return generalResponse;
@@ -225,6 +243,13 @@ public class PaymentControllerManagerImpl implements PaymentControllerManager {
             studentClassPaymentRecord.setReson(reason);
 
             studentClassPaymentRecordsRepository.save(studentClassPaymentRecord);
+
+            try {
+                emailService.sendPaymentRejected(studentClassPaymentRecord.getStudent().getEmail(), reason);
+            } catch (Exception e) {
+                // Email delivery is best-effort and must never block payment rejection.
+            }
+
             generalResponse.setIsSuccess(true);
             generalResponse.setMessage("Payment Rejected Successfully.");
 
