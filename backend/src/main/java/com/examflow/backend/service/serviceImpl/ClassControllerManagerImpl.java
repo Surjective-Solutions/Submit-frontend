@@ -254,7 +254,9 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
                     SubmissionPaperInstructorTutorResponse submissionResponse = new SubmissionPaperInstructorTutorResponse();
                     submissionResponse.setId(submission.getPaperSubmissionSeq().toString());
                     submissionResponse.setStudent_name(submission.getStudent().getFirstName() + " " + submission.getStudent().getLastName());
-                    submissionResponse.setStudent_number(submission.getStudent().getStudentNo().toString());
+                    submissionResponse.setStudent_number(submission.getStudent().getStudentNo() != null
+                        ? submission.getStudent().getStudentNo().toString()
+                        : null);
                     submissionResponse.setSubmitted_at(submission.getSubmissionDate());
                     submissionResponse.setGraded(submission.isGraded());
                     submissionResponse.setGraded_at(submission.getGradedDate());

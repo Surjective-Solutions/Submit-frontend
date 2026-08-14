@@ -20,6 +20,7 @@ import com.examflow.backend.dto.PaperResponse;
 import com.examflow.backend.dto.StudentClassPaymentRecordResponse;
 import com.examflow.backend.dto.StudentResponse;
 import com.examflow.backend.entity.ClassPaymentRecord;
+import com.examflow.backend.entity.GradeSubmission;
 import com.examflow.backend.entity.Classes;
 import com.examflow.backend.entity.PaperSubmission;
 import com.examflow.backend.entity.Student;
@@ -32,6 +33,7 @@ import com.examflow.backend.entity.UploadPaperQuestion;
 import com.examflow.backend.entity.UploadPaperQuestionSubQuestion;
 import com.examflow.backend.enums.paymentStatus;
 import com.examflow.backend.repository.ClassPaymentRecordRepository;
+import com.examflow.backend.repository.GradeSubmissionRepository;
 import com.examflow.backend.repository.ClassesRepository;
 import com.examflow.backend.repository.PaperSubmissionRepository;
 import com.examflow.backend.repository.StudentClassPaymentRecordsRepository;
@@ -62,6 +64,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
     private final UploadPaperQuestionSubQuestionRepository uploadPaperQuestionSubQuestionRepository;
     private final ClassesRepository classesRepository;
     private final ClassPaymentRecordRepository classPaymentRecordRepository;
+    private final GradeSubmissionRepository gradeSubmissionRepository;
     private final StudentClassPaymentRecordsRepository studentClassPaymentRecordsRepository;
     private HttpServletRequest request;
 
@@ -77,6 +80,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
             UploadPaperRepository uploadPaperRepository,
             StudentClassPaymentRecordsRepository studentClassPaymentRecordsRepository,
             ClassPaymentRecordRepository classPaymentRecordRepository,
+            GradeSubmissionRepository gradeSubmissionRepository,
             MonthlyPaymentService monthlyPaymentService,
             HttpServletRequest request,
             StudentClassesRepository studentClassesRepository) {
@@ -91,6 +95,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
         this.monthlyPaymentService = monthlyPaymentService;
         this.uploadPaperRepository = uploadPaperRepository;
         this.classPaymentRecordRepository = classPaymentRecordRepository;
+        this.gradeSubmissionRepository = gradeSubmissionRepository;
         this.studentClassPaymentRecordsRepository = studentClassPaymentRecordsRepository;
         this.request = request;
         this.studentClassesRepository = studentClassesRepository;
@@ -305,18 +310,31 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
                             .findByStudentAndUplaodpaperAndStatusSeq(student, monthUploadPaper, 2);
 
                     if (paperSubmission != null) {
-                        paperResponse.setSubmission_status("SUBMITTED");
                         String pdfUrl = "/uploads/" + paperSubmission.getSubmissionFilePath();
                         paperResponse.setSubmission_url(pdfUrl);
+
+                        GradeSubmission gradeSubmission = gradeSubmissionRepository
+                                .findByPaperSubmissionAndStatus(paperSubmission, 2);
+
+                        if (gradeSubmission != null) {
+                            paperResponse.setSubmission_status("GRADED");
+                            paperResponse.setGrade(gradeSubmission.getGrade() + " (" 
+                                    + gradeSubmission.getTotalMarks() + "/" 
+                                    + gradeSubmission.getMaxMarks() + ")");
+                            paperResponse.setGraded_pdf_url(pdfUrl);
+                        } else {
+                            paperResponse.setSubmission_status("SUBMITTED");
+                            paperResponse.setGrade(null);
+                            paperResponse.setGraded_pdf_url(null);
+                        }
                     } else {
                         paperResponse.setSubmission_status("NOT_SUBMITTED");
                         paperResponse.setSubmission_url(null);
+                        paperResponse.setGrade(null);
+                        paperResponse.setGraded_pdf_url(null);
                     }
-                    paperResponse.setGrade("need to implement");
                     String pdfUrl = "/uploads/" + monthUploadPaper.getFilePath();
                     paperResponse.setExam_pdf_url(pdfUrl);
-                    paperResponse.setSubmission_url(monthUploadPaper.getPaperName());
-                    paperResponse.setGraded_pdf_url(monthUploadPaper.getPaperName());
                     paperResponse.setIs_current(null);
 
                     monthpaperResponses.add(paperResponse);
