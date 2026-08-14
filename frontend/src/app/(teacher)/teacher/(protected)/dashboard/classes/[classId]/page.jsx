@@ -349,11 +349,7 @@ export default function ClassDetailPage() {
                                 type="button"
                                 onClick={() => {
                                   if (paper.pdf_url) {
-                                    const url = `http://localhost:8080/uploads/papers/${encodeURIComponent(
-                                      paper.pdf_url,
-                                    )}`;
-
-                                    window.open(url, "_blank");
+                                    window.open(paper.pdf_url, "_blank");
                                   } else {
                                     toast.info(
                                       "No PDF uploaded for this paper.",
