@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Eye, FileText, CheckCircle, Lock } from 'lucide-react';
+import { ArrowLeft, Eye, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -13,11 +13,6 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import PayNowDialog from '@/components/student/PayNowDialog';
 import ViewPaymentSubmissionDialog from '@/components/student/ViewPaymentSubmissionDialog';
 import { useEnrolledClasses } from '@/context/EnrolledClassesContext';
@@ -71,165 +66,54 @@ function SubmissionStatusBadge({ status }) {
   );
 }
 
-// ── View Paper Dialog ─────────────────────────────────────────────────────────
-
-function ViewPaperDialog({ open, onOpenChange, paper }) {
-  if (!paper) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden">
-        <div
-          className="px-6 py-5 flex items-center gap-3"
-          style={{ background: 'linear-gradient(135deg, #3940A0 0%, #5a62ff 100%)' }}
-        >
-          <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-            <FileText className="h-5 w-5 text-white" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <DialogTitle className="text-white text-sm font-semibold leading-tight m-0 truncate">
-              {paper.paper_name}
-            </DialogTitle>
-            <p className="text-white/60 text-xs mt-0.5">Due {formatDate(paper.due_date)}</p>
-          </div>
-        </div>
-
-        {paper.submission_status === 'GRADED' && paper.grade && (
-          <div className="mx-6 mt-5 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-green-50 border border-green-200">
-            <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
-              <span className="text-green-600 text-base font-bold">A</span>
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold text-green-600 uppercase tracking-wider">Your Grade</p>
-              <p className="text-lg font-bold text-green-700 leading-tight">{paper.grade}</p>
-            </div>
-          </div>
-        )}
-
-        <div className="px-6 py-5 grid sm:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-gray-200 p-4 space-y-3">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Exam Paper</p>
-            {paper.exam_pdf_url ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                onClick={() => window.open(paper.exam_pdf_url, '_blank')}
-              >
-                <FileText className="h-3.5 w-3.5" />
-                Open Exam Paper
-              </Button>
-            ) : (
-              <p className="text-sm text-gray-400">Exam paper not available.</p>
-            )}
-          </div>
-
-          <div className="rounded-xl border border-gray-200 p-4 space-y-3">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Your Submission</p>
-            {paper.submission_status === 'NOT_SUBMITTED' ? (
-              <p className="text-sm text-gray-400">You did not submit this paper.</p>
-            ) : paper.submission_url ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                onClick={() => window.open(paper.submission_url, '_blank')}
-              >
-                <Eye className="h-3.5 w-3.5" />
-                Open My Submission
-              </Button>
-            ) : (
-              <p className="text-sm text-gray-400">Submission file not available.</p>
-            )}
-          </div>
-
-          {paper.submission_status === 'GRADED' && (
-            <div className="sm:col-span-2 rounded-xl border border-green-200 bg-green-50/40 p-4 space-y-3">
-              <p className="text-xs font-semibold text-green-700 uppercase tracking-wider">Graded Submission</p>
-              {paper.graded_pdf_url ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full gap-2 border-green-200 text-green-700 hover:bg-green-50"
-                  onClick={() => window.open(paper.graded_pdf_url, '_blank')}
-                >
-                  <CheckCircle className="h-3.5 w-3.5" />
-                  Open Graded Submission
-                </Button>
-              ) : (
-                <p className="text-sm text-gray-400">Graded submission not available yet.</p>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center justify-end px-6 py-4 border-t bg-gray-50/60">
-          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // ── Papers Table ──────────────────────────────────────────────────────────────
 
-function PapersTable({ papers }) {
-  const [viewPaper, setViewPaper] = useState(null);
-
+function PapersTable({ classId, papers }) {
   return (
-    <>
-      <div className="rounded-xl border border-border overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Paper Name</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Grade</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>View</TableHead>
+    <div className="rounded-xl border border-border overflow-hidden">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Paper Name</TableHead>
+              <TableHead>Due Date</TableHead>
+              <TableHead>Grade</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>View</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {papers.map((paper) => (
+              <TableRow key={paper.id}>
+                <TableCell className="font-semibold text-gray-900">{paper.paper_name}</TableCell>
+                <TableCell className="text-sm text-gray-500">{formatDate(paper.due_date)}</TableCell>
+                <TableCell>
+                  {paper.submission_status === 'GRADED' && paper.grade ? (
+                    <span className="font-semibold text-amber-600">{paper.grade}</span>
+                  ) : paper.submission_status === 'SUBMITTED' ? (
+                    <span className="text-sm text-gray-400">Pending</span>
+                  ) : (
+                    <span className="text-sm text-gray-300">—</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <SubmissionStatusBadge status={paper.submission_status} />
+                </TableCell>
+                <TableCell>
+                  <Link
+                    href={`/student/dashboard/classes/${classId}/papers/${paper.id}/submission`}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 transition-colors"
+                    title="View paper"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Link>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {papers.map((paper) => (
-                <TableRow key={paper.id}>
-                  <TableCell className="font-semibold text-gray-900">{paper.paper_name}</TableCell>
-                  <TableCell className="text-sm text-gray-500">{formatDate(paper.due_date)}</TableCell>
-                  <TableCell>
-                    {paper.submission_status === 'GRADED' && paper.grade ? (
-                      <span className="font-semibold text-amber-600">{paper.grade}</span>
-                    ) : paper.submission_status === 'SUBMITTED' ? (
-                      <span className="text-sm text-gray-400">Pending</span>
-                    ) : (
-                      <span className="text-sm text-gray-300">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <SubmissionStatusBadge status={paper.submission_status} />
-                  </TableCell>
-                  <TableCell>
-                    <button
-                      onClick={() => setViewPaper(paper)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 transition-colors"
-                      title="View paper"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+            ))}
+          </TableBody>
+        </Table>
       </div>
-      <ViewPaperDialog
-        open={!!viewPaper}
-        onOpenChange={(o) => !o && setViewPaper(null)}
-        paper={viewPaper}
-      />
-    </>
+    </div>
   );
 }
 
@@ -336,12 +220,15 @@ export default function MonthDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <p className="text-gray-500 text-sm">Page not found.</p>
-        <Button variant="outline" asChild>
-          <Link href="/student/dashboard">
-            <ArrowLeft className="h-4 w-4 mr-1.5" />
-            Back to My Classes
-          </Link>
-        </Button>
+        <Button
+          variant="outline"
+          render={
+            <Link href="/student/dashboard">
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
+              Back to My Classes
+            </Link>
+          }
+        />
       </div>
     );
   }
@@ -388,7 +275,7 @@ export default function MonthDetailPage() {
           No papers available for {monthLabel}.
         </div>
       ) : (
-        <PapersTable papers={papers} />
+        <PapersTable classId={classId} papers={papers} />
       )}
     </div>
   );

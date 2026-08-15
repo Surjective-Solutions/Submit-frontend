@@ -69,12 +69,15 @@ export default function AnswerUploadPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <p className="text-gray-500 text-sm">Exam paper not found.</p>
-        <Button variant="outline" asChild>
-          <Link href="/student/dashboard">
-            <ArrowLeft className="h-4 w-4 mr-1.5" />
-            Back to My Classes
-          </Link>
-        </Button>
+        <Button
+          variant="outline"
+          render={
+            <Link href="/student/dashboard">
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
+              Back to My Classes
+            </Link>
+          }
+        />
       </div>
     );
   }

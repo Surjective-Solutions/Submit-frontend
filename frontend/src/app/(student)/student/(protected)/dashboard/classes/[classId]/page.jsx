@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 import {
   ArrowLeft,
   Clock,
@@ -34,7 +33,6 @@ import StartExamConfirmDialog from '@/components/student/StartExamConfirmDialog'
 import { useEnrolledClasses } from '@/context/EnrolledClassesContext';
 import { MOCK_PAYMENTS } from '@/lib/mock-data';
 import { getSubmittedPaperIds, isPaperSubmitted } from '@/lib/submitted-papers';
-import { getSubmissionPdf } from '@/lib/submission-pdf-storage';
 import {
   getCurrentMonthStatus,
   getMonthStatus,
@@ -193,27 +191,7 @@ function ViewPaperDialog({ open, onOpenChange, paper }) {
 
 // ── Current Papers — Paid ─────────────────────────────────────────────────────
 
-// TEMPORARY FRONTEND-ONLY WORKAROUND: there is no backend endpoint yet to
-// retrieve a submitted exam PDF, so we look it up from the IndexedDB Blob
-// store the upload page writes to (see lib/submission-pdf-storage.js) and
-// open it as an object URL in a new tab, matching how exam/graded PDFs are
-// opened elsewhere via window.open(url, '_blank'). If nothing is found
-// locally (cleared storage, different browser/device), we tell the student
-// this is a temporary local-only limitation. Remove once a real backend
-// endpoint exists.
-async function handleViewSubmission(paper) {
-  const blob = await getSubmissionPdf(paper.id);
-  if (!blob) {
-    toast.error(
-      "Submission preview isn't available on this device. This is a temporary local-only feature until backend storage is implemented.",
-    );
-    return;
-  }
-  const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
-}
-
-function PaidCurrentPapersSection({ monthLabel, papers, onStartExam, submittedPaperIds }) {
+function PaidCurrentPapersSection({ classId, monthLabel, papers, onStartExam, submittedPaperIds }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-4">
@@ -275,10 +253,12 @@ function PaidCurrentPapersSection({ monthLabel, papers, onStartExam, submittedPa
                             variant="outline"
                             size="sm"
                             className="text-xs h-7 px-3 border-gray-300 text-gray-600 hover:bg-gray-50"
-                            onClick={() => handleViewSubmission(paper)}
-                          >
-                            View Submission
-                          </Button>
+                            render={
+                              <Link href={`/student/dashboard/classes/${classId}/papers/${paper.id}/submission`}>
+                                View
+                              </Link>
+                            }
+                          />
                         )}
                       </TableCell>
                     </TableRow>
@@ -511,12 +491,15 @@ export default function ClassDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <p className="text-gray-500 text-sm">Class not found.</p>
-        <Button variant="outline" asChild>
-          <Link href="/student/dashboard">
-            <ArrowLeft className="h-4 w-4 mr-1.5" />
-            Back to My Classes
-          </Link>
-        </Button>
+        <Button
+          variant="outline"
+          render={
+            <Link href="/student/dashboard">
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
+              Back to My Classes
+            </Link>
+          }
+        />
       </div>
     );
   }
@@ -598,6 +581,7 @@ export default function ClassDetailPage() {
       {/* Current Papers */}
       {currentStatus === "PAID" ? (
         <PaidCurrentPapersSection
+          classId={cls.id}
           monthLabel={currentMonthLabel}
           papers={currentPapers}
           onStartExam={setPendingExamPaper}
