@@ -163,6 +163,7 @@ export default function TeacherClassesPage() {
         <p className="text-gray-500 text-sm">Teacher not found.</p>
         <Button
           variant="outline"
+          nativeButton={false}
           render={
             <Link href="/student/dashboard?section=teachers">
               <ArrowLeft className="h-4 w-4 mr-1.5" />

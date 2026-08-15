@@ -47,6 +47,7 @@ export default function ExamViewingPage() {
         <p className="text-gray-500 text-sm">Exam paper not found.</p>
         <Button
           variant="outline"
+          nativeButton={false}
           render={
             <Link href="/student/dashboard">
               <ArrowLeft className="h-4 w-4 mr-1.5" />

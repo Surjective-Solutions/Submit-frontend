@@ -252,6 +252,7 @@ function PaidCurrentPapersSection({ classId, monthLabel, papers, onStartExam, su
                           <Button
                             variant="outline"
                             size="sm"
+                            nativeButton={false}
                             className="text-xs h-7 px-3 border-gray-300 text-gray-600 hover:bg-gray-50"
                             render={
                               <Link href={`/student/dashboard/classes/${classId}/papers/${paper.id}/submission`}>
@@ -493,6 +494,7 @@ export default function ClassDetailPage() {
         <p className="text-gray-500 text-sm">Class not found.</p>
         <Button
           variant="outline"
+          nativeButton={false}
           render={
             <Link href="/student/dashboard">
               <ArrowLeft className="h-4 w-4 mr-1.5" />

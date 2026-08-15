@@ -141,6 +141,7 @@ export default function PaperSubmissionPage() {
         <p className="text-gray-500 text-sm">Class not found.</p>
         <Button
           variant="outline"
+          nativeButton={false}
           render={
             <Link href="/student/dashboard">
               <ArrowLeft className="h-4 w-4 mr-1.5" />
@@ -160,6 +161,7 @@ export default function PaperSubmissionPage() {
         <p className="text-gray-500 text-sm">Paper not found.</p>
         <Button
           variant="outline"
+          nativeButton={false}
           render={
             <Link href={`/student/dashboard/classes/${classId}`}>
               <ArrowLeft className="h-4 w-4 mr-1.5" />
