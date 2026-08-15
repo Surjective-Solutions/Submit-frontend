@@ -17,6 +17,7 @@ import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.PaperUploadRequest;
 import com.examflow.backend.dto.StudentResponse;
+import com.examflow.backend.dto.QuestionGradeResponse;
 import com.examflow.backend.service.StudentControllerManager;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -78,5 +79,10 @@ public class StudentController {
         response = studentControllerManager.uploadAnswerSheet(answerSheetUploadRequest, answerSheet);
         return response;
 
+    }
+
+    @GetMapping("/paper/{paperId}/grade-details")
+    public List<QuestionGradeResponse> getGradeDetailsForPaper(@PathVariable Integer paperId) {
+        return studentControllerManager.getGradeDetailsForPaper(paperId);
     }
 }

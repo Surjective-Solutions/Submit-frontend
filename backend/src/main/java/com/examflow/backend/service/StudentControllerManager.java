@@ -11,6 +11,7 @@ import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.PaperUploadRequest;
 import com.examflow.backend.dto.UserSignUpRequest;
 import com.examflow.backend.dto.StudentResponse;
+import com.examflow.backend.dto.QuestionGradeResponse;
 import com.examflow.backend.entity.Student;
 
 @Service
@@ -29,4 +30,6 @@ public interface StudentControllerManager {
     GeneralResponse updateStudent(Integer id, UserSignUpRequest studentRequest);
 
     GeneralResponse removeClassFromStudent(Integer classId);
+
+    List<QuestionGradeResponse> getGradeDetailsForPaper(Integer paperId);
 }

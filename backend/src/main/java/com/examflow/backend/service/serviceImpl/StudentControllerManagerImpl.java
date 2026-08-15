@@ -19,6 +19,8 @@ import com.examflow.backend.dto.MonthPapersResponse;
 import com.examflow.backend.dto.PaperResponse;
 import com.examflow.backend.dto.StudentClassPaymentRecordResponse;
 import com.examflow.backend.dto.StudentResponse;
+import com.examflow.backend.dto.UserSignUpRequest;
+import com.examflow.backend.dto.QuestionGradeResponse;
 import com.examflow.backend.entity.ClassPaymentRecord;
 import com.examflow.backend.entity.GradeSubmission;
 import com.examflow.backend.entity.Classes;
@@ -31,9 +33,11 @@ import com.examflow.backend.entity.StudentSubmissionPaperSubQuestion;
 import com.examflow.backend.entity.UplaodPaper;
 import com.examflow.backend.entity.UploadPaperQuestion;
 import com.examflow.backend.entity.UploadPaperQuestionSubQuestion;
+import com.examflow.backend.entity.GradeSubmissionQuestion;
 import com.examflow.backend.enums.paymentStatus;
 import com.examflow.backend.repository.ClassPaymentRecordRepository;
 import com.examflow.backend.repository.GradeSubmissionRepository;
+import com.examflow.backend.repository.GradeSubmissionQuestionRepository;
 import com.examflow.backend.repository.ClassesRepository;
 import com.examflow.backend.repository.PaperSubmissionRepository;
 import com.examflow.backend.repository.StudentClassPaymentRecordsRepository;
@@ -45,13 +49,13 @@ import com.examflow.backend.repository.UploadPaperQuestionSubQuestionRepository;
 import com.examflow.backend.repository.UploadPaperRepository;
 import com.examflow.backend.service.FileStorageService;
 import com.examflow.backend.service.StudentControllerManager;
-import com.examflow.backend.dto.UserSignUpRequest;
 
 import jakarta.servlet.http.HttpServletRequest;
 
 @Service
 public class StudentControllerManagerImpl implements StudentControllerManager {
 
+    private static final String FILE_SERVER_BASE_URL = "http://localhost:8080";
     private final StudentClassesRepository studentClassesRepository;
     private final StudentSubmissionPaperQuestionSubQuestionRepository studentSubmissionPaperQuestionSubQuestionRepository;
     private final UploadPaperQuestionRepository uploadPaperQuestionRepository;
@@ -65,6 +69,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
     private final ClassesRepository classesRepository;
     private final ClassPaymentRecordRepository classPaymentRecordRepository;
     private final GradeSubmissionRepository gradeSubmissionRepository;
+    private final GradeSubmissionQuestionRepository gradeSubmissionQuestionRepository;
     private final StudentClassPaymentRecordsRepository studentClassPaymentRecordsRepository;
     private HttpServletRequest request;
 
@@ -81,6 +86,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
             StudentClassPaymentRecordsRepository studentClassPaymentRecordsRepository,
             ClassPaymentRecordRepository classPaymentRecordRepository,
             GradeSubmissionRepository gradeSubmissionRepository,
+            GradeSubmissionQuestionRepository gradeSubmissionQuestionRepository,
             MonthlyPaymentService monthlyPaymentService,
             HttpServletRequest request,
             StudentClassesRepository studentClassesRepository) {
@@ -96,6 +102,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
         this.uploadPaperRepository = uploadPaperRepository;
         this.classPaymentRecordRepository = classPaymentRecordRepository;
         this.gradeSubmissionRepository = gradeSubmissionRepository;
+        this.gradeSubmissionQuestionRepository = gradeSubmissionQuestionRepository;
         this.studentClassPaymentRecordsRepository = studentClassPaymentRecordsRepository;
         this.request = request;
         this.studentClassesRepository = studentClassesRepository;
@@ -310,7 +317,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
                             .findByStudentAndUplaodpaperAndStatusSeq(student, monthUploadPaper, 2);
 
                     if (paperSubmission != null) {
-                        String pdfUrl = "/uploads/" + paperSubmission.getSubmissionFilePath();
+                        String pdfUrl = FILE_SERVER_BASE_URL + paperSubmission.getSubmissionFilePath();
                         paperResponse.setSubmission_url(pdfUrl);
 
                         GradeSubmission gradeSubmission = gradeSubmissionRepository
@@ -503,5 +510,53 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
         response.setIsSuccess(true);
         response.setMessage("Class removed successfully");
         return response;
+    }
+
+    @Override
+    public List<QuestionGradeResponse> getGradeDetailsForPaper(Integer paperId) {
+        List<QuestionGradeResponse> questionGradeResponses = new ArrayList<>();
+        Integer studentSeq = (Integer) request.getAttribute("userId");
+        Student student = studentRepository.findByStudentSeq(studentSeq);
+
+        UplaodPaper uploadPaper = uploadPaperRepository.findByUploadPaperSeq(paperId);
+        if (uploadPaper == null || student == null) {
+            return questionGradeResponses;
+        }
+
+        PaperSubmission paperSubmission = paperSubmissionRepository
+                .findByStudentAndUplaodpaperAndStatusSeq(student, uploadPaper, 2);
+        if (paperSubmission == null) {
+            return questionGradeResponses;
+        }
+
+        GradeSubmission gradeSubmission = gradeSubmissionRepository
+                .findByPaperSubmissionAndStatus(paperSubmission, 2);
+        if (gradeSubmission == null) {
+            return questionGradeResponses;
+        }
+
+        List<GradeSubmissionQuestion> gradeSubmissionQuestions = gradeSubmissionQuestionRepository
+                .findByGradeSubmissionAndStatus(gradeSubmission, 2);
+
+        for (GradeSubmissionQuestion gradedQuestion : gradeSubmissionQuestions) {
+            QuestionGradeResponse questionResponse = new QuestionGradeResponse();
+            questionResponse.setMarks_awarded(gradedQuestion.getMarksAwarded());
+            questionResponse.setComment(gradedQuestion.getComment());
+
+            boolean isSubQuestion = Boolean.TRUE.equals(gradedQuestion.getIsSubQuestion())
+                    && gradedQuestion.getUploadPaperQuestionSubQuestion() != null;
+            if (isSubQuestion) {
+                questionResponse.setQuestion_id(gradedQuestion.getUploadPaperQuestion().getUploadPaperQuestionSeq().toString()
+                        + "-" + gradedQuestion.getUploadPaperQuestionSubQuestion().getUploadPaperQuestionSubQuestionSeq().toString());
+                questionResponse.setMax_marks(gradedQuestion.getUploadPaperQuestionSubQuestion().getMark());
+            } else {
+                questionResponse.setQuestion_id(gradedQuestion.getUploadPaperQuestion().getUploadPaperQuestionSeq().toString());
+                questionResponse.setMax_marks(gradedQuestion.getUploadPaperQuestion().getMarks());
+            }
+
+            questionGradeResponses.add(questionResponse);
+        }
+
+        return questionGradeResponses;
     }
 }
