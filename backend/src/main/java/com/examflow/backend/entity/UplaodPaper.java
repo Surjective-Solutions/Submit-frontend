@@ -25,6 +25,8 @@ public class UplaodPaper {
 
     private Integer noOfQuestions;
 
+    private Integer startingQuestionNumber;
+
     private Integer status;
 
     private Boolean isPublished;
@@ -90,6 +92,15 @@ public class UplaodPaper {
 
     public void setNoOfQuestions(Integer noOfQuestions) {
         this.noOfQuestions = noOfQuestions;
+    }
+
+    @Column(name = "startingQuestionNumber")
+    public Integer getStartingQuestionNumber() {
+        return startingQuestionNumber;
+    }
+
+    public void setStartingQuestionNumber(Integer startingQuestionNumber) {
+        this.startingQuestionNumber = startingQuestionNumber;
     }
 
     @Column(name = "status")

@@ -213,7 +213,8 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
 
                 List<UploadPaperQuestion> paperQuestions = uploadPaperQuestionRepository.findByUplaodPaperAndStatusOrderByQuestionKeyAsc(paper, 2);
                 List<QuestionPaperInstructorTutorResponse> questionResponses = new ArrayList<>();
-                Integer questionCount = 0;
+                Integer startingNumber = paper.getStartingQuestionNumber() != null ? paper.getStartingQuestionNumber() : 1;
+                Integer questionCount = startingNumber - 1;
                 for(UploadPaperQuestion paperQuestion : paperQuestions){
                     QuestionPaperInstructorTutorResponse questionResponse = new QuestionPaperInstructorTutorResponse();
                     List<UploadPaperQuestionSubQuestion> subQuestions = uploadPaperQuestionSubQuestionRepository.findByUploadPaperQuestionAndStatusOrderByQuestionKeyAsc(paperQuestion, 2);
@@ -371,6 +372,12 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         Integer numberOfQuetions = insertPaperQuestions(uploadPaper, questions, username);
 
         uploadPaper.setNoOfQuestions(numberOfQuetions);
+
+        uploadPaper.setStartingQuestionNumber(
+            paperUploadRequest.getStarting_question_number() != null 
+                ? paperUploadRequest.getStarting_question_number() 
+                : 1
+        );
         uploadPaperRepository.save(uploadPaper);
 
         response.setMessage("Paper uploaded successfully");

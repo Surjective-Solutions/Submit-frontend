@@ -16,6 +16,8 @@ public class PaperUploadRequest {
 
     private Integer month;
 
+    private Integer starting_question_number;
+
     public String getPaper_name() {
         return paper_name;
     }
@@ -70,6 +72,14 @@ public class PaperUploadRequest {
 
     public void setQuestions(String questions) {
         this.questions = questions;
+    }
+
+    public Integer getStarting_question_number() {
+        return starting_question_number;
+    }
+
+    public void setStarting_question_number(Integer starting_question_number) {
+        this.starting_question_number = starting_question_number;
     }
 
 }

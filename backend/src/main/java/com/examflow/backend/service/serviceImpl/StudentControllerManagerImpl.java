@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -535,6 +537,17 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
             return questionGradeResponses;
         }
 
+        List<UploadPaperQuestion> allPaperQuestions = uploadPaperQuestionRepository
+                .findByUplaodPaperAndStatusOrderByQuestionKeyAsc(uploadPaper, 2);
+        Integer startingNumber = uploadPaper.getStartingQuestionNumber() != null ? uploadPaper.getStartingQuestionNumber() : 1;
+
+        Map<Integer, Integer> questionNumberByKey = new HashMap<>();
+        Integer runningNumber = startingNumber;
+        for (UploadPaperQuestion q : allPaperQuestions) {
+            questionNumberByKey.put(q.getUploadPaperQuestionSeq(), runningNumber);
+            runningNumber++;
+        }
+
         List<GradeSubmissionQuestion> gradeSubmissionQuestions = gradeSubmissionQuestionRepository
                 .findByGradeSubmissionAndStatus(gradeSubmission, 2);
 
@@ -543,14 +556,16 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
             questionResponse.setMarks_awarded(gradedQuestion.getMarksAwarded());
             questionResponse.setComment(gradedQuestion.getComment());
 
+            Integer questionNumber = questionNumberByKey.get(gradedQuestion.getUploadPaperQuestion().getUploadPaperQuestionSeq());
+
             boolean isSubQuestion = Boolean.TRUE.equals(gradedQuestion.getIsSubQuestion())
                     && gradedQuestion.getUploadPaperQuestionSubQuestion() != null;
             if (isSubQuestion) {
-                questionResponse.setQuestion_id(gradedQuestion.getUploadPaperQuestion().getUploadPaperQuestionSeq().toString()
+                questionResponse.setQuestion_id("Q" + questionNumber
                         + "-" + gradedQuestion.getUploadPaperQuestionSubQuestion().getUploadPaperQuestionSubQuestionSeq().toString());
                 questionResponse.setMax_marks(gradedQuestion.getUploadPaperQuestionSubQuestion().getMark());
             } else {
-                questionResponse.setQuestion_id(gradedQuestion.getUploadPaperQuestion().getUploadPaperQuestionSeq().toString());
+                questionResponse.setQuestion_id("Q" + questionNumber);
                 questionResponse.setMax_marks(gradedQuestion.getUploadPaperQuestion().getMarks());
             }
 

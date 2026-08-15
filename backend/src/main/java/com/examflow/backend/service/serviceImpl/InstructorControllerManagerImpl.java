@@ -258,7 +258,8 @@ public class InstructorControllerManagerImpl implements InstructorControllerMana
 
                 List<UploadPaperQuestion> paperQuestions = uploadPaperQuestionRepository.findByUplaodPaperAndStatusOrderByQuestionKeyAsc(tutorPapers, 2);
                 List<QuestionPaperInstructorTutorResponse> questionResponses = new ArrayList<>();
-                Integer questionCount = 0;
+                Integer startingNumber = tutorPapers.getStartingQuestionNumber() != null ? tutorPapers.getStartingQuestionNumber() : 1;
+                Integer questionCount = startingNumber - 1;
                 for(UploadPaperQuestion paperQuestion : paperQuestions){
                     QuestionPaperInstructorTutorResponse questionResponse = new QuestionPaperInstructorTutorResponse();
                     List<UploadPaperQuestionSubQuestion> subQuestions = uploadPaperQuestionSubQuestionRepository.findByUploadPaperQuestionAndStatusOrderByQuestionKeyAsc(paperQuestion, 2);
