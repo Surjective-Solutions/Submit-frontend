@@ -59,6 +59,7 @@ export const paperUploadSchema = z.object({
   year: z.coerce.number().int().min(2020, 'Year must be 2020 or later').max(2030, 'Year must be 2030 or earlier'),
   pdf_file: z.any().refine((val) => val && val.length > 0, 'Please select a PDF file'),
   status: z.enum(['DRAFT', 'PUBLISHED']),
+  starting_question_number: z.coerce.number().int().min(1, 'Must be at least 1').optional(),
 });
 
 export const paperEditSchema = z.object({

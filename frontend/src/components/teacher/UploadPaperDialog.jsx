@@ -90,6 +90,7 @@ export default function UploadPaperDialog({
       month: "",
       year: 2026,
       status: "DRAFT",
+      starting_question_number: 1,
     },
   });
 
@@ -130,6 +131,7 @@ export default function UploadPaperDialog({
     formData.append("paper_name", data.paper_name);
     formData.append("month", data.month);
     formData.append("year", data.year);
+    formData.append("starting_question_number", data.starting_question_number || 1);
     formData.append("number_of_questions", data.number_of_questions);
     formData.append("status", data.status);
     formData.append("questions", JSON.stringify(qb.questions));
@@ -137,6 +139,7 @@ export default function UploadPaperDialog({
     formData.append("pdf_file", data.pdf_file[0]);
 
     console.log(count);
+    console.log('starting_question_number:', data.starting_question_number);
     console.log(qb.questions);
 
     try {
@@ -267,6 +270,22 @@ export default function UploadPaperDialog({
               </Field>
 
               <SectionDivider label="Question Structure" />
+              <Field
+                id="starting_question_number"
+                error={errors.starting_question_number?.message}
+              >
+                <Label htmlFor="starting_question_number">Starting Question Number</Label>
+                <Input
+                  id="starting_question_number"
+                  type="number"
+                  min="1"
+                  placeholder="e.g. 1 or 11"
+                  {...register("starting_question_number", { valueAsNumber: true })}
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  If this paper continues from a previous week (e.g. starts at Q11), enter that number here.
+                </p>
+              </Field>
               <div className="flex items-center justify-between">
                 <p className="text-xs text-gray-500">
                   Add each question and, if it has parts, split it into (a) /
