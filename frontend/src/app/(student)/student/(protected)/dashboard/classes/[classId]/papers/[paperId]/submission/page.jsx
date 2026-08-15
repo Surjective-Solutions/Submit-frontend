@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
@@ -11,6 +11,8 @@ import {
   ClipboardEdit,
   Eye,
   FileText,
+  ListChecks,
+  MessageSquareText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +24,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useEnrolledClasses } from '@/context/EnrolledClassesContext';
 import { findPaperInClass } from '@/lib/exam-utils';
 import { toMonthYearSlug } from '@/lib/billing-utils';
+import { getGradeDetailsForPaper } from '@/lib/api-client';
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -30,6 +33,15 @@ function formatDate(iso) {
     month: 'short',
     year: 'numeric',
   });
+}
+
+function formatQuestionLabel(questionId) {
+  const [parentId, subId] = String(questionId).split('-');
+  if (!subId) return `Q${parentId}`;
+  const subLetter = /^\d+$/.test(subId)
+    ? String.fromCharCode(96 + Number(subId))
+    : subId;
+  return `Q${parentId} (${subLetter})`;
 }
 
 // ── Request Recorrection Dialog ──────────────────────────────────────────────
@@ -126,6 +138,97 @@ function DocumentCard({ icon: Icon, title, url, actionLabel, unavailableText, ac
   );
 }
 
+// ── Grade Breakdown ──────────────────────────────────────────────────────────
+
+function GradeBreakdownSection({ classId, paperId, isGraded }) {
+  const [gradeDetails, setGradeDetails] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isGraded) return;
+    let cancelled = false;
+    loadGradeDetails();
+    return () => {
+      cancelled = true;
+    };
+
+    async function loadGradeDetails() {
+      try {
+        setLoading(true);
+        const data = await getGradeDetailsForPaper(paperId);
+        if (!cancelled) setGradeDetails(data ?? []);
+      } catch {
+        if (!cancelled) toast.error('Failed to load grade breakdown.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+  }, [paperId, isGraded]);
+
+  if (!isGraded) return null;
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-3">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          Grade Breakdown
+        </p>
+        <p className="text-sm text-gray-400">Loading grade breakdown...</p>
+      </div>
+    );
+  }
+
+  if (gradeDetails.length === 0) return null;
+
+  return (
+    <div className="rounded-xl border border-green-200 bg-white p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
+          <ListChecks className="h-4 w-4 text-green-600" />
+        </div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          Grade Breakdown
+        </p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+              <th className="py-2 pr-4 font-semibold">Question</th>
+              <th className="py-2 font-semibold">Marks</th>
+            </tr>
+          </thead>
+          <tbody>
+            {gradeDetails.map((detail) => (
+              <tr key={detail.question_id} className="border-b border-gray-50 last:border-0">
+                <td className="py-3 pr-4 font-medium text-gray-900 align-top whitespace-nowrap">
+                  {formatQuestionLabel(detail.question_id)}
+                </td>
+                <td className="py-3 align-top whitespace-nowrap">
+                  <span className="font-semibold text-green-700">{detail.marks_awarded}</span>
+                  <span className="text-gray-400"> / {detail.max_marks}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <Button
+        variant="outline"
+        size="sm"
+        nativeButton={false}
+        className="gap-2 border-green-200 text-green-700 hover:bg-green-50"
+        render={<Link href={`/student/dashboard/classes/${classId}/papers/${paperId}/feedback`} />}
+      >
+        <MessageSquareText className="h-3.5 w-3.5" />
+        View Detailed Feedback
+      </Button>
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function PaperSubmissionPage() {
@@ -154,6 +257,7 @@ export default function PaperSubmissionPage() {
   }
 
   const paper = findPaperInClass(cls, paperId);
+  console.log('submission page paper.submission_url:', paper?.submission_url);
 
   if (!paper) {
     return (
@@ -256,6 +360,9 @@ export default function PaperSubmissionPage() {
           )}
         </div>
       </div>
+
+      {/* Grade Breakdown */}
+      <GradeBreakdownSection classId={classId} paperId={paperId} isGraded={isGraded} />
 
       {/* Recorrection */}
       <div className="rounded-xl border border-border bg-white p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

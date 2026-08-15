@@ -343,6 +343,11 @@ export async function updateStudent(id, data) {
   return protectedRequestPath(`/api/student/update/${id}`, { method: "PUT", body: data });
 }
 
+// get per-question grade breakdown for a graded paper
+export async function getGradeDetailsForPaper(paperId) {
+  return protectedRequestPath(`/api/student/paper/${paperId}/grade-details`, { method: 'GET' });
+}
+
 // ── Admin Instructors ─────────────────────────────────────────────────────────
 
 // TODO: replace with actual microservice endpoint
