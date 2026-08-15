@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { ChevronLeft, FileText, MessageSquareText } from 'lucide-react';
+import { ChevronLeft, ClipboardEdit, FileText, MessageSquareText } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useEnrolledClasses } from '@/context/EnrolledClassesContext';
 import { findPaperInClass } from '@/lib/exam-utils';
@@ -47,6 +49,72 @@ function formatQuestionLabel(questionId) {
   return `Q${parentId} (${subLetter})`;
 }
 
+// ── Request Recorrection Dialog ──────────────────────────────────────────────
+
+// TEMPORARY FRONTEND-ONLY WORKAROUND: there is no backend endpoint yet to
+// submit recorrection/regrading requests, so this just notes the request
+// locally via a toast. Wire this up to a real endpoint once one exists.
+function RequestRecorrectionDialog({ open, onOpenChange, paperName }) {
+  const [reason, setReason] = useState('');
+
+  function handleClose(next) {
+    if (!next) setReason('');
+    onOpenChange(next);
+  }
+
+  function handleSubmit() {
+    if (!reason.trim()) {
+      toast.error('Please enter a reason for your recorrection request.');
+      return;
+    }
+    toast.success(
+      "Your recorrection request has been noted. Backend processing for this isn't implemented yet.",
+    );
+    handleClose(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
+        <div
+          className="px-6 py-5"
+          style={{ background: 'linear-gradient(135deg, #3940A0 0%, #5a62ff 100%)' }}
+        >
+          <DialogTitle className="text-white text-sm font-semibold leading-tight m-0">
+            Request Recorrection
+          </DialogTitle>
+          <p className="text-white/60 text-xs mt-0.5 truncate">{paperName}</p>
+        </div>
+
+        <div className="px-6 py-5 space-y-2">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Reason
+          </label>
+          <Textarea
+            rows={4}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Explain why you'd like this paper re-checked..."
+          />
+        </div>
+
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t bg-gray-50/60">
+          <Button variant="outline" size="sm" onClick={() => handleClose(false)}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            onClick={handleSubmit}
+          >
+            Submit Request
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function FeedbackRow({ detail }) {
   return (
     <div className="space-y-1.5">
@@ -71,6 +139,7 @@ export default function StudentFeedbackPage() {
   const { classes } = useEnrolledClasses();
   const [gradeDetails, setGradeDetails] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [recorrectionOpen, setRecorrectionOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -184,8 +253,32 @@ export default function StudentFeedbackPage() {
               ) : (
                 gradeDetails.map((detail) => <FeedbackRow key={detail.question_id} detail={detail} />)
               )}
+
+              <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
+                <div>
+                  <p className="text-xs font-semibold text-gray-900">Not happy with your grade?</p>
+                  <p className="mt-0.5 text-[11px] text-gray-500">
+                    Request a recorrection if you think this paper needs to be re-checked.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+                  onClick={() => setRecorrectionOpen(true)}
+                >
+                  <ClipboardEdit className="h-3.5 w-3.5" />
+                  Request Recorrection
+                </Button>
+              </div>
             </div>
           </ScrollArea>
+
+          <RequestRecorrectionDialog
+            open={recorrectionOpen}
+            onOpenChange={setRecorrectionOpen}
+            paperName={paper.paper_name}
+          />
 
           {!loading && gradeDetails.length > 0 && (
             <div className="shrink-0 space-y-2 border-t border-border p-4">
