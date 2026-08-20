@@ -7,11 +7,15 @@ import { toast } from 'sonner';
 import {
   ArrowLeft,
   Award,
+  BarChart3,
+  Calendar,
   CheckCircle,
+  ChevronRight,
   Eye,
+  ExternalLink,
   FileText,
-  ListChecks,
-  MessageSquareText,
+  Info,
+  Star,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEnrolledClasses } from '@/context/EnrolledClassesContext';
@@ -37,27 +41,114 @@ function formatQuestionLabel(questionId) {
   return `Q${parentId} (${subLetter})`;
 }
 
+// Parses a "98/100"-style fraction out of a grade string like "A (98/100)"
+// so we can drive the score ring + performance message.
+function parseScoreFromGrade(gradeStr) {
+  if (!gradeStr) return null;
+  const match = String(gradeStr).match(/(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)/);
+  if (!match) return null;
+  const awarded = Number(match[1]);
+  const total = Number(match[2]);
+  if (!total) return null;
+  return { awarded, total, percentage: Math.round((awarded / total) * 100) };
+}
+
+function getPerformanceMessage(percentage) {
+  if (percentage >= 90) {
+    return {
+      title: 'Excellent work! 🎉',
+      subtitle: "You've demonstrated a strong understanding of the concepts.",
+    };
+  }
+  if (percentage >= 75) {
+    return {
+      title: 'Great job! 👏',
+      subtitle: 'You have a solid grasp of the material.',
+    };
+  }
+  if (percentage >= 60) {
+    return {
+      title: 'Good effort! 💪',
+      subtitle: 'A bit more practice will take you far.',
+    };
+  }
+  return {
+    title: 'Keep practicing! 📚',
+    subtitle: 'Review the feedback to strengthen weak areas.',
+  };
+}
+
+// ── Circular Score Ring ─────────────────────────────────────────────────────
+
+function CircularScore({ percentage }) {
+  const radius = 42;
+  const circumference = 2 * Math.PI * radius;
+  const clamped = Math.max(0, Math.min(100, percentage));
+  const offset = circumference - (clamped / 100) * circumference;
+
+  return (
+    <div className="relative w-24 h-24 shrink-0">
+      <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r={radius} fill="none" stroke="#bbf7d0" strokeWidth="8" />
+        <circle
+          cx="50"
+          cy="50"
+          r={radius}
+          fill="none"
+          stroke="#16a34a"
+          strokeWidth="8"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-lg font-bold text-green-700">{clamped}%</span>
+        <span className="text-[10px] text-gray-500">Score</span>
+      </div>
+    </div>
+  );
+}
+
 // ── Document Card ─────────────────────────────────────────────────────────────
 
-const ACCENT_CLASSES = {
-  indigo: 'border-indigo-200 text-indigo-700 hover:bg-indigo-50',
-  green: 'border-green-200 text-green-700 hover:bg-green-50',
+const ACCENT_STYLES = {
+  indigo: {
+    iconBg: 'bg-indigo-100',
+    iconColor: 'text-indigo-600',
+    button: 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100',
+  },
+  blue: {
+    iconBg: 'bg-blue-100',
+    iconColor: 'text-blue-600',
+    button: 'bg-blue-50 text-blue-700 hover:bg-blue-100',
+  },
+  green: {
+    iconBg: 'bg-green-100',
+    iconColor: 'text-green-600',
+    button: 'bg-green-50 text-green-700 hover:bg-green-100',
+  },
 };
 
 function DocumentCard({ icon: Icon, title, url, actionLabel, unavailableText, accent = 'indigo' }) {
+  const styles = ACCENT_STYLES[accent];
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-3">
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</p>
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4">
+      <div className="flex items-center gap-3">
+        <div className={`w-10 h-10 rounded-xl ${styles.iconBg} flex items-center justify-center shrink-0`}>
+          <Icon className={`h-5 w-5 ${styles.iconColor}`} />
+        </div>
+        <p className="text-sm font-semibold text-gray-900">{title}</p>
+      </div>
       {url ? (
-        <Button
-          variant="outline"
-          size="sm"
-          className={`w-full gap-2 ${ACCENT_CLASSES[accent]}`}
+        <button
+          type="button"
           onClick={() => window.open(url, '_blank')}
+          className={`w-full flex items-center justify-between rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${styles.button}`}
         >
-          <Icon className="h-3.5 w-3.5" />
           {actionLabel}
-        </Button>
+          <ExternalLink className="h-3.5 w-3.5" />
+        </button>
       ) : (
         <p className="text-sm text-gray-400">{unavailableText}</p>
       )}
@@ -96,7 +187,7 @@ function GradeBreakdownSection({ classId, paperId, isGraded }) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-3">
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 space-y-3 md:max-w-xl">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
           Grade Breakdown
         </p>
@@ -108,14 +199,12 @@ function GradeBreakdownSection({ classId, paperId, isGraded }) {
   if (gradeDetails.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-green-200 bg-white p-5 space-y-4">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
-          <ListChecks className="h-4 w-4 text-green-600" />
+    <div className="rounded-2xl border border-gray-200 bg-white p-6 space-y-5 md:max-w-xl">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+          <BarChart3 className="h-4.5 w-4.5 text-indigo-600" />
         </div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          Grade Breakdown
-        </p>
+        <p className="text-sm font-semibold text-gray-900">Grade Breakdown</p>
       </div>
 
       <div className="overflow-x-auto">
@@ -146,11 +235,11 @@ function GradeBreakdownSection({ classId, paperId, isGraded }) {
         variant="outline"
         size="sm"
         nativeButton={false}
-        className="gap-2 border-green-200 text-green-700 hover:bg-green-50"
+        className="gap-1.5 border-0 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg"
         render={<Link href={`/student/dashboard/classes/${classId}/papers/${paperId}/feedback`} />}
       >
-        <MessageSquareText className="h-3.5 w-3.5" />
         View Detailed Feedback
+        <ChevronRight className="h-3.5 w-3.5" />
       </Button>
     </div>
   );
@@ -214,44 +303,68 @@ export default function PaperSubmissionPage() {
     : `/student/dashboard/classes/${classId}`;
 
   const isGraded = paper.submission_status === 'GRADED';
+  const scoreInfo = isGraded ? parseScoreFromGrade(paper.grade) : null;
+  const message = scoreInfo ? getPerformanceMessage(scoreInfo.percentage) : null;
 
   return (
     <div className="space-y-6">
-      {/* Top bar */}
-      <div className="bg-white rounded-xl border border-border px-5 py-4 flex items-center gap-4">
+      {/* Header */}
+      <div className="flex items-start gap-4">
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-indigo-600 transition-colors shrink-0"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors shrink-0"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
         </Link>
-        <div className="w-px h-5 bg-gray-200 shrink-0" />
-        <div className="min-w-0">
-          <h1 className="text-base font-bold text-gray-900 leading-tight truncate">
+        <div className="min-w-0 pt-1">
+          <h1 className="text-2xl font-bold text-gray-900 leading-tight truncate">
             {paper.paper_name}
           </h1>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {cls.class_name} · Due {formatDate(paper.due_date)}
-          </p>
+          <div className="flex items-center gap-1.5 text-sm text-gray-400 mt-1">
+            <Calendar className="h-3.5 w-3.5" />
+            <span>
+              {cls.class_name} · Due {formatDate(paper.due_date)}
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Grade banner */}
       {isGraded && paper.grade && (
-        <div className="flex items-center gap-3 px-5 py-4 rounded-xl bg-green-50 border border-green-200">
-          <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
-            <Award className="h-5 w-5 text-green-600" />
+        <div className="rounded-2xl border border-green-200 bg-green-50 px-6 py-5 flex items-center gap-6 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+              <Award className="h-6 w-6 text-green-600" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-green-600 uppercase tracking-wider">
+                Your Grade
+              </p>
+              <p className="text-2xl font-bold text-green-700 leading-tight">{paper.grade}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-[11px] font-semibold text-green-600 uppercase tracking-wider">Your Grade</p>
-            <p className="text-xl font-bold text-green-700 leading-tight">{paper.grade}</p>
-          </div>
+
+          {scoreInfo && message && (
+            <>
+              <div className="w-px h-12 bg-green-200 hidden sm:block" />
+              <div className="flex items-center gap-3 flex-1 min-w-[200px]">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                  <Star className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{message.title}</p>
+                  <p className="text-sm text-gray-500">{message.subtitle}</p>
+                </div>
+              </div>
+              <CircularScore percentage={scoreInfo.percentage} />
+            </>
+          )}
         </div>
       )}
 
       {/* Documents */}
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
         <DocumentCard
           icon={FileText}
           title="Original Paper"
@@ -266,29 +379,44 @@ export default function PaperSubmissionPage() {
           url={paper.submission_url}
           actionLabel="Open My Submission"
           unavailableText="Submission file not available."
-          accent="indigo"
+          accent="blue"
         />
-        <div className="sm:col-span-2">
-          {isGraded ? (
-            <DocumentCard
-              icon={CheckCircle}
-              title="Graded Submission"
-              url={paper.graded_pdf_url}
-              actionLabel="Open Graded Submission"
-              unavailableText="Graded submission not available yet."
-              accent="green"
-            />
-          ) : (
-            <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-1">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Graded Submission</p>
-              <p className="text-sm text-gray-400">Not graded yet.</p>
+        {isGraded ? (
+          <DocumentCard
+            icon={CheckCircle}
+            title="Graded Submission"
+            url={paper.graded_pdf_url}
+            actionLabel="Open Graded Submission"
+            unavailableText="Graded submission not available yet."
+            accent="green"
+          />
+        ) : (
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
+                <CheckCircle className="h-5 w-5 text-gray-400" />
+              </div>
+              <p className="text-sm font-semibold text-gray-900">Graded Submission</p>
             </div>
-          )}
-        </div>
+            <p className="text-sm text-gray-400">Not graded yet.</p>
+          </div>
+        )}
       </div>
 
       {/* Grade Breakdown */}
       <GradeBreakdownSection classId={classId} paperId={paperId} isGraded={isGraded} />
+
+      {/* Info banner */}
+      {isGraded && paper.grade && (
+        <div className="flex items-center gap-3 rounded-xl bg-indigo-50 border border-indigo-100 px-5 py-3.5">
+          <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
+            <Info className="h-3.5 w-3.5 text-white" />
+          </div>
+          <p className="text-sm text-indigo-900">
+            You can review your graded submission and feedback to understand your performance better.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
