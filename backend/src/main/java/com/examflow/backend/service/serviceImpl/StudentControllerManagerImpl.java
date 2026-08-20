@@ -342,7 +342,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
                         paperResponse.setGrade(null);
                         paperResponse.setGraded_pdf_url(null);
                     }
-                    String pdfUrl = "/uploads/" + monthUploadPaper.getFilePath();
+                    String pdfUrl = FILE_SERVER_BASE_URL + "/uploads/" + monthUploadPaper.getFilePath();
                     paperResponse.setExam_pdf_url(pdfUrl);
                     paperResponse.setIs_current(null);
 
