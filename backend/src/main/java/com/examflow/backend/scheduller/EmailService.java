@@ -85,6 +85,10 @@ public class EmailService {
         sendTemplatedEmail(to, "PAYMENT_REJECTED", reason != null ? reason : "");
     }
 
+    public void sendRegradeCompleted(String to, String details) {
+        sendTemplatedEmail(to, "REGRADE_COMPLETED", details != null ? details : "");
+    }
+
     private void sendTemplatedEmail(String to, String emailName, String bodySuffix) {
         EmailStructure emailStructure = emailStructureRepository.findByEmailNameAndStatusSeq(emailName, 2);
         SendEmail sendEmail = new SendEmail();

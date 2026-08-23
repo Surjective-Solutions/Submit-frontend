@@ -22,6 +22,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import com.examflow.backend.entity.Instructor;
 import com.examflow.backend.entity.PaperSubmission;
 import com.examflow.backend.entity.Student;
+import com.examflow.backend.entity.Tutor;
 import com.examflow.backend.entity.TutorInstructor;
 import com.examflow.backend.entity.UplaodPaper;
 import com.examflow.backend.entity.UploadPaperQuestion;
@@ -42,6 +43,7 @@ import com.examflow.backend.dto.InstructorTeacherClassesResponse;
 import com.examflow.backend.dto.InstructorTeacherResponse;
 import com.examflow.backend.dto.PaperInstructorTutorResponse;
 import com.examflow.backend.dto.QuestionPaperInstructorTutorResponse;
+import com.examflow.backend.dto.RegradeRequestResponse;
 import com.examflow.backend.dto.SubmissionPaperInstructorTutorResponse;
 import com.examflow.backend.dto.SubmitGradeQuestionsResponse;
 import com.examflow.backend.dto.SubmitGradeResponse;
@@ -60,6 +62,9 @@ public class InstructorControllerManagerImpl implements InstructorControllerMana
     private final TutorInstructorRepository tutorInstructorRepository;
     private HttpServletRequest request;
     private final InstructorRepository instructorRepository;
+    private final GradeEditService gradeEditService;
+    private final RegradeRequestQueryService regradeRequestQueryService;
+    private final SubmissionGradeSummaryService submissionGradeSummaryService;
 
     @Autowired
     public InstructorControllerManagerImpl(InstructorRepository instructorRepository,
@@ -72,6 +77,9 @@ public class InstructorControllerManagerImpl implements InstructorControllerMana
             GradeSubmissionQuestionRepository gradeSubmissionQuestionRepository,
             TutorInstructorRepository tutorInstructorRepository,
             UploadPaperQuestionRepository uploadPaperQuestionRepository,
+            GradeEditService gradeEditService,
+            RegradeRequestQueryService regradeRequestQueryService,
+            SubmissionGradeSummaryService submissionGradeSummaryService,
             HttpServletRequest request) {
         this.instructorRepository = instructorRepository;
         this.paperSubmissionRepository = paperSubmissionRepository;
@@ -83,6 +91,9 @@ public class InstructorControllerManagerImpl implements InstructorControllerMana
         this.classesRepository = classesRepository;
         this.passwordEncoder = passwordEncoder;
         this.tutorInstructorRepository = tutorInstructorRepository;
+        this.gradeEditService = gradeEditService;
+        this.regradeRequestQueryService = regradeRequestQueryService;
+        this.submissionGradeSummaryService = submissionGradeSummaryService;
         this.request = request;
     }
 
@@ -305,7 +316,8 @@ public class InstructorControllerManagerImpl implements InstructorControllerMana
                     submissionResponse.setGraded(submission.isGraded());
                     submissionResponse.setGraded_at(submission.getGradedDate());
                     submissionResponse.setFile_url(submission.getSubmissionFilePath());
-                    
+                    submissionGradeSummaryService.applyGradeSummary(submissionResponse, submission);
+
                     submissionResponses.add(submissionResponse);
                 }
 
@@ -421,10 +433,75 @@ public class InstructorControllerManagerImpl implements InstructorControllerMana
 
         paperSubmissionRepository.save(paperSubmissionToUpdate);
 
-        
+
           response.setIsSuccess(true);
           response.setMessage("Grading submitted successfully");
           return response;
+    }
+
+    @Override
+    public GeneralResponse editSubmissionGrade(SubmitGradeResponse submitGradeResponse) {
+        Integer instructorSeq = (Integer) request.getAttribute("userId");
+        Instructor instructor = instructorRepository.findByInstructorSeq(instructorSeq);
+
+        GeneralResponse response = new GeneralResponse();
+
+        PaperSubmission paperSubmission = paperSubmissionRepository
+                .findByPaperSubmissionSeq(submitGradeResponse.getSubmissionId());
+        if (paperSubmission == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Paper submission not found. Contact a system administrator");
+            return response;
+        }
+
+        Tutor owningTutor = paperSubmission.getUplaodpaper().getClasses().getTutor();
+        boolean isEngaged = instructor != null && owningTutor != null
+                && !tutorInstructorRepository.findByTutorAndInstructorAndIsEngaged(owningTutor, instructor, true).isEmpty();
+        if (!isEngaged) {
+            response.setIsSuccess(false);
+            response.setMessage("You are not authorized to edit this submission's grade");
+            return response;
+        }
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
+        return gradeEditService.editGrade(paperSubmission, submitGradeResponse, username);
+    }
+
+    @Override
+    public List<RegradeRequestResponse> getPendingRegradeRequests() {
+        List<Tutor> engagedTutors = getEngagedTutors();
+        if (engagedTutors.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return regradeRequestQueryService.getPendingForTutors(engagedTutors);
+    }
+
+    @Override
+    public RegradeRequestResponse getRegradeRequestById(Integer regradeRequestSeq) {
+        List<Tutor> engagedTutors = getEngagedTutors();
+        if (engagedTutors.isEmpty()) {
+            return null;
+        }
+
+        return regradeRequestQueryService.getByIdForTutors(regradeRequestSeq, engagedTutors);
+    }
+
+    private List<Tutor> getEngagedTutors() {
+        Integer instructorSeq = (Integer) request.getAttribute("userId");
+        Instructor instructor = instructorRepository.findByInstructorSeq(instructorSeq);
+        if (instructor == null) {
+            return new ArrayList<>();
+        }
+
+        List<TutorInstructor> tutorInstructors = tutorInstructorRepository.findByInstructorAndIsEngaged(instructor, true);
+        List<Tutor> tutors = new ArrayList<>();
+        for (TutorInstructor tutorInstructor : tutorInstructors) {
+            tutors.add(tutorInstructor.getTutor());
+        }
+        return tutors;
     }
 
 }

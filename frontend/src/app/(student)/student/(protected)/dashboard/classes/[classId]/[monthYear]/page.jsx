@@ -52,6 +52,13 @@ function SubmissionStatusBadge({ status }) {
       </span>
     );
   }
+  if (status === 'REGRADE_REQUESTED') {
+    return (
+      <span className="inline-flex items-center text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
+        Regrade Requested
+      </span>
+    );
+  }
   if (status === 'SUBMITTED') {
     return (
       <span className="inline-flex items-center text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
@@ -88,7 +95,7 @@ function PapersTable({ classId, papers }) {
                 <TableCell className="font-semibold text-gray-900">{paper.paper_name}</TableCell>
                 <TableCell className="text-sm text-gray-500">{formatDate(paper.due_date)}</TableCell>
                 <TableCell>
-                  {paper.submission_status === 'GRADED' && paper.grade ? (
+                  {(paper.submission_status === 'GRADED' || paper.submission_status === 'REGRADE_REQUESTED') && paper.grade ? (
                     <span className="font-semibold text-amber-600">{paper.grade}</span>
                   ) : paper.submission_status === 'SUBMITTED' ? (
                     <span className="text-sm text-gray-400">Pending</span>

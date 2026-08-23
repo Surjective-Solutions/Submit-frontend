@@ -9,6 +9,8 @@ import com.examflow.backend.dto.AnswerSheetUploadRequest;
 import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.PaperUploadRequest;
+import com.examflow.backend.dto.RegradeRequestCreateRequest;
+import com.examflow.backend.dto.RegradeRequestResponse;
 import com.examflow.backend.dto.UserSignUpRequest;
 import com.examflow.backend.dto.StudentResponse;
 import com.examflow.backend.dto.QuestionGradeResponse;
@@ -32,4 +34,8 @@ public interface StudentControllerManager {
     GeneralResponse removeClassFromStudent(Integer classId);
 
     List<QuestionGradeResponse> getGradeDetailsForPaper(Integer paperId);
+
+    GeneralResponse createRegradeRequest(Integer paperId, RegradeRequestCreateRequest regradeRequestCreateRequest);
+
+    RegradeRequestResponse getRegradeRequestForPaper(Integer paperId);
 }

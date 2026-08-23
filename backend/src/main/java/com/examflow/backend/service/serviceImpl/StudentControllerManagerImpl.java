@@ -19,6 +19,8 @@ import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.MonthPapersResponse;
 import com.examflow.backend.dto.PaperResponse;
+import com.examflow.backend.dto.RegradeRequestCreateRequest;
+import com.examflow.backend.dto.RegradeRequestResponse;
 import com.examflow.backend.dto.StudentClassPaymentRecordResponse;
 import com.examflow.backend.dto.StudentResponse;
 import com.examflow.backend.dto.UserSignUpRequest;
@@ -27,6 +29,7 @@ import com.examflow.backend.entity.ClassPaymentRecord;
 import com.examflow.backend.entity.GradeSubmission;
 import com.examflow.backend.entity.Classes;
 import com.examflow.backend.entity.PaperSubmission;
+import com.examflow.backend.entity.RegradeRequest;
 import com.examflow.backend.entity.Student;
 import com.examflow.backend.entity.StudentClass;
 import com.examflow.backend.entity.StudentClassPaymentRecord;
@@ -42,6 +45,7 @@ import com.examflow.backend.repository.GradeSubmissionRepository;
 import com.examflow.backend.repository.GradeSubmissionQuestionRepository;
 import com.examflow.backend.repository.ClassesRepository;
 import com.examflow.backend.repository.PaperSubmissionRepository;
+import com.examflow.backend.repository.RegradeRequestRepository;
 import com.examflow.backend.repository.StudentClassPaymentRecordsRepository;
 import com.examflow.backend.repository.StudentRepository;
 import com.examflow.backend.repository.StudentSubmissionPaperQuestionRepository;
@@ -73,6 +77,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
     private final GradeSubmissionRepository gradeSubmissionRepository;
     private final GradeSubmissionQuestionRepository gradeSubmissionQuestionRepository;
     private final StudentClassPaymentRecordsRepository studentClassPaymentRecordsRepository;
+    private final RegradeRequestRepository regradeRequestRepository;
     private HttpServletRequest request;
 
     @Autowired
@@ -89,6 +94,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
             ClassPaymentRecordRepository classPaymentRecordRepository,
             GradeSubmissionRepository gradeSubmissionRepository,
             GradeSubmissionQuestionRepository gradeSubmissionQuestionRepository,
+            RegradeRequestRepository regradeRequestRepository,
             MonthlyPaymentService monthlyPaymentService,
             HttpServletRequest request,
             StudentClassesRepository studentClassesRepository) {
@@ -106,6 +112,7 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
         this.gradeSubmissionRepository = gradeSubmissionRepository;
         this.gradeSubmissionQuestionRepository = gradeSubmissionQuestionRepository;
         this.studentClassPaymentRecordsRepository = studentClassPaymentRecordsRepository;
+        this.regradeRequestRepository = regradeRequestRepository;
         this.request = request;
         this.studentClassesRepository = studentClassesRepository;
     }
@@ -326,9 +333,12 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
                                 .findByPaperSubmissionAndStatus(paperSubmission, 2);
 
                         if (gradeSubmission != null) {
-                            paperResponse.setSubmission_status("GRADED");
-                            paperResponse.setGrade(gradeSubmission.getGrade() + " (" 
-                                    + gradeSubmission.getTotalMarks() + "/" 
+                            RegradeRequest pendingRegradeRequest = regradeRequestRepository
+                                    .findByPaperSubmissionAndStatus(paperSubmission, 1);
+                            paperResponse.setSubmission_status(
+                                    pendingRegradeRequest != null ? "REGRADE_REQUESTED" : "GRADED");
+                            paperResponse.setGrade(gradeSubmission.getGrade() + " ("
+                                    + gradeSubmission.getTotalMarks() + "/"
                                     + gradeSubmission.getMaxMarks() + ")");
                             paperResponse.setGraded_pdf_url(pdfUrl);
                         } else {
@@ -573,5 +583,113 @@ public class StudentControllerManagerImpl implements StudentControllerManager {
         }
 
         return questionGradeResponses;
+    }
+
+    @Override
+    public GeneralResponse createRegradeRequest(Integer paperId, RegradeRequestCreateRequest regradeRequestCreateRequest) {
+        GeneralResponse response = new GeneralResponse();
+        Integer studentSeq = (Integer) request.getAttribute("userId");
+        Student student = studentRepository.findByStudentSeq(studentSeq);
+        if (student == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Student not found");
+            return response;
+        }
+
+        if (regradeRequestCreateRequest.getReason() == null || regradeRequestCreateRequest.getReason().trim().isEmpty()) {
+            response.setIsSuccess(false);
+            response.setMessage("Please provide a reason for the regrade request");
+            return response;
+        }
+
+        UplaodPaper uploadPaper = uploadPaperRepository.findByUploadPaperSeq(paperId);
+        if (uploadPaper == null) {
+            response.setIsSuccess(false);
+            response.setMessage("Paper not found");
+            return response;
+        }
+
+        PaperSubmission paperSubmission = paperSubmissionRepository
+                .findByStudentAndUplaodpaperAndStatusSeq(student, uploadPaper, 2);
+        if (paperSubmission == null) {
+            response.setIsSuccess(false);
+            response.setMessage("You have not submitted an answer sheet for this paper");
+            return response;
+        }
+
+        GradeSubmission activeGradeSubmission = gradeSubmissionRepository.findByPaperSubmissionAndStatus(paperSubmission, 2);
+        if (activeGradeSubmission == null) {
+            response.setIsSuccess(false);
+            response.setMessage("This submission has not been graded yet");
+            return response;
+        }
+
+        RegradeRequest existingPending = regradeRequestRepository.findByPaperSubmissionAndStatus(paperSubmission, 1);
+        if (existingPending != null) {
+            response.setIsSuccess(false);
+            response.setMessage("A regrade request for this submission is already pending");
+            return response;
+        }
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+
+        RegradeRequest regradeRequest = new RegradeRequest();
+        regradeRequest.setPaperSubmission(paperSubmission);
+        // Snapshot exactly which grading record is being contested, since a future
+        // edit will supersede it with a brand new GradeSubmission row rather than
+        // mutating this one - the FK keeps this request identifiable by its marks.
+        regradeRequest.setGradeSubmission(activeGradeSubmission);
+        regradeRequest.setReason(regradeRequestCreateRequest.getReason());
+        regradeRequest.setStatus(1); // pending / open
+        regradeRequest.setRequestedAt(LocalDateTime.now());
+        regradeRequest.setRequestedBy(username);
+        regradeRequestRepository.save(regradeRequest);
+
+        response.setIsSuccess(true);
+        response.setMessage("Regrade request submitted successfully");
+        return response;
+    }
+
+    @Override
+    public RegradeRequestResponse getRegradeRequestForPaper(Integer paperId) {
+        Integer studentSeq = (Integer) request.getAttribute("userId");
+        Student student = studentRepository.findByStudentSeq(studentSeq);
+        if (student == null) {
+            return null;
+        }
+
+        UplaodPaper uploadPaper = uploadPaperRepository.findByUploadPaperSeq(paperId);
+        if (uploadPaper == null) {
+            return null;
+        }
+
+        PaperSubmission paperSubmission = paperSubmissionRepository
+                .findByStudentAndUplaodpaperAndStatusSeq(student, uploadPaper, 2);
+        if (paperSubmission == null) {
+            return null;
+        }
+
+        RegradeRequest regradeRequest = regradeRequestRepository
+                .findTopByPaperSubmissionOrderByRequestedAtDesc(paperSubmission);
+        if (regradeRequest == null) {
+            return null;
+        }
+
+        RegradeRequestResponse response = new RegradeRequestResponse();
+        response.setId(regradeRequest.getRegradeRequestSeq());
+        response.setReason(regradeRequest.getReason());
+        response.setRequested_at(regradeRequest.getRequestedAt());
+        response.setStatus(regradeRequest.getStatus() == 2 ? "COMPLETED" : "PENDING");
+        response.setResolved_at(regradeRequest.getResolvedAt());
+
+        GradeSubmission contestedGradeSubmission = regradeRequest.getGradeSubmission();
+        if (contestedGradeSubmission != null) {
+            response.setPrevious_total_marks(contestedGradeSubmission.getTotalMarks());
+            response.setPrevious_max_marks(contestedGradeSubmission.getMaxMarks());
+            response.setPrevious_grade(contestedGradeSubmission.getGrade());
+        }
+
+        return response;
     }
 }

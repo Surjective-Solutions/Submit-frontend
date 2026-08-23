@@ -3,7 +3,8 @@
 import { useState ,useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, UserCheck } from 'lucide-react';
+import { ChevronLeft, RotateCcw, UserCheck } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -16,8 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { MOCK_INSTRUCTOR_TEACHERS } from '@/lib/mock-data';
-import {getInstructorTeachers} from '@/lib/api-client';
+import { getInstructorTeachers, getInstructorPendingRegradeRequests } from '@/lib/api-client';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MOCK_NOW = new Date('2026-06-19T18:30:00.000Z');
@@ -74,12 +74,14 @@ export default function InstructorPaperSubmissionsPage() {
   const { teacherId, paperId } = useParams();
   const router = useRouter();
    const [instructorTeachers, setInstructorTeachers] = useState([]);
+   const [regradeRequests, setRegradeRequests] = useState([]);
   const teacher = instructorTeachers.find((item) => item.id === teacherId);
   const paper = teacher?.papers?.find((item) => item.id === paperId);
 
 
     useEffect(() => {
       loadInstructorTeachers();
+      loadRegradeRequests();
     }, []);
 
 
@@ -90,6 +92,15 @@ export default function InstructorPaperSubmissionsPage() {
       setInstructorTeachers(data);
     } catch (error) {
       toast.error("Failed to load instructor teachers");
+    }
+  }
+
+  async function loadRegradeRequests() {
+    try {
+      const data = await getInstructorPendingRegradeRequests();
+      setRegradeRequests(data ?? []);
+    } catch (error) {
+      console.error("Failed to load regrade requests:", error);
     }
   }
 
@@ -111,8 +122,16 @@ export default function InstructorPaperSubmissionsPage() {
     );
   }
 
+  const paperRegradeRequests = regradeRequests.filter((r) => String(r.paper_id) === String(paperId));
+  const regradeBySubmissionId = new Map(paperRegradeRequests.map((r) => [String(r.submission_id), r]));
+
   const pendingSubmissions = paper.submissions.filter((submission) => !submission.graded);
-  const gradedSubmissions = paper.submissions.filter((submission) => submission.graded);
+  const regradeRequestedSubmissions = paper.submissions.filter(
+    (submission) => submission.graded && regradeBySubmissionId.has(String(submission.id))
+  );
+  const gradedSubmissions = paper.submissions.filter(
+    (submission) => submission.graded && !regradeBySubmissionId.has(String(submission.id))
+  );
 
   return (
     <div className="space-y-5">
@@ -185,6 +204,69 @@ export default function InstructorPaperSubmissionsPage() {
           </TableBody>
         </Table>
       </section>
+
+      {regradeRequestedSubmissions.length > 0 && (
+        <section className="rounded-2xl border border-border bg-white shadow-sm">
+          <div className="border-l-4 border-purple-400 px-4 py-3">
+            <h3 className="text-base font-semibold text-gray-900">
+              Regrade Requested{' '}
+              <span className="font-normal text-gray-400">•&nbsp;{regradeRequestedSubmissions.length}</span>
+            </h3>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Student</TableHead>
+                <TableHead>Student No.</TableHead>
+                <TableHead>Previous Grade</TableHead>
+                <TableHead>Regrade Remark</TableHead>
+                <TableHead>Requested</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {regradeRequestedSubmissions.map((submission) => {
+                const regradeRequest = regradeBySubmissionId.get(String(submission.id));
+                return (
+                  <TableRow key={submission.id}>
+                    <TableCell>
+                      <StudentCell submission={submission} />
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-mono text-[11px] text-gray-500">
+                        {submission.student_number}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-semibold text-amber-600">{formatGrade(submission.grade)}</TableCell>
+                    <TableCell className="max-w-56 truncate text-gray-600" title={regradeRequest?.reason}>
+                      {regradeRequest?.reason || '—'}
+                    </TableCell>
+                    <TableCell className="text-gray-500">
+                      {regradeRequest?.requested_at ? (
+                        <span title={formatFullDate(regradeRequest.requested_at)}>
+                          {formatRelativeDate(regradeRequest.requested_at)}
+                        </span>
+                      ) : (
+                        '—'
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        className="gap-1.5 bg-purple-600 text-white hover:bg-purple-700"
+                        onClick={() => router.push(`/instructor/dashboard/teachers/${teacherId}/papers/${paperId}/grade/${submission.id}`)}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        Regrade
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </section>
+      )}
 
       <section className="rounded-2xl border border-border bg-white shadow-sm">
         <div className="border-l-4 border-green-500 px-4 py-3">

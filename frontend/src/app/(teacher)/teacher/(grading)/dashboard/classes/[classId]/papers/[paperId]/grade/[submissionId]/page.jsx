@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, FileText, PenLine } from 'lucide-react';
+import { ChevronLeft, FileText, Loader2, PenLine, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import {
   getClasses,
   submitTutorGrades,
   editTutorSubmissionGrade,
+  getPendingRegradeRequests,
 } from '@/lib/api-client';
 
 const GRADE_TEXT_COLOR = {
@@ -127,10 +128,22 @@ export default function GradeSubmissionPage() {
 const [classes, setClasses] = useState([]);
 const [loading, setLoading] = useState(true);
 const [submission, setSubmission] = useState(null);
+const [regradeRequest, setRegradeRequest] = useState(null);
 
   useEffect(() => {
     loadData();
+    loadRegradeRequest();
   }, []);
+
+  async function loadRegradeRequest() {
+    try {
+      const requests = await getPendingRegradeRequests();
+      const match = (requests ?? []).find((r) => String(r.submission_id) === String(submissionId));
+      setRegradeRequest(match ?? null);
+    } catch (error) {
+      console.error('Failed to load regrade request:', error);
+    }
+  }
 
   async function loadData() {
     try {
@@ -205,6 +218,7 @@ const [submission, setSubmission] = useState(null);
   const [commentOpen, setCommentOpen] = useState({});
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [loadedSubmissionId, setLoadedSubmissionId] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Once the real submission data arrives, seed the mark-entry state from it.
   // Done here (during render, gated on the id changing) rather than in a
@@ -248,6 +262,8 @@ const [submission, setSubmission] = useState(null);
   }
 
   async function handleSubmit() {
+    if (submitting) return;
+
     const hasExceeded = questions.some((q) => isExceeded(q));
     const hasEmpty = questions.some((q) => isEmpty(q));
     if (hasExceeded || hasEmpty) {
@@ -275,18 +291,30 @@ const [submission, setSubmission] = useState(null);
 
     const isEditingGradedSubmission = submission.graded;
 
+    setSubmitting(true);
     try {
-      if (isEditingGradedSubmission) {
-        await editTutorSubmissionGrade(gradeRequest);
-        toast.success('Grades updated successfully');
-      } else {
-        await submitTutorGrades(gradeRequest);
-        toast.success('Grades submitted successfully');
+      const response = isEditingGradedSubmission
+        ? await editTutorSubmissionGrade(gradeRequest)
+        : await submitTutorGrades(gradeRequest);
+
+      if (response?.isSuccess === false) {
+        toast.error(response.message || (isEditingGradedSubmission ? 'Failed to update grades' : 'Failed to submit grades'));
+        return;
       }
+
+      toast.success(
+        isEditingGradedSubmission
+          ? regradeRequest
+            ? 'Regrade completed successfully'
+            : 'Grades updated successfully'
+          : 'Grades submitted successfully'
+      );
       router.push(`/teacher/dashboard/classes/${classId}/papers/${paperId}`);
     } catch (error) {
       console.error('Failed to save grades:', error);
       toast.error(isEditingGradedSubmission ? 'Failed to update grades' : 'Failed to submit grades');
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -306,6 +334,13 @@ const [submission, setSubmission] = useState(null);
       </div>
     );
   }
+
+  const actionLabel = regradeRequest ? 'Complete Regrade' : submission.graded ? 'Update Grades' : 'Submit Grades';
+  const submittingLabel = regradeRequest
+    ? 'Completing regrade...'
+    : submission.graded
+      ? 'Updating grades...'
+      : 'Submitting grades...';
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-gray-50">
@@ -337,11 +372,44 @@ const [submission, setSubmission] = useState(null);
           >
             Total: {totalAwarded} / {totalMax} ({gradeInfo.grade})
           </span>
-          <Button size="sm" className="bg-indigo-600 text-white hover:bg-indigo-700" onClick={handleSubmit}>
-            {submission.graded ? 'Update Grades' : 'Submit Grades'}
+          <Button
+            size="sm"
+            className={cn(
+              'text-white',
+              regradeRequest ? 'bg-purple-600 hover:bg-purple-700' : 'bg-indigo-600 hover:bg-indigo-700'
+            )}
+            onClick={handleSubmit}
+            disabled={submitting}
+          >
+            {submitting && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
+            {submitting ? submittingLabel : actionLabel}
           </Button>
         </div>
       </div>
+
+      {regradeRequest && (
+        <div className="flex shrink-0 items-start gap-2.5 border-b border-purple-100 bg-purple-50 px-4 py-2.5">
+          <RotateCcw className="mt-0.5 h-4 w-4 shrink-0 text-purple-600" />
+          <div className="min-w-0 space-y-0.5">
+            <p className="text-xs font-semibold text-purple-900">
+              Regrade Requested
+              {regradeRequest.previous_total_marks != null && regradeRequest.previous_max_marks != null && (
+                <span className="ml-1.5 font-normal text-purple-700">
+                  · Previously graded {regradeRequest.previous_total_marks} / {regradeRequest.previous_max_marks}
+                  {regradeRequest.previous_grade ? ` (${regradeRequest.previous_grade})` : ''}
+                </span>
+              )}
+            </p>
+            <p className="text-xs text-purple-700">
+              <span className="font-semibold">Student's remark: </span>
+              {regradeRequest.reason}
+            </p>
+            <p className="text-[11px] text-purple-500">
+              The marks below are pre-filled with the previous marking — adjust and resubmit to complete the regrade.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Two panel split */}
       <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
@@ -428,8 +496,16 @@ const [submission, setSubmission] = useState(null);
                 {gradeInfo.grade}
               </span>
             </div>
-            <Button className="w-full bg-indigo-600 text-white hover:bg-indigo-700" onClick={handleSubmit}>
-              {submission.graded ? 'Update Grades' : 'Submit Grades'}
+            <Button
+              className={cn(
+                'w-full text-white',
+                regradeRequest ? 'bg-purple-600 hover:bg-purple-700' : 'bg-indigo-600 hover:bg-indigo-700'
+              )}
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
+              {submitting ? submittingLabel : actionLabel}
             </Button>
           </div>
         </div>

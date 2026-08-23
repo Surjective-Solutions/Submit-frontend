@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useEnrolledClasses } from '@/context/EnrolledClassesContext';
 import { findPaperInClass } from '@/lib/exam-utils';
-import { getGradeDetailsForPaper } from '@/lib/api-client';
+import { getGradeDetailsForPaper, createRegradeRequest, getRegradeRequestForPaper } from '@/lib/api-client';
 
 const GRADE_TEXT_COLOR = {
   green: 'text-green-600',
@@ -51,26 +51,35 @@ function formatQuestionLabel(questionId) {
 
 // ── Request Recorrection Dialog ──────────────────────────────────────────────
 
-// TEMPORARY FRONTEND-ONLY WORKAROUND: there is no backend endpoint yet to
-// submit recorrection/regrading requests, so this just notes the request
-// locally via a toast. Wire this up to a real endpoint once one exists.
-function RequestRecorrectionDialog({ open, onOpenChange, paperName }) {
+function RequestRecorrectionDialog({ open, onOpenChange, paperId, paperName, onRequested }) {
   const [reason, setReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   function handleClose(next) {
     if (!next) setReason('');
     onOpenChange(next);
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!reason.trim()) {
       toast.error('Please enter a reason for your recorrection request.');
       return;
     }
-    toast.success(
-      "Your recorrection request has been noted. Backend processing for this isn't implemented yet.",
-    );
-    handleClose(false);
+    setSubmitting(true);
+    try {
+      const response = await createRegradeRequest(paperId, { reason });
+      if (response?.isSuccess === false) {
+        toast.error(response.message || 'Failed to submit recorrection request.');
+        return;
+      }
+      toast.success(response?.message || 'Your recorrection request has been submitted.');
+      onRequested?.(reason);
+      handleClose(false);
+    } catch {
+      toast.error('Failed to submit recorrection request.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -95,19 +104,21 @@ function RequestRecorrectionDialog({ open, onOpenChange, paperName }) {
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Explain why you'd like this paper re-checked..."
+            disabled={submitting}
           />
         </div>
 
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t bg-gray-50/60">
-          <Button variant="outline" size="sm" onClick={() => handleClose(false)}>
+          <Button variant="outline" size="sm" onClick={() => handleClose(false)} disabled={submitting}>
             Cancel
           </Button>
           <Button
             size="sm"
             className="bg-indigo-600 hover:bg-indigo-700 text-white"
             onClick={handleSubmit}
+            disabled={submitting}
           >
-            Submit Request
+            {submitting ? 'Submitting...' : 'Submit Request'}
           </Button>
         </div>
       </DialogContent>
@@ -140,6 +151,7 @@ export default function StudentFeedbackPage() {
   const [gradeDetails, setGradeDetails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [recorrectionOpen, setRecorrectionOpen] = useState(false);
+  const [regradeRequest, setRegradeRequest] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -158,6 +170,23 @@ export default function StudentFeedbackPage() {
       cancelled = true;
     };
   }, [paperId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await getRegradeRequestForPaper(paperId);
+        if (!cancelled) setRegradeRequest(data ?? null);
+      } catch {
+        // Non-critical - the recorrection button just falls back to its default state.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [paperId]);
+
+  const regradePending = regradeRequest?.status === 'PENDING';
 
   const cls = classes.find((c) => c.id === Number(classId));
   const paper = findPaperInClass(cls, paperId);
@@ -254,30 +283,48 @@ export default function StudentFeedbackPage() {
                 gradeDetails.map((detail) => <FeedbackRow key={detail.question_id} detail={detail} />)
               )}
 
-              <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
-                <div>
-                  <p className="text-xs font-semibold text-gray-900">Not happy with your grade?</p>
-                  <p className="mt-0.5 text-[11px] text-gray-500">
-                    Request a recorrection if you think this paper needs to be re-checked.
+              {regradePending ? (
+                <div className="rounded-lg border border-purple-200 bg-purple-50 p-3 space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <ClipboardEdit className="h-3.5 w-3.5 text-purple-600" />
+                    <p className="text-xs font-semibold text-purple-900">Regrade Requested</p>
+                  </div>
+                  <p className="text-[11px] text-purple-700">
+                    Your teacher is reviewing the marks above and will update them once the regrade is complete.
                   </p>
+                  <div className="rounded-md bg-white/70 px-2.5 py-2 text-[11px] text-purple-800">
+                    <span className="font-semibold">Your reason: </span>
+                    {regradeRequest.reason}
+                  </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
-                  onClick={() => setRecorrectionOpen(true)}
-                >
-                  <ClipboardEdit className="h-3.5 w-3.5" />
-                  Request Recorrection
-                </Button>
-              </div>
+              ) : (
+                <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-900">Not happy with your grade?</p>
+                    <p className="mt-0.5 text-[11px] text-gray-500">
+                      Request a recorrection if you think this paper needs to be re-checked.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+                    onClick={() => setRecorrectionOpen(true)}
+                  >
+                    <ClipboardEdit className="h-3.5 w-3.5" />
+                    Request Recorrection
+                  </Button>
+                </div>
+              )}
             </div>
           </ScrollArea>
 
           <RequestRecorrectionDialog
             open={recorrectionOpen}
             onOpenChange={setRecorrectionOpen}
+            paperId={paperId}
             paperName={paper.paper_name}
+            onRequested={(reason) => setRegradeRequest({ status: 'PENDING', reason })}
           />
 
           {!loading && gradeDetails.length > 0 && (

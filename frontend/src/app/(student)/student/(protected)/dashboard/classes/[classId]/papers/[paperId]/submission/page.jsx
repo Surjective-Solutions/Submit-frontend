@@ -213,7 +213,7 @@ export default function PaperSubmissionPage() {
     ? `/student/dashboard/classes/${classId}/${toMonthYearSlug(monthEntry.month, monthEntry.year)}`
     : `/student/dashboard/classes/${classId}`;
 
-  const isGraded = paper.submission_status === 'GRADED';
+  const isGraded = paper.submission_status === 'GRADED' || paper.submission_status === 'REGRADE_REQUESTED';
 
   return (
     <div className="space-y-6">

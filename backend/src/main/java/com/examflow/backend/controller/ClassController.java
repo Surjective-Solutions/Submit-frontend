@@ -23,6 +23,7 @@ import com.examflow.backend.dto.ClassRequest;
 import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.PaperUploadRequest;
+import com.examflow.backend.dto.RegradeRequestResponse;
 import com.examflow.backend.dto.SubmitGradeResponse;
 import com.examflow.backend.entity.UplaodPaper;
 import com.examflow.backend.service.ClassControllerManager;
@@ -100,5 +101,15 @@ public class ClassController {
     @PutMapping("/submissions/edit-grade")
     public GeneralResponse editSubmissionGrade(@RequestBody SubmitGradeResponse submitGradeResponse) {
         return classControllerManager.editSubmissionGrade(submitGradeResponse);
+    }
+
+    @GetMapping("/regrade-requests")
+    public List<RegradeRequestResponse> getPendingRegradeRequests() {
+        return classControllerManager.getPendingRegradeRequests();
+    }
+
+    @GetMapping("/regrade-requests/{regradeRequestSeq}")
+    public RegradeRequestResponse getRegradeRequestById(@PathVariable Integer regradeRequestSeq) {
+        return classControllerManager.getRegradeRequestById(regradeRequestSeq);
     }
 }

@@ -18,6 +18,7 @@ import com.examflow.backend.service.InstructorControllerManager;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.InstructorSignUpRequest;
 import com.examflow.backend.dto.InstructorTeacherResponse;
+import com.examflow.backend.dto.RegradeRequestResponse;
 import com.examflow.backend.dto.SubmitGradeResponse;
 
 @RestController
@@ -58,6 +59,21 @@ public class InstructorController {
     @GetMapping("/get-instructor-teachers")
     public List<InstructorTeacherResponse> getInstructorTeacher() {
         return instructorControllerManager.getIntructorTeachers();
+    }
+
+    @PutMapping("/submissions/edit-grade")
+    public GeneralResponse editSubmissionGrade(@RequestBody SubmitGradeResponse submitGradeResponse) {
+        return instructorControllerManager.editSubmissionGrade(submitGradeResponse);
+    }
+
+    @GetMapping("/regrade-requests")
+    public List<RegradeRequestResponse> getPendingRegradeRequests() {
+        return instructorControllerManager.getPendingRegradeRequests();
+    }
+
+    @GetMapping("/regrade-requests/{regradeRequestSeq}")
+    public RegradeRequestResponse getRegradeRequestById(@PathVariable Integer regradeRequestSeq) {
+        return instructorControllerManager.getRegradeRequestById(regradeRequestSeq);
     }
 
 }
