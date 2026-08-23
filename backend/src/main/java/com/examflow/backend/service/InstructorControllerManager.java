@@ -9,6 +9,7 @@ import com.examflow.backend.entity.Instructor;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.InstructorSignUpRequest;
 import com.examflow.backend.dto.InstructorTeacherResponse;
+import com.examflow.backend.dto.RegradeRequestResponse;
 import com.examflow.backend.dto.SubmitGradeResponse;
 
 @Service
@@ -21,4 +22,10 @@ public interface InstructorControllerManager {
     List<InstructorTeacherResponse> getIntructorTeachers();
 
     GeneralResponse GradeSubmission(SubmitGradeResponse submitGradeResponse);
+
+    GeneralResponse editSubmissionGrade(SubmitGradeResponse submitGradeResponse);
+
+    List<RegradeRequestResponse> getPendingRegradeRequests();
+
+    RegradeRequestResponse getRegradeRequestById(Integer regradeRequestSeq);
 }

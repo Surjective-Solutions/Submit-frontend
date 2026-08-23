@@ -302,7 +302,7 @@ export default function PaperSubmissionPage() {
     ? `/student/dashboard/classes/${classId}/${toMonthYearSlug(monthEntry.month, monthEntry.year)}`
     : `/student/dashboard/classes/${classId}`;
 
-  const isGraded = paper.submission_status === 'GRADED';
+  const isGraded = paper.submission_status === 'GRADED' || paper.submission_status === 'REGRADE_REQUESTED';
   const scoreInfo = isGraded ? parseScoreFromGrade(paper.grade) : null;
   const message = scoreInfo ? getPerformanceMessage(scoreInfo.percentage) : null;
 

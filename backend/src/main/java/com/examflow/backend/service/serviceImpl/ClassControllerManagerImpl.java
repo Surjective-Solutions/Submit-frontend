@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.examflow.backend.dto.CashierResponse;
@@ -19,9 +18,9 @@ import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.MonthPapersResponse;
 import com.examflow.backend.dto.PaperResponse;
 import com.examflow.backend.dto.PaperUploadRequest;
-import com.examflow.backend.dto.QuestionGradeResponse;
 import com.examflow.backend.dto.QuestionPaperInstructorTutorResponse;
 import com.examflow.backend.dto.QuestionRequestDTO;
+import com.examflow.backend.dto.RegradeRequestResponse;
 import com.examflow.backend.dto.SubQuestionRequestDTO;
 import com.examflow.backend.dto.SubmissionPaperInstructorTutorResponse;
 import com.examflow.backend.dto.SubmitGradeQuestionsResponse;
@@ -33,6 +32,7 @@ import com.examflow.backend.entity.Classes;
 import com.examflow.backend.entity.GradeSubmission;
 import com.examflow.backend.entity.GradeSubmissionQuestion;
 import com.examflow.backend.entity.PaperSubmission;
+import com.examflow.backend.entity.Student;
 import com.examflow.backend.entity.Tutor;
 import com.examflow.backend.entity.UplaodPaper;
 import com.examflow.backend.entity.UploadPaperQuestion;
@@ -69,6 +69,9 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
     private final UploadPaperQuestionRepository uploadPaperQuestionRepository;
     private final UploadPaperQuestionSubQuestionRepository uploadPaperQuestionSubQuestionRepository;
     private final MonthlyPaymentService monthlyPaymentService;
+    private final GradeEditService gradeEditService;
+    private final RegradeRequestQueryService regradeRequestQueryService;
+    private final SubmissionGradeSummaryService submissionGradeSummaryService;
 
     @Autowired
     public ClassControllerManagerImpl(HttpServletRequest request,
@@ -82,6 +85,9 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
             ClassPaymentRecordRepository classPaymentRecordRepository,
             ClassesRepository classesRepository,
             UploadPaperRepository uploadPaperRepository,
+            GradeEditService gradeEditService,
+            RegradeRequestQueryService regradeRequestQueryService,
+            SubmissionGradeSummaryService submissionGradeSummaryService,
             MonthlyPaymentService monthlyPaymentService) {
         this.request = request;
         this.paperSubmissionRepository = paperSubmissionRepository;
@@ -92,6 +98,9 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
         this.classPaymentRecordRepository = classPaymentRecordRepository;
         this.classesRepository = classesRepository;
         this.uploadPaperQuestionRepository = uploadPaperQuestionRepository;
+        this.gradeEditService = gradeEditService;
+        this.regradeRequestQueryService = regradeRequestQueryService;
+        this.submissionGradeSummaryService = submissionGradeSummaryService;
         this.uploadPaperQuestionSubQuestionRepository = uploadPaperQuestionSubQuestionRepository;
         this.uploadPaperRepository = uploadPaperRepository;
         this.monthlyPaymentService = monthlyPaymentService;
@@ -270,36 +279,7 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
                     
                     submissionResponses.add(submissionResponse);
 
-                    List<QuestionGradeResponse> questionGradeResponses = new ArrayList<>();
-                    GradeSubmission gradeSubmission = gradeSubmissionRepository.findByPaperSubmissionAndStatus(submission, 2);
-                    if (gradeSubmission != null) {
-                        submissionResponse.setGrade(gradeSubmission.getGrade());
-                        submissionResponse.setGraded_by(gradeSubmission.getGrardedBy());
-
-                        List<GradeSubmissionQuestion> gradeSubmissionQuestions = gradeSubmissionQuestionRepository.findByGradeSubmissionAndStatus(gradeSubmission, 2);
-                        for(GradeSubmissionQuestion gradedQuestion:gradeSubmissionQuestions){
-                            QuestionGradeResponse questionResponse = new QuestionGradeResponse();
-
-                            questionResponse.setMarks_awarded(gradedQuestion.getMarksAwarded());
-                            questionResponse.setComment(gradedQuestion.getComment());
-
-                            boolean isSubQuestion = Boolean.TRUE.equals(gradedQuestion.getIsSubQuestion())
-                                    && gradedQuestion.getUploadPaperQuestionSubQuestion() != null;
-                            if (isSubQuestion) {
-                                questionResponse.setQuestion_id(gradedQuestion.getUploadPaperQuestion().getUploadPaperQuestionSeq().toString()
-                                        + "-" + gradedQuestion.getUploadPaperQuestionSubQuestion().getUploadPaperQuestionSubQuestionSeq().toString());
-                                questionResponse.setMax_marks(gradedQuestion.getUploadPaperQuestionSubQuestion().getMark());
-                            } else {
-                                questionResponse.setQuestion_id(gradedQuestion.getUploadPaperQuestion().getUploadPaperQuestionSeq().toString());
-                                questionResponse.setMax_marks(gradedQuestion.getUploadPaperQuestion().getMarks());
-                            }
-
-                            questionGradeResponses.add(questionResponse);
-
-                        }
-                    }
-
-                    submissionResponse.setAwarded_marks(questionGradeResponses);
+                    submissionGradeSummaryService.applyGradeSummary(submissionResponse, submission);
                 }
 
                 paperResponse.setSubmissions(submissionResponses);
@@ -700,7 +680,6 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
     }
 
     @Override
-    @Transactional
     public GeneralResponse editSubmissionGrade(SubmitGradeResponse submitGradeResponse) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
@@ -724,54 +703,30 @@ public class ClassControllerManagerImpl implements ClassControllerManager {
             return response;
         }
 
-        GradeSubmission gradeSubmission = gradeSubmissionRepository.findByPaperSubmissionAndStatus(paperSubmission, 2);
-        if (gradeSubmission == null) {
-            response.setIsSuccess(false);
-            response.setMessage("This submission has not been graded yet");
-            return response;
-        }
-
-        List<GradeSubmissionQuestion> newQuestions = new ArrayList<>();
-        for (SubmitGradeQuestionsResponse submitGradeQuestionsResponse : submitGradeResponse.getQuestions()) {
-            GradeSubmissionQuestion gradeSubmissionQuestion = buildGradeSubmissionQuestion(gradeSubmission,
-                    submitGradeQuestionsResponse);
-            if (gradeSubmissionQuestion == null) {
-                response.setIsSuccess(false);
-                response.setMessage("Question not found. Contact a system administrator");
-                return response;
-            }
-            newQuestions.add(gradeSubmissionQuestion);
-        }
-
-        // Supersede the previously awarded marks rather than mutating them in place,
-        // so the marking history for this submission is preserved.
-        List<GradeSubmissionQuestion> previousQuestions = gradeSubmissionQuestionRepository
-                .findByGradeSubmissionAndStatus(gradeSubmission, 2);
-        for (GradeSubmissionQuestion previous : previousQuestions) {
-            previous.setStatus(1);
-            gradeSubmissionQuestionRepository.save(previous);
-        }
-        for (GradeSubmissionQuestion gradeSubmissionQuestion : newQuestions) {
-            gradeSubmissionQuestionRepository.save(gradeSubmissionQuestion);
-        }
-
-        gradeSubmission.setLastModifiedBy(username);
-        gradeSubmission.setLastModifiedAt(LocalDateTime.now());
-        gradeSubmission.setGrardedBy(username);
-        gradeSubmission.setGradedAt(LocalDateTime.now());
-        gradeSubmission.setMaxMarks(submitGradeResponse.getMaxMarks());
-        gradeSubmission.setGrade(submitGradeResponse.getGrade());
-        gradeSubmission.setTotalMarks(submitGradeResponse.getTotalMarks());
-        gradeSubmissionRepository.save(gradeSubmission);
-
-        paperSubmission.setGradedDate(LocalDateTime.now());
-        paperSubmissionRepository.save(paperSubmission);
-
-        response.setIsSuccess(true);
-        response.setMessage("Grade updated successfully");
-        return response;
+        return gradeEditService.editGrade(paperSubmission, submitGradeResponse, username);
     }
 
+    @Override
+    public List<RegradeRequestResponse> getPendingRegradeRequests() {
+        Integer tutorSeq = (Integer) request.getAttribute("userId");
+        Tutor tutor = tutorRepository.findByTutorSeq(tutorSeq);
+        if (tutor == null) {
+            return new ArrayList<>();
+        }
+
+        return regradeRequestQueryService.getPendingForTutors(List.of(tutor));
+    }
+
+    @Override
+    public RegradeRequestResponse getRegradeRequestById(Integer regradeRequestSeq) {
+        Integer tutorSeq = (Integer) request.getAttribute("userId");
+        Tutor tutor = tutorRepository.findByTutorSeq(tutorSeq);
+        if (tutor == null) {
+            return null;
+        }
+
+        return regradeRequestQueryService.getByIdForTutors(regradeRequestSeq, List.of(tutor));
+    }
 
     private GradeSubmissionQuestion buildGradeSubmissionQuestion(GradeSubmission gradeSubmission,
             SubmitGradeQuestionsResponse submitGradeQuestionsResponse) {

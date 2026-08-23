@@ -9,6 +9,7 @@ import com.examflow.backend.dto.ClassRequest;
 import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.PaperUploadRequest;
+import com.examflow.backend.dto.RegradeRequestResponse;
 import com.examflow.backend.dto.SubmitGradeResponse;
 
 @Service
@@ -33,5 +34,9 @@ public interface ClassControllerManager {
     GeneralResponse gradeSubmission(SubmitGradeResponse submitGradeResponse);
 
     GeneralResponse editSubmissionGrade(SubmitGradeResponse submitGradeResponse);
+
+    List<RegradeRequestResponse> getPendingRegradeRequests();
+
+    RegradeRequestResponse getRegradeRequestById(Integer regradeRequestSeq);
 }
     

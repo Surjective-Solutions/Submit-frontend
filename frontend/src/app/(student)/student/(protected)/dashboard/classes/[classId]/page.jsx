@@ -73,6 +73,13 @@ function SubmissionStatusBadge({ status }) {
       </span>
     );
   }
+  if (status === 'REGRADE_REQUESTED') {
+    return (
+      <span className="inline-flex items-center text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">
+        Regrade Requested
+      </span>
+    );
+  }
   if (status === 'SUBMITTED') {
     return (
       <span className="inline-flex items-center text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
@@ -110,7 +117,7 @@ function ViewPaperDialog({ open, onOpenChange, paper }) {
           </div>
         </div>
 
-        {paper.submission_status === 'GRADED' && paper.grade && (
+        {(paper.submission_status === 'GRADED' || paper.submission_status === 'REGRADE_REQUESTED') && paper.grade && (
           <div className="mx-6 mt-5 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-green-50 border border-green-200">
             <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
               <span className="text-green-600 text-base font-bold">A</span>
@@ -159,7 +166,7 @@ function ViewPaperDialog({ open, onOpenChange, paper }) {
             )}
           </div>
 
-          {paper.submission_status === 'GRADED' && (
+          {(paper.submission_status === 'GRADED' || paper.submission_status === 'REGRADE_REQUESTED') && (
             <div className="sm:col-span-2 rounded-xl border border-green-200 bg-green-50/40 p-4 space-y-3">
               <p className="text-xs font-semibold text-green-700 uppercase tracking-wider">Graded Submission</p>
               {paper.graded_pdf_url ? (

@@ -202,6 +202,16 @@ export async function editTutorSubmissionGrade(payload) {
   });
 }
 
+// get pending regrade requests for the tutor's own classes
+export async function getPendingRegradeRequests() {
+  return protectedRequestPath("/api/class/regrade-requests", { method: "GET" });
+}
+
+// get a single regrade request's detail (previous marks, reason, etc), as the class's tutor
+export async function getRegradeRequestById(regradeRequestSeq) {
+  return protectedRequestPath(`/api/class/regrade-requests/${regradeRequestSeq}`, { method: "GET" });
+}
+
 // TODO: replace with actual microservice endpoint
 export async function createClass(data) {
   console.log("Creating class with data:", data);
@@ -346,6 +356,19 @@ export async function updateStudent(id, data) {
 // get per-question grade breakdown for a graded paper
 export async function getGradeDetailsForPaper(paperId) {
   return protectedRequestPath(`/api/student/paper/${paperId}/grade-details`, { method: 'GET' });
+}
+
+// submit a regrade request for a graded paper, as the student
+export async function createRegradeRequest(paperId, payload) {
+  return protectedRequestPath(`/api/student/paper/${paperId}/regrade-request`, {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+// get the student's own (most recent) regrade request for a paper, if any
+export async function getRegradeRequestForPaper(paperId) {
+  return protectedRequestPath(`/api/student/paper/${paperId}/regrade-request`, { method: 'GET' });
 }
 
 // ── Admin Instructors ─────────────────────────────────────────────────────────
@@ -596,5 +619,23 @@ export async function submitGrades(payload) {
     method: "POST",
     body: payload,
   });
+}
+
+// edit marks/comments for a submission that's already been graded, as an instructor
+export async function editInstructorSubmissionGrade(payload) {
+  return protectedRequest("/api/instructor/submissions/edit-grade", {
+    method: "PUT",
+    body: payload,
+  });
+}
+
+// get pending regrade requests across every tutor the instructor is engaged with
+export async function getInstructorPendingRegradeRequests() {
+  return protectedRequestPath("/api/instructor/regrade-requests", { method: "GET" });
+}
+
+// get a single regrade request's detail (previous marks, reason, etc), as an instructor
+export async function getInstructorRegradeRequestById(regradeRequestSeq) {
+  return protectedRequestPath(`/api/instructor/regrade-requests/${regradeRequestSeq}`, { method: "GET" });
 }
 

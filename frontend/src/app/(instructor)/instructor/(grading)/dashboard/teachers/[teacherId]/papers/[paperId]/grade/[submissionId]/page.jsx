@@ -3,7 +3,7 @@
 import { useMemo, useState,useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, FileText, PenLine } from 'lucide-react';
+import { ChevronLeft, FileText, Loader2, PenLine, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -12,8 +12,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { MOCK_INSTRUCTOR_TEACHERS, MOCK_LOGGED_IN_INSTRUCTOR } from '@/lib/mock-data';
-import {getInstructorTeachers,submitGrades} from '@/lib/api-client';
+import {
+  getInstructorTeachers,
+  submitGrades,
+  editInstructorSubmissionGrade,
+  getInstructorPendingRegradeRequests,
+} from '@/lib/api-client';
 
 const GRADE_TEXT_COLOR = {
   green: 'text-green-600',
@@ -31,8 +35,18 @@ const GRADE_BADGE_COLOR = {
   red: 'bg-red-100 text-red-700',
 };
 
-function applySubmissionGrade(submission, patch) {
-  Object.assign(submission, patch);
+function buildInitialGradeState(submission) {
+  const marks = {};
+  const comments = {};
+  const commentOpen = {};
+  (submission?.awarded_marks ?? []).forEach((a) => {
+    marks[a.question_id] = a.marks_awarded != null ? String(a.marks_awarded) : '';
+    if (a.comment) {
+      comments[a.question_id] = a.comment;
+      commentOpen[a.question_id] = true;
+    }
+  });
+  return { marks, comments, commentOpen };
 }
 
 function getGrade(score, totalMarks) {
@@ -109,6 +123,7 @@ export default function InstructorGradeSubmissionPage() {
   const { teacherId, paperId, submissionId } = useParams();
   const router = useRouter();
    const [instructorTeachers, setInstructorTeachers] = useState([]);
+   const [regradeRequest, setRegradeRequest] = useState(null);
 
   const teacher = instructorTeachers.find((t) => t.id === teacherId);
   const paper = teacher?.papers?.find((p) => p.id === paperId);
@@ -118,6 +133,7 @@ export default function InstructorGradeSubmissionPage() {
 
     useEffect(() => {
       loadInstructorTeachers();
+      loadRegradeRequest();
     }, []);
 
 
@@ -131,7 +147,16 @@ export default function InstructorGradeSubmissionPage() {
         }
       }
 
-      
+      async function loadRegradeRequest() {
+        try {
+          const requests = await getInstructorPendingRegradeRequests();
+          const match = (requests ?? []).find((r) => String(r.submission_id) === String(submissionId));
+          setRegradeRequest(match ?? null);
+        } catch (error) {
+          console.error('Failed to load regrade request:', error);
+        }
+      }
+
   const questions = useMemo(
     () => (paper?.questions ? [...paper.questions].sort((a, b) => a.display_order - b.display_order) : []),
     [paper]
@@ -152,28 +177,23 @@ export default function InstructorGradeSubmissionPage() {
     return list;
   }, [questions]);
 
-  const [marks, setMarks] = useState(() => {
-    const initial = {};
-    (submission?.awarded_marks ?? []).forEach((a) => {
-      initial[a.question_id] = a.marks_awarded != null ? String(a.marks_awarded) : '';
-    });
-    return initial;
-  });
-  const [comments, setComments] = useState(() => {
-    const initial = {};
-    (submission?.awarded_marks ?? []).forEach((a) => {
-      if (a.comment) initial[a.question_id] = a.comment;
-    });
-    return initial;
-  });
-  const [commentOpen, setCommentOpen] = useState(() => {
-    const initial = {};
-    (submission?.awarded_marks ?? []).forEach((a) => {
-      if (a.comment) initial[a.question_id] = true;
-    });
-    return initial;
-  });
+  const [marks, setMarks] = useState({});
+  const [comments, setComments] = useState({});
+  const [commentOpen, setCommentOpen] = useState({});
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const [loadedSubmissionId, setLoadedSubmissionId] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // instructorTeachers loads async, so `submission` starts undefined - seed the
+  // mark-entry state here (gated on the id changing) once the real data arrives,
+  // rather than in a useState initializer which would only ever see undefined.
+  if (submission && submission.id !== loadedSubmissionId) {
+    const initial = buildInitialGradeState(submission);
+    setLoadedSubmissionId(submission.id);
+    setMarks(initial.marks);
+    setComments(initial.comments);
+    setCommentOpen(initial.commentOpen);
+  }
 
   const totalMax = questions.reduce((sum, q) => sum + q.max_marks, 0);
   const totalAwarded = questions.reduce((sum, q) => {
@@ -204,26 +224,8 @@ export default function InstructorGradeSubmissionPage() {
     setCommentOpen((prev) => ({ ...prev, [q.id]: !prev[q.id] }));
   }
 
-  async  function handleSubmit() {
-
-
-          const gradeRequest = {
-     submissionId: Number(submission.id),
-    teacherId: Number(teacherId),
-    paperId: Number(paperId),
-    totalMarks: totalAwarded,
-    maxMarks: totalMax,
-    grade: gradeInfo.grade,
-    gradedAt: new Date().toISOString(),
-    questions: questions.map((q) => ({
-      questionId: q.id,
-      marksAwarded: Number(marks[q.id]),
-      subquestionSeq: Number(q.subQuestionSeq),
-      mainQuestionSeq: Number(q.mainQuestionSeq),
-      isSubQuestion: q.parent_label ? true : false,
-      comment: comments[q.id] || ""
-      }))
-      };
+  async function handleSubmit() {
+    if (submitting) return;
 
     const hasExceeded = questions.some((q) => isExceeded(q));
     const hasEmpty = questions.some((q) => isEmpty(q));
@@ -233,41 +235,51 @@ export default function InstructorGradeSubmissionPage() {
       return;
     }
 
-      try {
-     const response =  await submitGrades(gradeRequest);
-
-      toast.success("Grades submitted successfully");
-
-      router.push(
-        `/instructor/dashboard/teachers/${teacherId}/papers/${paperId}`
-      );
-
-    } catch (error) {
-        toast.error("Failed to submit grades");
-    }
-
-    const instructorName = MOCK_LOGGED_IN_INSTRUCTOR
-      ? `Instructor ${MOCK_LOGGED_IN_INSTRUCTOR.first_name} ${MOCK_LOGGED_IN_INSTRUCTOR.last_name}`
-      : 'Instructor';
-
-    applySubmissionGrade(submission, {
-      graded: true,
-      graded_by: instructorName,
-      graded_at: new Date().toISOString(),
-      grade: `${totalAwarded}/${totalMax}`,
-      awarded_marks: questions.map((q) => ({
-        question_id: q.id,
-        marks_awarded: Number(marks[q.id]),
-        comment: comments[q.id] || null,
+    const gradeRequest = {
+      submissionId: Number(submission.id),
+      teacherId: Number(teacherId),
+      paperId: Number(paperId),
+      totalMarks: totalAwarded,
+      maxMarks: totalMax,
+      grade: gradeInfo.grade,
+      gradedAt: new Date().toISOString(),
+      questions: questions.map((q) => ({
+        questionId: q.id,
+        marksAwarded: Number(marks[q.id]),
+        subquestionSeq: Number(q.subQuestionSeq),
+        mainQuestionSeq: Number(q.mainQuestionSeq),
+        isSubQuestion: q.parent_label ? true : false,
+        comment: comments[q.id] || '',
       })),
-    });
+    };
 
+    const isEditingGradedSubmission = submission.graded;
 
+    setSubmitting(true);
+    try {
+      const response = isEditingGradedSubmission
+        ? await editInstructorSubmissionGrade(gradeRequest)
+        : await submitGrades(gradeRequest);
 
-  //   toast.success('Grades submitted successfully');
-  //   router.push(`/instructor/dashboard/teachers/${teacherId}/papers/${paperId}`);
-  // }
+      if (response?.isSuccess === false) {
+        toast.error(response.message || (isEditingGradedSubmission ? 'Failed to update grades' : 'Failed to submit grades'));
+        return;
+      }
 
+      toast.success(
+        isEditingGradedSubmission
+          ? regradeRequest
+            ? 'Regrade completed successfully'
+            : 'Grades updated successfully'
+          : 'Grades submitted successfully'
+      );
+      router.push(`/instructor/dashboard/teachers/${teacherId}/papers/${paperId}`);
+    } catch (error) {
+      console.error('Failed to save grades:', error);
+      toast.error(isEditingGradedSubmission ? 'Failed to update grades' : 'Failed to submit grades');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (!teacher || !paper || !submission) {
@@ -286,6 +298,13 @@ export default function InstructorGradeSubmissionPage() {
       </div>
     );
   }
+
+  const actionLabel = regradeRequest ? 'Complete Regrade' : submission.graded ? 'Update Grades' : 'Submit Grades';
+  const submittingLabel = regradeRequest
+    ? 'Completing regrade...'
+    : submission.graded
+      ? 'Updating grades...'
+      : 'Submitting grades...';
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-gray-50">
@@ -317,11 +336,44 @@ export default function InstructorGradeSubmissionPage() {
           >
             Total: {totalAwarded} / {totalMax} ({gradeInfo.grade})
           </span>
-          <Button size="sm" className="bg-indigo-600 text-white hover:bg-indigo-700" onClick={handleSubmit}>
-            Submit Grades
+          <Button
+            size="sm"
+            className={cn(
+              'text-white',
+              regradeRequest ? 'bg-purple-600 hover:bg-purple-700' : 'bg-indigo-600 hover:bg-indigo-700'
+            )}
+            onClick={handleSubmit}
+            disabled={submitting}
+          >
+            {submitting && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
+            {submitting ? submittingLabel : actionLabel}
           </Button>
         </div>
       </div>
+
+      {regradeRequest && (
+        <div className="flex shrink-0 items-start gap-2.5 border-b border-purple-100 bg-purple-50 px-4 py-2.5">
+          <RotateCcw className="mt-0.5 h-4 w-4 shrink-0 text-purple-600" />
+          <div className="min-w-0 space-y-0.5">
+            <p className="text-xs font-semibold text-purple-900">
+              Regrade Requested
+              {regradeRequest.previous_total_marks != null && regradeRequest.previous_max_marks != null && (
+                <span className="ml-1.5 font-normal text-purple-700">
+                  · Previously graded {regradeRequest.previous_total_marks} / {regradeRequest.previous_max_marks}
+                  {regradeRequest.previous_grade ? ` (${regradeRequest.previous_grade})` : ''}
+                </span>
+              )}
+            </p>
+            <p className="text-xs text-purple-700">
+              <span className="font-semibold">Student's remark: </span>
+              {regradeRequest.reason}
+            </p>
+            <p className="text-[11px] text-purple-500">
+              The marks below are pre-filled with the previous marking — adjust and resubmit to complete the regrade.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Two panel split */}
       <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
@@ -408,8 +460,16 @@ export default function InstructorGradeSubmissionPage() {
                 {gradeInfo.grade}
               </span>
             </div>
-            <Button className="w-full bg-indigo-600 text-white hover:bg-indigo-700" onClick={handleSubmit}>
-              Submit Grades
+            <Button
+              className={cn(
+                'w-full text-white',
+                regradeRequest ? 'bg-purple-600 hover:bg-purple-700' : 'bg-indigo-600 hover:bg-indigo-700'
+              )}
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
+              {submitting ? submittingLabel : actionLabel}
             </Button>
           </div>
         </div>

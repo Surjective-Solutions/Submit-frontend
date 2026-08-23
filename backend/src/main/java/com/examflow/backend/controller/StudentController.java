@@ -16,6 +16,8 @@ import com.examflow.backend.dto.ClassRequest;
 import com.examflow.backend.dto.ClassResponse;
 import com.examflow.backend.dto.GeneralResponse;
 import com.examflow.backend.dto.PaperUploadRequest;
+import com.examflow.backend.dto.RegradeRequestCreateRequest;
+import com.examflow.backend.dto.RegradeRequestResponse;
 import com.examflow.backend.dto.StudentResponse;
 import com.examflow.backend.dto.QuestionGradeResponse;
 import com.examflow.backend.service.StudentControllerManager;
@@ -84,5 +86,16 @@ public class StudentController {
     @GetMapping("/paper/{paperId}/grade-details")
     public List<QuestionGradeResponse> getGradeDetailsForPaper(@PathVariable Integer paperId) {
         return studentControllerManager.getGradeDetailsForPaper(paperId);
+    }
+
+    @PostMapping("/paper/{paperId}/regrade-request")
+    public GeneralResponse createRegradeRequest(@PathVariable Integer paperId,
+            @RequestBody RegradeRequestCreateRequest regradeRequestCreateRequest) {
+        return studentControllerManager.createRegradeRequest(paperId, regradeRequestCreateRequest);
+    }
+
+    @GetMapping("/paper/{paperId}/regrade-request")
+    public RegradeRequestResponse getRegradeRequestForPaper(@PathVariable Integer paperId) {
+        return studentControllerManager.getRegradeRequestForPaper(paperId);
     }
 }
